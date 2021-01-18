@@ -22,7 +22,7 @@ namespace BGOverlay
 
             var entityList = new List<BGEntity>();
 
-            while(true)
+            while (true)
             {
                 BGEntity main = null;
                 for (int i = 15; i < 275; ++i)
@@ -42,13 +42,18 @@ namespace BGOverlay
                         main = newEntity;
                     }
                 }
-                
-                entityList.Where(y=> len(main, y) < 300).ToList().ForEach(x => Console.WriteLine(x.ToString()));
+
+                entityList.Where(y => len(main, y) < 300).ToList().ForEach(x => Console.WriteLine(x.ToString()));
                 Thread.Sleep(3000);
                 Console.Clear();
                 entityList.Clear();
             }
         }
+        //static void Main(string[] args)
+        //{
+        //    var reader = CREReader.get("DUERGAR.CRE");
+        //    int i = 0;
+        //}
 
         static double len(BGEntity entity1, BGEntity entity2)
         {
