@@ -50,8 +50,10 @@ namespace BGOverlay
                 entityList.Clear();
             }
         }
+
         static void Init()
         {
+            new TLKReader();
             var keyReader = new KeyReader();
             var creEntries = KeyReader.CREResorceEntries;
             creEntries.ForEach(x => x.LoadCREFiles());

@@ -56,6 +56,8 @@
     <Compile Include="Resources\BIFEntry.cs" />
     <Compile Include="Resources\BIFFV1FileEntry.cs" />
     <Compile Include="Resources\BIFResourceEntry.cs" />
+    <Compile Include="Resources\TLKEntry.cs" />
+    <Compile Include="TLKReader.cs" />
     <Compile Include="WinAPIBindings.cs" />
   </ItemGroup>
   <ItemGroup>

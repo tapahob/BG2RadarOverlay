@@ -53,8 +53,10 @@ namespace BGOverlay
             {
                 this.Signature = new string(reader.ReadChars(4));
                 this.Version   = new string(reader.ReadChars(4));
-                this.LongName  = reader.ReadInt32();
-                this.ShortName = reader.ReadInt32();
+                TLKReader.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
+                this.LongName = text?.Text;
+                TLKReader.StringRefs.TryGetValue(reader.ReadInt32(), out text);
+                this.ShortName = text?.Text;
 
                 this.CreatureFlags = reader.ReadInt32();
                 /*
@@ -194,13 +196,13 @@ namespace BGOverlay
 
         }
 
-        public int ShortName { get; private set; }
+        public string ShortName { get; private set; }
         public int CreatureFlags { get; private set; }
         public int XPGained { get; private set; }
         public short MaximumHP { get; private set; }
         public string Signature { get; private set; }
         public string Version { get; private set; }
-        public int LongName { get; private set; }
+        public string LongName { get; private set; }
         public byte EffStructureVersion { get; }
         public char[] SmallPortrait { get; }
         public char[] LargePortrait { get; }

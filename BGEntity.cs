@@ -46,7 +46,7 @@ namespace BGOverlay
             {
                 return "NO .CRE INFO";
             }
-            return $"HP: {reader.MaximumHP}, THAC0:{reader.THAC0}";
+            return $"Name: {reader.ShortName}, HP: {reader.MaximumHP}, THAC0:{reader.THAC0}";
         }
     }
 }
