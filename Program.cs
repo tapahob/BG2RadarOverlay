@@ -14,6 +14,7 @@ namespace BGOverlay
     {
         static void Main(string[] args)
         {
+            Init();
             Process proc = Process.GetProcessesByName("Baldur")[0];
 
             var hProc = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, proc.Id);
@@ -49,11 +50,14 @@ namespace BGOverlay
                 entityList.Clear();
             }
         }
-        //static void Main(string[] args)
-        //{
-        //    var reader = CREReader.get("DUERGAR.CRE");
-        //    int i = 0;
-        //}
+        static void Init()
+        {
+            var keyReader = new KeyReader();
+            var creEntries = KeyReader.CREResorceEntries;
+            creEntries.ForEach(x => x.LoadCREFiles());
+
+            int i = 0;
+        }
 
         static double len(BGEntity entity1, BGEntity entity2)
         {

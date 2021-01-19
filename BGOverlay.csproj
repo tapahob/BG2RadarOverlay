@@ -47,17 +47,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BGEntity.cs" />
+    <Compile Include="BIFFReader.cs" />
+    <Compile Include="Configuration.cs" />
     <Compile Include="CREReader.cs" />
+    <Compile Include="KeyReader.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\BIFEntry.cs" />
+    <Compile Include="Resources\BIFFV1FileEntry.cs" />
+    <Compile Include="Resources\BIFResourceEntry.cs" />
     <Compile Include="WinAPIBindings.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="app.manifest" />
-    <None Include="DUERGAR.CRE">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

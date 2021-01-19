@@ -14,19 +14,42 @@ namespace BGOverlay
         public static CREReader get(String creFilename)
         {
             creFilename = creFilename.ToUpper();
+            if (creFilename.StartsWith("HARBASE"))
+            {
+                creFilename = "C" + creFilename;
+            }
             CREReader reader; 
             if (!Cache.TryGetValue(creFilename, out reader))
             {
-                reader = new CREReader(creFilename);
-                Cache.Add(creFilename, reader);
+                try
+                {
+                    reader = new CREReader(creFilename);
+                    Cache.Add(creFilename, reader);
+                } catch (ArgumentException ex)
+                {
+                    //Console.WriteLine(ex.Message);
+                    reader = null;
+                }
+                
             }
             return reader;
         }
-        public static string gameDirectory = @"D:\SteamLibrary\steamapps\common\Baldur's Gate II Enhanced Edition";
-        public CREReader(String creFilename = "DUERGAR.CRE")
+        public static string gameDirectory = Configuration.GameFolder;
+        public CREReader(String creFilename = "DUERGAR.CRE", int originOffset = 0, string biffArchivePath = "")
         {
-            creFilename = $"{gameDirectory}\\override\\{creFilename}";
-            using (BinaryReader reader = new BinaryReader(File.Open(creFilename, FileMode.Open)))
+            var filename = creFilename;
+            var overrideCreFilename = $"{gameDirectory}\\override\\{creFilename}";
+            if (File.Exists(overrideCreFilename))
+            {
+                originOffset = 0;
+                biffArchivePath = "";
+                filename = overrideCreFilename;
+            } 
+            else
+            {
+                filename = biffArchivePath;
+            }
+            using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
             {
                 this.Signature = new string(reader.ReadChars(4));
                 this.Version   = new string(reader.ReadChars(4));
@@ -73,15 +96,15 @@ namespace BGOverlay
 
                 this.XPGained = reader.ReadInt32();
 
-                reader.BaseStream.Seek(0x0026, SeekOrigin.Begin);
+                reader.BaseStream.Seek(originOffset + 0x0026, SeekOrigin.Begin);
                 this.MaximumHP = reader.ReadInt16();
 
-                reader.BaseStream.Seek(0x0033, SeekOrigin.Begin);
+                reader.BaseStream.Seek(originOffset + 0x0033, SeekOrigin.Begin);
                 this.EffStructureVersion = reader.ReadByte();
                 this.SmallPortrait       = reader.ReadChars(8);
                 this.LargePortrait       = reader.ReadChars(8);
 
-                reader.BaseStream.Seek(0x0046, SeekOrigin.Begin);
+                reader.BaseStream.Seek(originOffset + 0x0046, SeekOrigin.Begin);
 				this.ArmorClassNatural   = reader.ReadInt16();
 				this.ArmorClassEffective = reader.ReadInt16();
 				this.ArmorClassCrushing  = reader.ReadInt16();
@@ -107,7 +130,7 @@ namespace BGOverlay
 				this.ResistPiercing      = reader.ReadByte();
 				this.ResistMissile       = reader.ReadByte();
 
-                reader.BaseStream.Seek(0x0234, SeekOrigin.Begin);
+                reader.BaseStream.Seek(originOffset + 0x0234, SeekOrigin.Begin);
                 this.Class1Level          = reader.ReadByte();
                 this.Class2Level          = reader.ReadByte();
                 this.Class3Level          = reader.ReadByte();
@@ -120,7 +143,7 @@ namespace BGOverlay
                 this.Constitution         = reader.ReadByte();
                 this.Charisma             = reader.ReadByte();
 
-                reader.BaseStream.Seek(0x0244, SeekOrigin.Begin);
+                reader.BaseStream.Seek(originOffset + 0x0244, SeekOrigin.Begin);
                 this.KitInformation = reader.ReadInt32();
                 /**
                  * Kit information:
@@ -160,12 +183,12 @@ namespace BGOverlay
                     NB.: The values of this offset are written in big endian style.
                  */
 
-                reader.BaseStream.Seek(0x0271, SeekOrigin.Begin);
+                reader.BaseStream.Seek(originOffset + 0x0271, SeekOrigin.Begin);
                 this.General = reader.ReadByte();
                 this.Race = reader.ReadByte();
                 this.Class = reader.ReadByte();
 
-                reader.BaseStream.Seek(0x027b, SeekOrigin.Begin);
+                reader.BaseStream.Seek(originOffset + 0x027b, SeekOrigin.Begin);
                 this.Alignment = reader.ReadByte();
             }
 
@@ -173,10 +196,8 @@ namespace BGOverlay
 
         public int ShortName { get; private set; }
         public int CreatureFlags { get; private set; }
-
-        private readonly int XPGained;
-        private readonly short MaximumHP;
-
+        public int XPGained { get; private set; }
+        public short MaximumHP { get; private set; }
         public string Signature { get; private set; }
         public string Version { get; private set; }
         public int LongName { get; private set; }
