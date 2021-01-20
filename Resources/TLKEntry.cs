@@ -1,24 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace BGOverlay.Resources
 {
     public class TLKEntry
     {
-
-        public TLKEntry(BinaryReader reader)
+        public TLKEntry(BinaryReader reader, int offsetToStringData)
         {
-            this.BitField  = reader.ReadInt16();
-            this.Sound     = reader.ReadChars(8);
-            this.Volume    = reader.ReadInt32();
-            this.Pitch     = reader.ReadInt32();
-            this.Offset    = reader.ReadInt32();
-            this.StrLength = reader.ReadInt32();
-            this.Text      = "No text found";
+            this.BitField           = reader.ReadInt16();
+            this.Sound              = reader.ReadChars(8);
+            this.Volume             = reader.ReadInt32();
+            this.Pitch              = reader.ReadInt32();
+            this.Offset             = reader.ReadInt32();
+            this.StrLength          = reader.ReadInt32();
+            this.Text               = "No text found";
+            this.offsetToStringData = offsetToStringData;
         }
 
         public override string ToString()
@@ -28,7 +24,7 @@ namespace BGOverlay.Resources
 
         public void LoadText(BinaryReader reader)
         {
-            reader.BaseStream.Seek(TLKReader.OffsetToStringData + Offset, SeekOrigin.Begin);
+            reader.BaseStream.Seek(offsetToStringData + Offset, SeekOrigin.Begin);
             Text = Encoding.UTF8.GetString(reader.ReadBytes(StrLength));
         }
 
@@ -39,5 +35,7 @@ namespace BGOverlay.Resources
         public int Offset { get; }
         public int StrLength { get; }
         public string Text { get; private set; }
+
+        private int offsetToStringData;
     }
 }

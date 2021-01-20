@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{DEDF4851-555F-4F9A-B540-248BB9D3C2C2}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <RootNamespace>BGOverlay</RootNamespace>
     <AssemblyName>BGOverlay</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
@@ -32,8 +32,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup />
   <PropertyGroup>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -51,8 +52,9 @@
     <Compile Include="Configuration.cs" />
     <Compile Include="CREReader.cs" />
     <Compile Include="KeyReader.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="ProcessHacker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResourceManager.cs" />
     <Compile Include="Resources\BIFEntry.cs" />
     <Compile Include="Resources\BIFFV1FileEntry.cs" />
     <Compile Include="Resources\BIFResourceEntry.cs" />

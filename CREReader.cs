@@ -1,42 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
+using System.Linq;
 
 namespace BGOverlay
 {
     // reference: https://gibberlings3.github.io/iesdp/file_formats/ie_formats/cre_v1.htm
     public class CREReader
     {
-        public static Dictionary<string, CREReader> Cache = new Dictionary<string, CREReader>();
-        public static CREReader get(String creFilename)
-        {
-            creFilename = creFilename.ToUpper();
-            if (creFilename.StartsWith("HARBASE"))
-            {
-                creFilename = "C" + creFilename;
-            }
-            CREReader reader; 
-            if (!Cache.TryGetValue(creFilename, out reader))
-            {
-                try
-                {
-                    reader = new CREReader(creFilename);
-                    Cache.Add(creFilename, reader);
-                } catch (ArgumentException ex)
-                {
-                    //Console.WriteLine(ex.Message);
-                    reader = null;
-                }
-                
-            }
-            return reader;
-        }
         public static string gameDirectory = Configuration.GameFolder;
-        public CREReader(String creFilename = "DUERGAR.CRE", int originOffset = 0, string biffArchivePath = "")
+        private ResourceManager resourceManager;
+
+        public CREReader(ResourceManager resourceManager, String creFilename = "DUERGAR.CRE", int originOffset = 0, string biffArchivePath = "")
         {
+            this.resourceManager = resourceManager;
             var filename = creFilename;
             var overrideCreFilename = $"{gameDirectory}\\override\\{creFilename}";
             if (File.Exists(overrideCreFilename))
@@ -47,15 +24,23 @@ namespace BGOverlay
             } 
             else
             {
-                filename = biffArchivePath;
+                var lastTry = Directory.GetFiles($"{gameDirectory}\\override").Select(x=>x.ToUpper()).FirstOrDefault(x => x.EndsWith(creFilename));
+                if (lastTry == null)
+                {
+                    filename = biffArchivePath;
+                } else
+                {
+                    filename = lastTry;
+                }
+
             }
             using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
             {
                 this.Signature = new string(reader.ReadChars(4));
-                this.Version   = new string(reader.ReadChars(4));
-                TLKReader.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
+                this.Version = new string(reader.ReadChars(4));
+                resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
                 this.LongName = text?.Text;
-                TLKReader.StringRefs.TryGetValue(reader.ReadInt32(), out text);
+                resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
                 this.ShortName = text?.Text;
 
                 this.CreatureFlags = reader.ReadInt32();
@@ -107,30 +92,30 @@ namespace BGOverlay
                 this.LargePortrait       = reader.ReadChars(8);
 
                 reader.BaseStream.Seek(originOffset + 0x0046, SeekOrigin.Begin);
-				this.ArmorClassNatural   = reader.ReadInt16();
-				this.ArmorClassEffective = reader.ReadInt16();
-				this.ArmorClassCrushing  = reader.ReadInt16();
-				this.ArmorClassMissile   = reader.ReadInt16();
-				this.ArmorClassPiercing  = reader.ReadInt16();
-				this.ArmorClassSlashing  = reader.ReadInt16();
-				this.THAC0               = reader.ReadByte();
-				this.NumberOfAttacks     = reader.ReadByte();
-				this.SaveVersusDeath     = reader.ReadByte();
-				this.SaveVersusWands     = reader.ReadByte();
-				this.SaveVersusPolymorph = reader.ReadByte();
-				this.SaveVersusBreath    = reader.ReadByte();
-				this.SaveVersusSpells    = reader.ReadByte();
-				this.ResistFire          = reader.ReadByte();
-				this.ResistCold          = reader.ReadByte();
-				this.ResistElectricity   = reader.ReadByte();
-				this.ResistAcid          = reader.ReadByte();
-				this.ResistMagic         = reader.ReadByte();
-				this.ResistMagicFire     = reader.ReadByte();
-				this.ResistMagicCold     = reader.ReadByte();
-				this.ResistSlashing      = reader.ReadByte();
-				this.ResistCrushing      = reader.ReadByte();
-				this.ResistPiercing      = reader.ReadByte();
-				this.ResistMissile       = reader.ReadByte();
+                this.ArmorClassNatural   = reader.ReadInt16();
+                this.ArmorClassEffective = reader.ReadInt16();
+                this.ArmorClassCrushing  = reader.ReadInt16();
+                this.ArmorClassMissile   = reader.ReadInt16();
+                this.ArmorClassPiercing  = reader.ReadInt16();
+                this.ArmorClassSlashing  = reader.ReadInt16();
+                this.THAC0               = reader.ReadByte();
+                this.NumberOfAttacks     = reader.ReadByte();
+                this.SaveVersusDeath     = reader.ReadByte();
+                this.SaveVersusWands     = reader.ReadByte();
+                this.SaveVersusPolymorph = reader.ReadByte();
+                this.SaveVersusBreath    = reader.ReadByte();
+                this.SaveVersusSpells    = reader.ReadByte();
+                this.ResistFire          = reader.ReadByte();
+                this.ResistCold          = reader.ReadByte();
+                this.ResistElectricity   = reader.ReadByte();
+                this.ResistAcid          = reader.ReadByte();
+                this.ResistMagic         = reader.ReadByte();
+                this.ResistMagicFire     = reader.ReadByte();
+                this.ResistMagicCold     = reader.ReadByte();
+                this.ResistSlashing      = reader.ReadByte();
+                this.ResistCrushing      = reader.ReadByte();
+                this.ResistPiercing      = reader.ReadByte();
+                this.ResistMissile       = reader.ReadByte();
 
                 reader.BaseStream.Seek(originOffset + 0x0234, SeekOrigin.Begin);
                 this.Class1Level          = reader.ReadByte();
@@ -146,54 +131,309 @@ namespace BGOverlay
                 this.Charisma             = reader.ReadByte();
 
                 reader.BaseStream.Seek(originOffset + 0x0244, SeekOrigin.Begin);
-                this.KitInformation = reader.ReadInt32();
-                /**
-                 * Kit information:
-                    NONE                0x00000000
-                    KIT_BARBARIAN       0x00004000
-                    KIT_TRUECLASS       0x40000000
-                    KIT_BERSERKER       0x40010000
-                    KIT_WIZARDSLAYER    0x40020000
-                    KIT_KENSAI          0x40030000
-                    KIT_CAVALIER        0x40040000
-                    KIT_INQUISITOR      0x40050000
-                    KIT_UNDEADHUNTER    0x40060000
-                    KIT_ARCHER          0x40070000
-                    KIT_STALKER         0x40080000
-                    KIT_BEASTMASTER     0x40090000
-                    KIT_ASSASSIN        0x400A0000
-                    KIT_BOUNTYHUNTER    0x400B0000
-                    KIT_SWASHBUCKLER    0x400C0000
-                    KIT_BLADE           0x400D0000
-                    KIT_JESTER          0x400E0000
-                    KIT_SKALD           0x400F0000
-                    KIT_TOTEMIC         0x40100000
-                    KIT_SHAPESHIFTER    0x40110000
-                    KIT_AVENGER         0x40120000
-                    KIT_GODTALOS        0x40130000
-                    KIT_GODHELM         0x40140000
-                    KIT_GODLATHANDER    0x40150000
-                    ABJURER             0x00400000
-                    CONJURER            0x00800000
-                    DIVINER             0x01000000
-                    ENCHANTER           0x02000000
-                    ILLUSIONIST         0x04000000
-                    INVOKER             0x08000000
-                    NECROMANCER         0x10000000
-                    TRANSMUTER          0x20000000
-
-                    NB.: The values of this offset are written in big endian style.
-                 */
-
+                this.KitInformation = (KIT)reader.ReadInt32();
                 reader.BaseStream.Seek(originOffset + 0x0271, SeekOrigin.Begin);
                 this.General = reader.ReadByte();
-                this.Race = reader.ReadByte();
-                this.Class = reader.ReadByte();
+                this.Race    = (RACE)reader.ReadByte();
+                this.Class   = (CLASS)reader.ReadByte();
 
                 reader.BaseStream.Seek(originOffset + 0x027b, SeekOrigin.Begin);
                 this.Alignment = reader.ReadByte();
             }
 
+        }
+
+        public enum CLASS
+        {
+            ERROR                = 0,
+            MAGE                 = 1,
+            FIGHTER              = 2,
+            CLERIC               = 3,
+            THIEF                = 4,
+            BARD                 = 5,
+            PALADIN              = 6,
+            FIGHTER_MAGE         = 7,
+            FIGHTER_CLERIC       = 8,
+            FIGHTER_THIEF        = 9,
+            FIGHTER_MAGE_THIEF   = 10,
+            DRUID                = 11,
+            RANGER               = 12,
+            MAGE_THIEF           = 13,
+            CLERIC_MAGE          = 14,
+            CLERIC_THIEF         = 15,
+            FIGHTER_DRUID        = 16,
+            FIGHTER_MAGE_CLERIC  = 17,
+            CLERIC_RANGER        = 18,
+            SORCERER             = 19,
+            MONK                 = 20,
+            SHAMAN               = 21,
+            ANKHEG               = 101,
+            BASILISK             = 102,
+            BASILISK_GREATER     = 103,
+            BEAR_BLACK           = 104,
+            BEAR_BROWN           = 105,
+            BEAR_CAVE            = 106,
+            BEAR_POLAR           = 107,
+            CARRIONCRAWLER       = 108,
+            DOG_WILD             = 109,
+            DOG_WAR              = 110,
+            DOPPLEGANGER         = 111,
+            DOPPLEGANGER_GREATER = 112,
+            DRIZZT               = 113,
+            ELMINSTER            = 114,
+            ETTERCAP             = 115,
+            GHOUL                = 116,
+            GHOUL_REVEANT        = 117,
+            GHOUL_GHAST          = 118,
+            GIBBERLING           = 119,
+            GNOLL                = 120,
+            HOBGOBLIN            = 121,
+            KOBOLD               = 122,
+            KOBOLD_TASLOI        = 123,
+            KOBOLD_XVART         = 124,
+            OGRE                 = 125,
+            OGRE_MAGE            = 126,
+            OGRE_HALFOGRE        = 127,
+            OGRE_OGRILLON        = 128,
+            SAREVOK              = 129,
+            FAIRY_SIRINE         = 130,
+            FAIRY_DRYAD          = 131,
+            FAIRY_NEREID         = 132,
+            FAIRY_NYMPH          = 133,
+            SKELETON             = 134,
+            SKELETON_WARRIOR     = 135,
+            SKELETON_BANEGUARD   = 136,
+            SPIDER_GIANT         = 137,
+            SPIDER_HUGE          = 138,
+            SPIDER_PHASE         = 139,
+            SPIDER_SWORD         = 140,
+            SPIDER_WRAITH        = 141,
+            VOLO                 = 142,
+            WOLF                 = 143,
+            WOLF_WORG            = 144,
+            WOLF_DIRE            = 145,
+            WOLF_WINTER          = 146,
+            WOLF_VAMPIRIC        = 147,
+            WOLF_DREAD           = 148,
+            WYVERN               = 149,
+            OLIVE_SLIME          = 150,
+            MUSTARD_JELLY        = 151,
+            OCRE_JELLY           = 152,
+            GREY_OOZE            = 153,
+            GREEN_SLIME          = 154,
+            INNOCENT             = 155,
+            FLAMING_FIST         = 156,
+            WEREWOLF             = 157,
+            WOLFWERE             = 158,
+            DEATHKNIGHT          = 159,
+            TANARI               = 160,
+            BEHOLDER             = 161,
+            MIND_FLAYER          = 162,
+            VAMPIRE              = 163,
+            VAMPYRE              = 164,
+            OTYUGH               = 165,
+            RAKSHASA             = 166,
+            TROLL                = 167,
+            UMBERHULK            = 168,
+            SAHUAGIN             = 169,
+            SHADOW               = 170,
+            SPECTRE              = 171,
+            WRAITH               = 172,
+            KUO_TOA              = 173,
+            MIST                 = 174,
+            CAT                  = 175,
+            DUERGAR              = 176,
+            MEPHIT               = 177,
+            MIMIC                = 178,
+            IMP                  = 179,
+            GIANT                = 180,
+            ORC                  = 181,
+            GOLEM_IRON           = 182,
+            GOLEM_FLESH          = 183,
+            GOLEM_STONE          = 184,
+            GOLEM_CLAY           = 185,
+            ELEMENTAL_AIR        = 186,
+            ELEMENTAL_FIRE       = 187,
+            ELEMENTAL_EARTH      = 188,
+            SPIDER_CENTEOL       = 189,
+            RED_DRAGON           = 190,
+            SHADOW_DRAGON        = 191,
+            SILVER_DRAGON        = 192,
+            GENIE_DJINNI         = 193,
+            GENIE_DAO            = 194,
+            GENIE_EFREETI        = 195,
+            GENIE_NOBLE_DJINNI   = 196,
+            GENIE_NOBLE_EFREETI  = 197,
+            ZOMBIE_NORMAL        = 198,
+            FOOD_CREATURE        = 199,
+            HUNTER_CREATURE      = 200,
+            LONG_SWORD           = 201,
+            LONG_BOW             = 202,
+            MAGE_ALL             = 202,
+            FIGHTER_ALL          = 203,
+            CLERIC_ALL           = 204,
+            THIEF_ALL            = 205,
+            BARD_ALL             = 206,
+            PALADIN_ALL          = 207,
+            DRUID_ALL            = 208,
+            RANGER_ALL           = 209,
+            WIZARD_EYE           = 210,
+            CANDLEKEEP_WATCHER   = 211,
+            AMNISH_SOLDIER       = 212,
+            TOWN_GUARD           = 213,
+            ELEMENTAL_WATER      = 219,
+            GREEN_DRAGON         = 220,
+            SOD_TMP              = 221,
+            SPECTRAL_TROLL       = 222,
+            WIGHT                = 223,
+            NO_CLASS             = 255
+        }
+
+        public enum KIT
+        {
+            NONE         = 0x00000000,
+            BARBARIAN    = 0x00004000,
+            TRUECLASS    = 0x40000000,
+            BERSERKER    = 0x40010000,
+            WIZARDSLAYER = 0x40020000,
+            KENSAI       = 0x40030000,
+            CAVALIER     = 0x40040000,
+            INQUISITOR   = 0x40050000,
+            UNDEADHUNTER = 0x40060000,
+            ARCHER       = 0x40070000,
+            STALKER      = 0x40080000,
+            BEASTMASTER  = 0x40090000,
+            ASSASSIN     = 0x400A0000,
+            BOUNTYHUNTER = 0x400B0000,
+            SWASHBUCKLER = 0x400C0000,
+            BLADE        = 0x400D0000,
+            JESTER       = 0x400E0000,
+            SKALD        = 0x400F0000,
+            TOTEMIC      = 0x40100000,
+            SHAPESHIFTER = 0x40110000,
+            AVENGER      = 0x40120000,
+            GODTALOS     = 0x40130000,
+            GODHELM      = 0x40140000,
+            GODLATHANDER = 0x40150000,
+            ABJURER      = 0x00400000,
+            CONJURER     = 0x00800000,
+            DIVINER      = 0x01000000,
+            ENCHANTER    = 0x02000000,
+            ILLUSIONIST  = 0x04000000,
+            INVOKER      = 0x08000000,
+            NECROMANCER  = 0x10000000,
+            TRANSMUTER   = 0x20000000
+        }
+
+        public enum RACE
+        {
+            HUMAN           = 1,
+            ELF             = 2,
+            HALF_ELF        = 3,
+            DWARF           = 4,
+            HALFLING        = 5,
+            GNOME           = 6,
+            HALFORC         = 7,
+            ANKHEG          = 101,
+            BASILISK        = 102,
+            BEAR            = 103,
+            CARRIONCRAWLER  = 104,
+            DOG             = 105,
+            DOPPLEGANGER    = 106,
+            ETTERCAP        = 107,
+            GHOUL           = 108,
+            GIBBERLING      = 109,
+            GNOLL           = 110,
+            HOBGOBLIN       = 111,
+            KOBOLD          = 112,
+            OGRE            = 113,
+            SKELETON        = 115,
+            SPIDER          = 116,
+            WOLF            = 117,
+            WYVERN          = 118,
+            SLIME           = 119,
+            FAIRY           = 120,
+            DEMONIC         = 121,
+            LYCANTHROPE     = 122,
+            BEHOLDER        = 123,
+            MIND_FLAYER     = 124,
+            VAMPIRE         = 125,
+            VAMPYRE         = 126,
+            OTYUGH          = 127,
+            RAKSHASA        = 128,
+            TROLL           = 129,
+            UMBERHULK       = 130,
+            SAHUAGIN        = 131,
+            SHADOW          = 132,
+            SPECTRE         = 133,
+            WRAITH          = 134,
+            KUO_TOA         = 135,
+            MIST            = 136,
+            CAT             = 137,
+            DUERGAR         = 138,
+            MEPHIT          = 139,
+            MIMIC           = 140,
+            IMP             = 141,
+            GIANT           = 142,
+            ORC             = 143,
+            GOLEM           = 144,
+            ELEMENTAL       = 145,
+            DRAGON          = 146,
+            GENIE           = 147,
+            ZOMBIE          = 148,
+            STATUE          = 149,
+            LICH            = 150,
+            RABBIT          = 151,
+            GITHYANKI       = 152,
+            TIEFLING        = 153,
+            YUANTI          = 154,
+            DEMILICH        = 155,
+            SOLAR           = 156,
+            ANTISOLAR       = 157,
+            PLANATAR        = 158,
+            DARKPLANATAR    = 159,
+            BEETLE          = 160,
+            GOBLIN          = 161,
+            LIZARDMAN       = 162,
+            MYCONID         = 164,
+            BUGBEAR         = 165,
+            FEYR            = 166,
+            HOOK_HORROR     = 167,
+            SHRIEKER        = 168,
+            SALAMANDER      = 169,
+            BIRD            = 170,
+            MINOTAUR        = 171,
+            DRIDER          = 172,
+            SIMULACRUM      = 173,
+            HARPY           = 174,
+            SPECTRAL_UNDEAD = 175,
+            SHAMBLING_MOUND = 176,
+            CHIMERA         = 177,
+            HALF_DRAGON     = 178,
+            YETI            = 179,
+            KEG             = 180,
+            WILL_O_WISP     = 181,
+            MAMMAL          = 182,
+            REPTILE         = 183,
+            TREANT          = 184,
+            AASIMAR         = 185,
+            ETTIN           = 199,
+            SWORD           = 201,
+            BOW             = 202,
+            XBOW            = 203,
+            STAFF           = 204,
+            SLING           = 205,
+            MACE            = 206,
+            DAGGER          = 207,
+            SPEAR           = 208,
+            FIST            = 209,
+            HAMMER          = 210,
+            MORNINGSTAR     = 211,
+            ROBES           = 212,
+            LEATHER         = 213,
+            CHAIN           = 214,
+            PLATE           = 215,
+            NO_RACE         = 255,
         }
 
         public string ShortName { get; private set; }
@@ -241,53 +481,10 @@ namespace BGOverlay
         public byte Dexterity { get; }
         public byte Constitution { get; }
         public byte Charisma { get; }
-        public int KitInformation { get; }
+        public KIT KitInformation { get; }
         public byte General { get; }
-        public byte Race { get; }
-        public byte Class { get; }
+        public RACE Race { get; }
+        public CLASS Class { get; }
         public byte Alignment { get; }
-    }
-
-    internal struct NewStruct
-    {
-        public object Item1;
-        public object Item2;
-
-        public NewStruct(object item1, object item2)
-        {
-            Item1 = item1;
-            Item2 = item2;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is NewStruct other &&
-                   EqualityComparer<object>.Default.Equals(Item1, other.Item1) &&
-                   EqualityComparer<object>.Default.Equals(Item2, other.Item2);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = -1030903623;
-            hashCode = hashCode * -1521134295 + EqualityComparer<object>.Default.GetHashCode(Item1);
-            hashCode = hashCode * -1521134295 + EqualityComparer<object>.Default.GetHashCode(Item2);
-            return hashCode;
-        }
-
-        public void Deconstruct(out object item1, out object item2)
-        {
-            item1 = Item1;
-            item2 = Item2;
-        }
-
-        public static implicit operator (object, object)(NewStruct value)
-        {
-            return (value.Item1, value.Item2);
-        }
-
-        public static implicit operator NewStruct((object, object) value)
-        {
-            return new NewStruct(value.Item1, value.Item2);
-        }
     }
 }

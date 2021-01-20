@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BGOverlay.Resources
 {
@@ -61,15 +58,16 @@ namespace BGOverlay.Resources
             ACM = 0xfff
         }
 
-        public BIFResourceEntry(int index, BinaryReader reader)
+        public BIFResourceEntry(int index, BinaryReader reader, ResourceManager resourceManager)
         {
             this.Index = index;
             this.ResourceName = new string(reader.ReadChars(8)).Trim('\0');
             this.ResourceType = reader.ReadInt16() & 0xffff;
             this.ResourceLocator = reader.ReadInt32();
             this.Ext = (Extension)ResourceType;
-            this.BiffEntry = KeyReader.BIFEntries.FirstOrDefault(x => x.Index == ((ResourceLocator >> 20) & 0xfff));
+            this.BiffEntry = resourceManager.BIFEntries.FirstOrDefault(x => x.Index == ((ResourceLocator >> 20) & 0xfff));
             this.FullName = $"{ResourceName}.{Ext.ToString().Substring(Ext.ToString().Length-3, 3)}";
+            this.resourceManager = resourceManager;
         }
 
         public void LoadCREFiles()
@@ -77,13 +75,13 @@ namespace BGOverlay.Resources
             if (Ext == Extension.CRE)
             {
                 var bifArchive = BiffEntry.FileName.Substring(BiffEntry.FileName.LastIndexOf('/') + 1);
-                var allEntries = BIFFReader.Get(bifArchive).BIFFV1FileEntries;
+                var allEntries = resourceManager.GetBIFFReader(bifArchive).BIFFV1FileEntries;
                 var biffFileEntry = allEntries[ResourceLocator & 0xfffff];
                 if (biffFileEntry.Ext != Extension.CRE)
                 {
                     throw new Exception();
                 }
-                CREReader.Cache[$"{ResourceName}.CRE"] = new CREReader($"{ResourceName}.CRE", biffFileEntry.Offset, BiffEntry.BIFFilePath);
+                this.resourceManager.CREReaderCache[$"{ResourceName}.CRE"] = new CREReader(this.resourceManager, $"{ResourceName}.CRE", biffFileEntry.Offset, BiffEntry.BIFFilePath);
             }
         }
 
@@ -100,5 +98,7 @@ namespace BGOverlay.Resources
         public Extension Ext { get; }
         public BIFEntry BiffEntry { get; }
         public string FullName { get; }
+
+        private ResourceManager resourceManager;
     }
 }

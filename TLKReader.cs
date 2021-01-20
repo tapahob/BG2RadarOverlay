@@ -1,19 +1,16 @@
 ﻿using BGOverlay.Resources;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BGOverlay
 {
     public class TLKReader
     {
-        public static Dictionary<int, TLKEntry> StringRefs = new Dictionary<int, TLKEntry>();
+        private ResourceManager resourceManager = null;
 
-        public TLKReader(string locale = "ru_RU")
+        public TLKReader(ResourceManager resourceManager)
         {
+            string locale = Configuration.Locale;
             string tlkFilePath = $"{Configuration.GameFolder}/lang/{locale}/dialogf.tlk";
 
             
@@ -24,17 +21,16 @@ namespace BGOverlay
                 this.Version            = new string(reader.ReadChars(4));
                 this.LanguageId         = reader.ReadInt16();
                 this.StrRefCount        = reader.ReadInt32();
-                OffsetToStringData      = reader.ReadInt32();
+                this.OffsetToStringData = reader.ReadInt32();
 
                 reader.BaseStream.Seek(18, SeekOrigin.Begin);
                 for (int i=0; i<StrRefCount; ++i)
                 {
-                    var entry = new TLKEntry(reader);
+                    var entry = new TLKEntry(reader, OffsetToStringData);
                     //entry.LoadText(reader);
-                    StringRefs[i] = entry;
+                    resourceManager.StringRefs[i] = entry;
                 }
-                StringRefs.Values.ToList().ForEach(x => x.LoadText(reader));
-                int z = 0;
+                resourceManager.StringRefs.Values.ToList().ForEach(x => x.LoadText(reader));
             }
         }
 
@@ -42,6 +38,6 @@ namespace BGOverlay
         public string Version { get; }
         public short LanguageId { get; }
         public int StrRefCount { get; }
-        public static int OffsetToStringData { get; private set; }
+        public int OffsetToStringData { get; private set; }
     }
 }

@@ -1,18 +1,11 @@
 ﻿using BGOverlay.Resources;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BGOverlay
 {
     public class KeyReader
     {
-        public static List<BIFEntry> BIFEntries = new List<BIFEntry>();
-        public static List<BIFResourceEntry> BIFResourceEntries = new List<BIFResourceEntry>();
-        public static List<BIFResourceEntry> CREResorceEntries => BIFResourceEntries.Where(x => x.Ext == BIFResourceEntry.Extension.CRE).ToList();
+        private ResourceManager resourceManager;
         public KeyReader(string keyFilename = "chitin.key")
         {
             keyFilename = $"{Configuration.GameFolder}\\{keyFilename}";
@@ -28,15 +21,20 @@ namespace BGOverlay
                 reader.BaseStream.Seek(BIFEntriesOffset, SeekOrigin.Begin);
                 for (int i=0, offset=BIFEntriesOffset; i<BIFEntriesCount; ++i)
                 {
-                    BIFEntries.Add(new BIFEntry(i, reader, offset));
+                    resourceManager.BIFEntries.Add(new BIFEntry(i, reader, offset));
                 }
 
                 reader.BaseStream.Seek(ResourceEntriesOffset, SeekOrigin.Begin);
                 for (int i = 0, offset = ResourceEntriesOffset; i < ResourceEntriesCount; ++i)
                 {
-                    BIFResourceEntries.Add(new BIFResourceEntry(i, reader));
+                    resourceManager.BIFResourceEntries.Add(new BIFResourceEntry(i, reader, resourceManager));
                 }
             }
+        }
+
+        public KeyReader(ResourceManager resourceManager)
+        {
+            this.resourceManager = resourceManager;
         }
 
         public string Signature { get; }
