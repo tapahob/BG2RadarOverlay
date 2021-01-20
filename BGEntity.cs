@@ -32,7 +32,10 @@ namespace BGOverlay
             this.Name1           = WinAPIBindings.ReadString(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x364 }));
             this.Name2           = WinAPIBindings.ReadString(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x3FC })).Trim('*') + ".CRE";
             this.CurrentHP       = WinAPIBindings.ReadByte(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x438 }));
-            this.Reader = resourceManager.GetCREReader(Name2.ToUpper());
+            if (Type == 49)
+            {
+                this.Reader = resourceManager.GetCREReader(Name2.ToUpper());
+            }            
         }
 
         public override string ToString()

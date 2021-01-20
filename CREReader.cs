@@ -28,6 +28,10 @@ namespace BGOverlay
                 if (lastTry == null)
                 {
                     filename = biffArchivePath;
+                    if (biffArchivePath.Equals(""))
+                    {
+                        return;
+                    }
                 } else
                 {
                     filename = lastTry;

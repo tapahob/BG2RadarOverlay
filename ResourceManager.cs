@@ -46,9 +46,14 @@ namespace BGOverlay
             CREReader reader;
             if (!CREReaderCache.TryGetValue(creFilename, out reader))
             {
+                if (creFilename == "<ERROR>.CRE")
+                {
+                    return null;
+                }
                 try
                 {
                     reader = new CREReader(this, creFilename);
+                    if (reader.Version == null) reader = null;
                     CREReaderCache.Add(creFilename, reader);
                 }
                 catch (ArgumentException ex)

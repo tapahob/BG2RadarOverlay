@@ -40,7 +40,8 @@ namespace BGOverlay
                     && newEntity.Reader.EnemyAlly != 128
                     || newEntity.Reader.Class1Level == 0
                     || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
-                    || newEntity.Name2 == "TIMOEN.CRE") continue;
+                    || newEntity.Name2 == "TIMOEN.CRE"
+                    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS) continue;
                 if (newEntity.Type == 49)
                 {
                     entityList.Add(newEntity);
