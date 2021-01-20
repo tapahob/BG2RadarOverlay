@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -37,23 +38,21 @@ namespace WPFFrontend
                 {
                     ph.MainLoop();
                     EnemyTextEntries.Clear();
-                    foreach (var item in ph.NearestEnemies)
+                foreach (var item in ph.NearestEnemies.Where(x =>
+                    !x.Name2.StartsWith("HARBASE") && !x.ToString().Equals("NO .CRE INFO")
+                ))
                     {
                         EnemyTextEntries.Add(item);
                     }
-                    Thread.Sleep(500);
                 }
             });
-            
-        
         }
 
-        private void TextBlock_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            TextBlock obj = (TextBlock)sender;
-            BGEntity context = (BGEntity)obj.DataContext;
-
-            MainGrid.Children.Add(new EnemyControl(context, MainCanvas));
+            var content = (BGEntity)listView.SelectedItem;
+            if (content == null) return;
+            MainGrid.Children.Add(new EnemyControl(content, MainCanvas));
         }
     }
 }

@@ -14,6 +14,9 @@ namespace BGOverlay
         public int Type {get; private set;}
         public string Name1 {get; private set;}
         public string Name2 {get; private set;}
+
+        public int CurrentHP { get; private set; }
+
         public BGEntity()
         {
 
@@ -28,6 +31,7 @@ namespace BGOverlay
             this.Y               = WinAPIBindings.ReadInt32(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x00C }));
             this.Name1           = WinAPIBindings.ReadString(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x364 }));
             this.Name2           = WinAPIBindings.ReadString(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x3FC })).Trim('*') + ".CRE";
+            this.CurrentHP       = WinAPIBindings.ReadByte(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x438 }));
             this.Reader = resourceManager.GetCREReader(Name2.ToUpper());
         }
 
@@ -43,7 +47,7 @@ namespace BGOverlay
             {
                 return "NO .CRE INFO";
             }
-            return $"Name: {Reader.ShortName}, HP: {Reader.MaximumHP}, THAC0:{Reader.THAC0}";
+            return $"{Reader.ShortName}";
         }
     }
 }

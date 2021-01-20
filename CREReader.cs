@@ -132,7 +132,8 @@ namespace BGOverlay
 
                 reader.BaseStream.Seek(originOffset + 0x0244, SeekOrigin.Begin);
                 this.KitInformation = (KIT)reader.ReadInt32();
-                reader.BaseStream.Seek(originOffset + 0x0271, SeekOrigin.Begin);
+                reader.BaseStream.Seek(originOffset + 0x0270, SeekOrigin.Begin);
+                this.EnemyAlly = reader.ReadByte();
                 this.General = reader.ReadByte();
                 this.Race    = (RACE)reader.ReadByte();
                 this.Class   = (CLASS)reader.ReadByte();
@@ -482,6 +483,7 @@ namespace BGOverlay
         public byte Constitution { get; }
         public byte Charisma { get; }
         public KIT KitInformation { get; }
+        public byte EnemyAlly { get; }
         public byte General { get; }
         public RACE Race { get; }
         public CLASS Class { get; }
