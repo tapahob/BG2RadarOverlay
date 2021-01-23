@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BGOverlay.Resources;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -136,16 +137,53 @@ namespace BGOverlay
 
                 reader.BaseStream.Seek(originOffset + 0x0244, SeekOrigin.Begin);
                 this.KitInformation = (KIT)reader.ReadInt32();
+                
                 reader.BaseStream.Seek(originOffset + 0x0270, SeekOrigin.Begin);
                 this.EnemyAlly = reader.ReadByte();
-                this.General = reader.ReadByte();
-                this.Race    = (RACE)reader.ReadByte();
-                this.Class   = (CLASS)reader.ReadByte();
+                this.General   = reader.ReadByte();
+                this.Race      = (RACE)reader.ReadByte();
+                this.Class     = (CLASS)reader.ReadByte();
 
                 reader.BaseStream.Seek(originOffset + 0x027b, SeekOrigin.Begin);
-                this.Alignment = reader.ReadByte();
+                this.SetAlignment((ALIGNMENT)reader.ReadByte());
+
+                reader.BaseStream.Seek(originOffset + 0x02c4, SeekOrigin.Begin);
+                var offsetToEffects = reader.ReadInt32();
+                var countOfEffects  = reader.ReadInt32();
+
+                reader.BaseStream.Seek(originOffset + offsetToEffects, SeekOrigin.Begin);
+                bool isV2Version = this.EffStructureVersion == 1;
+                this.Effects = new List<EffectEntry>();
+                for (int i=0; i<countOfEffects; ++i)
+                {
+                    var begining = originOffset + offsetToEffects + i * (0x108);
+                    if (isV2Version)
+                    {
+                        Effects.Add(new EffectEntry(reader, begining));
+                    }
+                }
             }
 
+        }
+
+        public enum ALIGNMENT
+        {
+            NONE            = 0x00,
+            LAWFUL_GOOD     = 0x11,
+            LAWFUL_NEUTRAL  = 0x12,
+            LAWFUL_EVIL     = 0x13,
+            NEUTRAL_GOOD    = 0x21,
+            NEUTRAL         = 0x22,
+            NEUTRAL_EVIL    = 0x23,
+            CHAOTIC_GOOD    = 0x31,
+            CHAOTIC_NEUTRAL = 0x32,
+            CHAOTIC_EVIL    = 0x33,
+            MASK_GOOD       = 0x01,
+            MASK_GENEUTRAL  = 0x02,
+            MASK_EVIL       = 0x03,
+            MASK_LAWFUL     = 0x10,
+            MASK_LCNEUTRAL  = 0x20,
+            MASK_CHAOTIC    = 0x30,
         }
 
         public enum CLASS
@@ -441,6 +479,7 @@ namespace BGOverlay
             NO_RACE         = 255,
         }
 
+       
         public string ShortName { get; private set; }
         public int CreatureFlags { get; private set; }
         public int XPGained { get; private set; }
@@ -491,6 +530,33 @@ namespace BGOverlay
         public byte General { get; }
         public RACE Race { get; }
         public CLASS Class { get; }
-        public byte Alignment { get; }
+
+        private ALIGNMENT alignment;
+
+        public string ShortAlignment
+        {
+            get
+            {
+                switch (alignment)
+                {
+                    case ALIGNMENT.CHAOTIC_EVIL:
+                    case ALIGNMENT.LAWFUL_EVIL:
+                    case ALIGNMENT.NEUTRAL_EVIL:
+                        return "Evil";
+                    case ALIGNMENT.CHAOTIC_GOOD:
+                    case ALIGNMENT.LAWFUL_GOOD:
+                    case ALIGNMENT.NEUTRAL_GOOD:
+                        return "Good";
+                    default: return "Neutral";
+                }
+            }
+        }
+
+        private void SetAlignment(ALIGNMENT value)
+        {
+            alignment = value;
+        }
+
+        public List<EffectEntry> Effects { get; }
     }
 }

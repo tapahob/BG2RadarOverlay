@@ -23,7 +23,6 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
-            RenderTransform = new TranslateTransform();
 
             EnemyTextEntries = new ObservableCollection<BGEntity>();
             BindingOperations.EnableCollectionSynchronization(EnemyTextEntries, _stocksLock);
@@ -38,13 +37,12 @@ namespace WPFFrontend
                 {
                     ph.MainLoop();
                     EnemyTextEntries.Clear();
-                foreach (var item in ph.NearestEnemies.Where(x =>
-                    !x.Name2.StartsWith("HARBASE") && !x.ToString().Equals("NO .CRE INFO")
-                ))
+                foreach (var item in ph.NearestEnemies)
                     {
                         EnemyTextEntries.Add(item);
                     }
                 }
+                Thread.Sleep(500);
             });
         }
 

@@ -61,12 +61,12 @@ namespace BGOverlay.Resources
         public BIFResourceEntry(int index, BinaryReader reader, ResourceManager resourceManager)
         {
             this.Index = index;
-            this.ResourceName = new string(reader.ReadChars(8)).Trim('\0');
+            this.ResourceName = new string(reader.ReadChars(8)).Trim('\0').ToUpper();
             this.ResourceType = reader.ReadInt16() & 0xffff;
             this.ResourceLocator = reader.ReadInt32();
             this.Ext = (Extension)ResourceType;
             this.BiffEntry = resourceManager.BIFEntries.FirstOrDefault(x => x.Index == ((ResourceLocator >> 20) & 0xfff));
-            this.FullName = $"{ResourceName}.{Ext.ToString().Substring(Ext.ToString().Length-3, 3)}";
+            this.FullName = $"{ResourceName}.{Ext.ToString().Substring(Ext.ToString().Length-3, 3)}".ToUpper();
             this.resourceManager = resourceManager;
         }
 

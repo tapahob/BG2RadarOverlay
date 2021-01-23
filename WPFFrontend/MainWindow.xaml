@@ -33,7 +33,7 @@
                 </DockPanel.Background>
             </DockPanel>
             <DockPanel Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" x:Name="LeftPanel" HorizontalAlignment="Left" Width="380">
-                <ListView x:Name="listView" Foreground="Black" BorderBrush="Black" BorderThickness="2" FontWeight="Bold" FontFamily="Segoe Script" HorizontalAlignment="Left" VerticalAlignment="Top" SelectionChanged="listView_SelectionChanged">
+                <ListView x:Name="listView" Foreground="Black" BorderBrush="Black" BorderThickness="2" FontWeight="Bold" FontFamily="Segoe Print" HorizontalAlignment="Left" VerticalAlignment="Top" SelectionChanged="listView_SelectionChanged">
                     <ListView.Background>
                         <ImageBrush Stretch="UniformToFill" ImageSource="/pexels-photo-235985.jpeg"/>
                     </ListView.Background>

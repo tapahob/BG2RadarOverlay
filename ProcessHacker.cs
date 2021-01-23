@@ -24,10 +24,12 @@ namespace BGOverlay
         public void MainLoop()
         {
             entityList.Clear();
+            var All = new List<BGEntity>();
             BGEntity main = null;
-            for (int i = 0; i < 275; ++i)
+            for (int i = 0; i < 575; ++i)
             {
                 var newEntity = new BGEntity(ResourceManager, hProc, modBase2 + 0x541020 - 0x738 + 0x8 * i);
+                All.Add(newEntity);
                 if (main == null && newEntity?.Reader?.EnemyAlly == 2)
                 {
                     main = newEntity;
@@ -40,7 +42,7 @@ namespace BGOverlay
                     && newEntity.Reader.EnemyAlly != 128
                     || newEntity.Reader.Class1Level == 0
                     || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
-                    || newEntity.Name2 == "TIMOEN.CRE"
+                    || newEntity.CreResourceFilename == "TIMOEN.CRE"
                     || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS) continue;
                 if (newEntity.Type == 49)
                 {
@@ -54,12 +56,10 @@ namespace BGOverlay
 
         public void Init()
         {
+            Configuration.Init();
             this.TextEntries = new ObservableCollection<string>();
             this.ResourceManager = new ResourceManager();
             ResourceManager.Init();
-            
-            var creEntries = ResourceManager.CREResorceEntries;
-            creEntries.ForEach(x => x.LoadCREFiles());
 
             this.proc       = Process.GetProcessesByName("Baldur")[0];
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, proc.Id);

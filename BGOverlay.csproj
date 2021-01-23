@@ -8,10 +8,11 @@
     <OutputType>Library</OutputType>
     <RootNamespace>BGOverlay</RootNamespace>
     <AssemblyName>BGOverlay</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -58,7 +59,9 @@
     <Compile Include="Resources\BIFEntry.cs" />
     <Compile Include="Resources\BIFFV1FileEntry.cs" />
     <Compile Include="Resources\BIFResourceEntry.cs" />
+    <Compile Include="Resources\EffectEntry.cs" />
     <Compile Include="Resources\TLKEntry.cs" />
+    <Compile Include="SPLReader.cs" />
     <Compile Include="TLKReader.cs" />
     <Compile Include="WinAPIBindings.cs" />
   </ItemGroup>

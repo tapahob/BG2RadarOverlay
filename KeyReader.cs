@@ -6,10 +6,11 @@ namespace BGOverlay
     public class KeyReader
     {
         private ResourceManager resourceManager;
-        public KeyReader(string keyFilename = "chitin.key")
+        public KeyReader(ResourceManager resourceManager, string keyFilename = "chitin.key")
         {
+            this.resourceManager = resourceManager;
             keyFilename = $"{Configuration.GameFolder}\\{keyFilename}";
-            using (BinaryReader reader = new BinaryReader(File.Open(keyFilename, FileMode.Open)))
+            using (BinaryReader reader = new BinaryReader(File.OpenRead(keyFilename)))
             {
                 this.Signature             = new string(reader.ReadChars(4));
                 this.Version               = new string(reader.ReadChars(4));
@@ -30,11 +31,6 @@ namespace BGOverlay
                     resourceManager.BIFResourceEntries.Add(new BIFResourceEntry(i, reader, resourceManager));
                 }
             }
-        }
-
-        public KeyReader(ResourceManager resourceManager)
-        {
-            this.resourceManager = resourceManager;
         }
 
         public string Signature { get; }

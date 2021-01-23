@@ -11,7 +11,7 @@ namespace BGOverlay
         public TLKReader(ResourceManager resourceManager)
         {
             string locale = Configuration.Locale;
-            string tlkFilePath = $"{Configuration.GameFolder}/lang/{locale}/dialogf.tlk";
+            string tlkFilePath = $"{Configuration.GameFolder}/lang/{locale}/dialog.tlk";
 
             
 
