@@ -93,12 +93,11 @@ namespace BGOverlay
                 try
                 {
                     reader = new CREReader(this, creFilename);
-                    if (reader.Version == null) reader = null;
-                    CREReaderCache.Add(creFilename, reader);
+                    if (reader.Version == null) 
+                        reader = CREReaderCache[creFilename];
                 }
-                catch (ArgumentException ex)
+                catch (ArgumentException)
                 {
-                    //Console.WriteLine(ex.Message);
                     reader = null;
                 }
 

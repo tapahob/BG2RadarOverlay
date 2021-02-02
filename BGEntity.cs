@@ -17,7 +17,7 @@ namespace BGOverlay
         public string Name1 { get; private set; }
         public string CreResourceFilename { get; private set; }
 
-        public int CurrentHP { get; private set; }
+        public byte CurrentHP { get; private set; }
 
         public List<string> Protections 
         {
@@ -53,7 +53,7 @@ namespace BGOverlay
                     {
                         var amount = item.Param1;
                         var type = (Proficiency)item.Param2;
-                        result.Add($"Proficiency {type} +{amount}");
+                        result.Add($"Proficiency {type} + {amount}");
                         continue;
                     }
                     if (item.EffectName == Effect.Stat_AC_vs_Damage_Type_Modifier)
@@ -143,22 +143,26 @@ namespace BGOverlay
             this.resourceManager = resourceManager;
             this.Id              = WinAPIBindings.ReadInt32(hProc, entityIdPtr);
             entityIdPtr += 0x4;
-            this.Type            = WinAPIBindings.ReadByte(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x004 }));
-            this.X               = WinAPIBindings.ReadInt32(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x008 }));
-            this.Y               = WinAPIBindings.ReadInt32(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x00C }));
-            this.Name1           = WinAPIBindings.ReadString(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x364 }));
+            this.Type                          = WinAPIBindings.ReadByte(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x004 }));
+            this.X                             = WinAPIBindings.ReadInt32(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x008 }));
+            this.Y                             = WinAPIBindings.ReadInt32(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x00C }));
+            this.Name1                         = WinAPIBindings.ReadString(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x364 }));
             this.CreResourceFilename           = WinAPIBindings.ReadString(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x3FC })).Trim('*') + ".CRE";
-            this.CurrentHP       = WinAPIBindings.ReadByte(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x438 }));
+            this.CurrentHP                     = (byte)WinAPIBindings.ReadByte(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x438 }));
             if (Type == 49)
             {
                 this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
+                if (Reader == null)
+                {
+                     this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
+
+                }
             }            
         }
 
         public override string ToString()
         {
             return additionalInfo();
-            //return $"{Id}:\"{Name1}\": X:{X}, Y:{Y}, TYPE: {Type}, {Name2} | {additionalInfo()}";
         }
 
         private string additionalInfo()
@@ -167,11 +171,11 @@ namespace BGOverlay
             {
                 return "NO .CRE INFO";
             }
-            if (Reader.ShortName == "Фиркрааг")
+            if (Reader.ShortName == "<NO TEXT>")
             {
-                int i = 0;
+                throw new Exception();
             }
-            return $"{Reader.ShortName}";
+            return $"{Reader.ShortName} HP:{CurrentHP}";
         }
     }
 }

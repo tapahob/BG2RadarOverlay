@@ -6,7 +6,7 @@
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
     x:Class="WPFFrontend.EnemyControl"
              mc:Ignorable="d" 
-             Height="Auto" Width="450" MouseLeftButtonDown="UserControl_MouseLeftButtonDown" MouseLeftButtonUp="UserControl_MouseLeftButtonUp" MouseMove="UserControl_MouseMove" 
+             Height="Auto" Width="450"
     Grid.Column="2" Grid.ColumnSpan="3" Grid.RowSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center">
     <UserControl.Resources>
         <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -107,14 +107,14 @@
             <Label x:Name="ResPiercing" Content="{Binding Reader.ResistPiercing}" ContentStringFormat="Resist Piercing: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResMissile" Content="{Binding Reader.ResistMissile}" ContentStringFormat="Resist Missile: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
         </StackPanel>
-        <Border Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="2" BorderBrush="Black" BorderThickness="1" Margin="1">
-            <ListView ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,5,5,5" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="{x:Null}">
+        <!--<Border Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="2" >-->
+            <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding}" FontFamily="Segoe print" FontSize="18" FontWeight="Bold" Foreground="Black" TextWrapping="Wrap"/>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-        </Border>
+        <!--</Border>-->
     </Grid>
 </UserControl>

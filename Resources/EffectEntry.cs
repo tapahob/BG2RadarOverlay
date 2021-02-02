@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Text;
 
 namespace BGOverlay.Resources
 {
@@ -14,7 +16,14 @@ namespace BGOverlay.Resources
             this.Param2 = reader.ReadInt32();
 
             reader.BaseStream.Seek(offset + 0x0030 - 16, SeekOrigin.Begin);
-            this.Resource   = new string(reader.ReadChars(8));
+            try 
+            {
+                var bytes = reader.ReadBytes(8);
+                this.Resource = Encoding.UTF8.GetString(bytes);
+            } catch (Exception ex)
+            {
+                var msg = ex.Message;
+            }
             this.EffectName = (Effect)opcode;
 
             reader.BaseStream.Seek(offset + 0x0094 - 16, SeekOrigin.Begin);

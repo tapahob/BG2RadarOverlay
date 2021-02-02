@@ -6,8 +6,6 @@ namespace BGOverlay
 {
     public class TLKReader
     {
-        private ResourceManager resourceManager = null;
-
         public TLKReader(ResourceManager resourceManager)
         {
             string locale = Configuration.Locale;

@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading;
+﻿using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
 using BGOverlay;
 
 namespace WPFFrontend
@@ -42,7 +37,6 @@ namespace WPFFrontend
                         EnemyTextEntries.Add(item);
                     }
                 }
-                Thread.Sleep(500);
             });
         }
 
@@ -50,7 +44,7 @@ namespace WPFFrontend
         {
             var content = (BGEntity)listView.SelectedItem;
             if (content == null) return;
-            MainGrid.Children.Add(new EnemyControl(content, MainCanvas));
+            MainGrid.Children.Add(new EnemyControl(content));
         }
     }
 }

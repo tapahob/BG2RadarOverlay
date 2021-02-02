@@ -26,7 +26,7 @@ namespace BGOverlay
             entityList.Clear();
             var All = new List<BGEntity>();
             BGEntity main = null;
-            for (int i = 0; i < 575; ++i)
+            for (int i = 18; i < 5048; ++i)
             {
                 var newEntity = new BGEntity(ResourceManager, hProc, modBase2 + 0x541020 - 0x738 + 0x8 * i);
                 All.Add(newEntity);
@@ -36,7 +36,8 @@ namespace BGOverlay
                 }
                 
                 if (newEntity.CurrentHP == 0
-                    || newEntity.ToString() == "NO .CRE INFO" 
+                    //|| newEntity.ToString() == "NO .CRE INFO"
+                    || newEntity.Reader == null 
                     || newEntity.Reader.EnemyAlly != 255 
                     && newEntity.Reader.EnemyAlly != 5 
                     && newEntity.Reader.EnemyAlly != 128
@@ -49,6 +50,8 @@ namespace BGOverlay
                     entityList.Add(newEntity);
                 }
             }
+            var nearestThings = All.Where(y => len(main, y) < 300);
+            var a = All.Where(x => x.CurrentHP == 20);
             this.NearestEnemies = entityList.Where(y => len(main, y) < 300);
             TextEntries = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());
             Thread.Sleep(500);
@@ -60,7 +63,10 @@ namespace BGOverlay
             this.TextEntries = new ObservableCollection<string>();
             this.ResourceManager = new ResourceManager();
             ResourceManager.Init();
-
+            while (Process.GetProcessesByName("Baldur").Length == 0)
+            {
+                Thread.Sleep(3000);
+            }
             this.proc       = Process.GetProcessesByName("Baldur")[0];
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, proc.Id);
             this.modBase    = WinAPIBindings.GetModuleBaseAddress(proc, "Baldur.exe");

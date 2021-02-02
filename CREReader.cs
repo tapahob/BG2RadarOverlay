@@ -31,6 +31,9 @@ namespace BGOverlay
                     filename = biffArchivePath;
                     if (biffArchivePath.Equals(""))
                     {
+                        var test2 = resourceManager.CREResourceEntries.FirstOrDefault(x => x.FullName.EndsWith(creFilename));
+                        test2.LoadCREFiles();
+                        resourceManager.CREReaderCache[creFilename] = resourceManager.GetCREReader(test2.FullName);
                         return;
                     }
                 } else
@@ -41,6 +44,7 @@ namespace BGOverlay
             }
             using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
             {
+                reader.BaseStream.Seek(originOffset, SeekOrigin.Begin);
                 this.Signature = new string(reader.ReadChars(4));
                 this.Version = new string(reader.ReadChars(4));
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
