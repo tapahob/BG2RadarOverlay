@@ -1,6 +1,7 @@
 ﻿using BGOverlay.Resources;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using WinApiBindings;
 namespace BGOverlay
@@ -10,14 +11,28 @@ namespace BGOverlay
         public CREReader Reader { get; set; }
         private ResourceManager resourceManager;
 
+        public bool Loaded { get; }
         public int Id { get; private set; }
         public int X { get; private set; }
         public int Y { get; private set; }
-        public int Type { get; private set; }
+        public byte Type { get; private set; }
+        public long RealId { get; }
+        public string AreaName { get; }
+        public string AreaRef { get; }
+        public int MousePosX { get; }
+        public int AreaNCharacters { get; }
+        public int MousePosY { get; }
+        public int MousePosX1 { get; }
+        public int MousePosY1 { get; }
+        public byte Name2Len { get; }
+        public string Name2 { get; }
         public string Name1 { get; private set; }
         public string CreResourceFilename { get; private set; }
 
         public byte CurrentHP { get; private set; }
+        public CDerivedStats DerivedStats { get; }
+        public CDerivedStats DerivedStatsTemp { get; }
+        public CDerivedStats DerivedStatsBonus { get; }
 
         public List<string> Protections 
         {
@@ -27,6 +42,18 @@ namespace BGOverlay
                 var result = new List<String>();
                 var opCodeStrings = new List<String>();
                 var spellStrings = new List<String>();
+                if (DerivedStatsTemp.WeaponImmune.Count > 0)
+                {
+                    result.Add($"Requires +{DerivedStatsTemp.WeaponImmune.Count} weapons to be hit");
+                }
+                for (int i = 9; i>0; --i)
+                {
+                    if(DerivedStatsTemp.spellImmuneLevel[i] > 0)
+                    {
+                        result.Add($"Immune to spells up to level {i}");
+                        break;
+                    }
+                }
                 foreach (var item in allEffects)
                 {
                     if ($"{item.EffectName}".StartsWith("Graphics")
@@ -53,7 +80,7 @@ namespace BGOverlay
                     {
                         var amount = item.Param1;
                         var type = (Proficiency)item.Param2;
-                        result.Add($"Proficiency {type} + {amount}");
+                        result.Add($"Proficiency {type.ToString().Replace("_"," ")} +{amount}");
                         continue;
                     }
                     if (item.EffectName == Effect.Stat_AC_vs_Damage_Type_Modifier)
@@ -138,26 +165,46 @@ namespace BGOverlay
         {
 
         }
-        public BGEntity(ResourceManager resourceManager, IntPtr hProc, IntPtr entityIdPtr)
+        public BGEntity(ResourceManager resourceManager, IntPtr entityIdPtr)
         {
             this.resourceManager = resourceManager;
-            this.Id              = WinAPIBindings.ReadInt32(hProc, entityIdPtr);
-            entityIdPtr += 0x4;
-            this.Type                          = WinAPIBindings.ReadByte(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x004 }));
-            this.X                             = WinAPIBindings.ReadInt32(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x008 }));
-            this.Y                             = WinAPIBindings.ReadInt32(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x00C }));
-            this.Name1                         = WinAPIBindings.ReadString(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x364 }));
-            this.CreResourceFilename           = WinAPIBindings.ReadString(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x3FC })).Trim('*') + ".CRE";
-            this.CurrentHP                     = (byte)WinAPIBindings.ReadByte(hProc, WinAPIBindings.FindDMAAddy(hProc, entityIdPtr, new int[] { 0x438 }));
+            this.Loaded = false;
+            // 1020 bytes CGameAIBase
+            this.Id                            = WinAPIBindings.ReadInt32(entityIdPtr);
+            entityIdPtr                       += 0x4;
+            this.Type                          = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x004 }));
+            if (Type != 49)
+                return;
+            this.X                             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x008 }));
+            this.Y                             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x00C }));
+            if (X == 0 && Y == 0) 
+                return;
+            IntPtr cGameAreaPtr                = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x14 });
+            this.RealId                        = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x34 }));
+            this.AreaName                      = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
+            this.AreaRef                       = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x1E4 }), 8);
+            this.MousePosX                     = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x22C }));
+            this.MousePosY                     = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x22C + 4 }));
+            this.MousePosX1                    = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0xA84 }));
+            this.MousePosY1                    = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0xA84 + 4 }));
+            this.Name2                         = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x28A8, 0}), 64);
+            this.Name1                         = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x364 }), 8);
+            this.CreResourceFilename           = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3FC }), 8).Trim('*') + ".CRE";
+            this.CurrentHP                     = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x438 }));
+            //this.DerivedStats                = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xB30 }));
+            //this.DerivedStatsTemp            = new CDerivedStats(entityIdPtr + 0x1454 );
+            this.DerivedStatsTemp              = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1454 }));
+
+            //this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1D78 }));
             if (Type == 49)
             {
                 this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
                 if (Reader == null)
                 {
-                     this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
-
+                    this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
                 }
-            }            
+            }
+            this.Loaded = true;
         }
 
         public override string ToString()
@@ -175,7 +222,7 @@ namespace BGOverlay
             {
                 throw new Exception();
             }
-            return $"{Reader.ShortName} HP:{CurrentHP}";
+            return $"{this.Name2} HP:{CurrentHP}";
         }
     }
 }

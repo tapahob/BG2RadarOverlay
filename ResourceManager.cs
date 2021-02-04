@@ -19,6 +19,7 @@ namespace BGOverlay
         }
         public List<BIFResourceEntry> CREResourceEntries            => BIFResourceEntries.Where(x => x.Ext == BIFResourceEntry.Extension.CRE).ToList();
         public List<BIFResourceEntry> SPLResourceEntries            => BIFResourceEntries.Where(x => x.Ext == BIFResourceEntry.Extension.SPL).ToList();
+
         public Dictionary<int, TLKEntry> StringRefs                 = null;
         public List<BIFEntry> BIFEntries                            = null; 
         public List<BIFResourceEntry> BIFResourceEntries            = null;
@@ -93,8 +94,9 @@ namespace BGOverlay
                 try
                 {
                     reader = new CREReader(this, creFilename);
-                    if (reader.Version == null) 
-                        reader = CREReaderCache[creFilename];
+                    //if (reader.Version == null) 
+                    //reader = CREReaderCache[creFilename];
+                    CREReaderCache[creFilename] = reader;
                 }
                 catch (ArgumentException)
                 {
@@ -102,6 +104,7 @@ namespace BGOverlay
                 }
 
             }
+
             return reader;
         }
     }

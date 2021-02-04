@@ -10,6 +10,8 @@ namespace BGOverlay
 
         public static string Locale { get; private set; }
 
+        public static IntPtr hProc { get; set; }
+
         public static void Init()
         {
             loadConfig();
@@ -27,10 +29,6 @@ namespace BGOverlay
 
         private static void detectGameFolder()
         {
-            if (GameFolder != "none")
-            {
-                return;
-            }
             if (File.Exists(GameFolder + "\\Baldur.exe"))
             {
                 return;

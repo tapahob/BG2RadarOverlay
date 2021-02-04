@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -11,11 +12,11 @@ namespace BGOverlay
 {
     public class ProcessHacker
     {
-        private Process proc;
+        public Process proc;
         private IntPtr hProc;
         private IntPtr modBase;
         private IntPtr modBase2;
-        private List<BGEntity> entityList;
+        public ConcurrentBag<BGEntity> entityList;
 
         public ObservableCollection<String> TextEntries { get; set; }
         public ResourceManager ResourceManager { get; private set; }
@@ -23,38 +24,48 @@ namespace BGOverlay
 
         public void MainLoop()
         {
-            entityList.Clear();
+            System.Diagnostics.Stopwatch sw = new Stopwatch();
+
+            var entityListTemp = new ConcurrentBag<BGEntity>();
             var All = new List<BGEntity>();
             BGEntity main = null;
-            for (int i = 18; i < 5048; ++i)
+            sw.Start();
+            for (int i = 18; i < 5000; ++i)
             {
-                var newEntity = new BGEntity(ResourceManager, hProc, modBase2 + 0x541020 - 0x738 + 0x8 * i);
+                if (ReadInt32(modBase2 + 0x541020 - 0x738 + 0x8 * i) == 65535) continue;
+                var newEntity = new BGEntity(ResourceManager, modBase2 + 0x541020 - 0x738 + 0x8 * i);
+                if (!newEntity.Loaded) 
+                    continue;
                 All.Add(newEntity);
                 if (main == null && newEntity?.Reader?.EnemyAlly == 2)
                 {
                     main = newEntity;
                 }
-                
+
                 if (newEntity.CurrentHP == 0
                     //|| newEntity.ToString() == "NO .CRE INFO"
-                    || newEntity.Reader == null 
-                    || newEntity.Reader.EnemyAlly != 255 
-                    && newEntity.Reader.EnemyAlly != 5 
+                    || newEntity.Reader == null
+                    || newEntity.Reader.EnemyAlly != 255
+                    && newEntity.Reader.EnemyAlly != 5
                     && newEntity.Reader.EnemyAlly != 128
+                    && newEntity.Reader.EnemyAlly != 28
                     || newEntity.Reader.Class1Level == 0
                     || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
                     || newEntity.CreResourceFilename == "TIMOEN.CRE"
                     || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS) continue;
                 if (newEntity.Type == 49)
                 {
-                    entityList.Add(newEntity);
+                    entityListTemp.Add(newEntity);
                 }
             }
+            entityList = new ConcurrentBag<BGEntity>(entityListTemp);
+            var ms2 = sw.Elapsed.TotalMilliseconds;
             var nearestThings = All.Where(y => len(main, y) < 300);
-            var a = All.Where(x => x.CurrentHP == 20);
-            this.NearestEnemies = entityList.Where(y => len(main, y) < 300);
+            this.NearestEnemies = entityListTemp.Where(y => len(main, y) < 300);
             TextEntries = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());
-            Thread.Sleep(500);
+            sw.Stop();
+            var ms = sw.Elapsed.TotalMilliseconds;
+            //Thread.Sleep(500);
         }
 
         public void Init()
@@ -71,7 +82,8 @@ namespace BGOverlay
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, proc.Id);
             this.modBase    = WinAPIBindings.GetModuleBaseAddress(proc, "Baldur.exe");
             this.modBase2   = WinAPIBindings.GetModuleBaseAddress(proc.Id, "Baldur.exe");
-            this.entityList = new List<BGEntity>();
+            this.entityList = new ConcurrentBag<BGEntity>();
+            Configuration.hProc = hProc;
         }
 
         double len(BGEntity entity1, BGEntity entity2)

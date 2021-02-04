@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BGOverlay;
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -67,8 +68,9 @@ namespace WinApiBindings
             return IntPtr.Zero;
         }
 
-        public static IntPtr FindDMAAddy(IntPtr hProc, IntPtr ptr, int[] offsets)
+        public static IntPtr FindDMAAddy(IntPtr ptr, int[] offsets)
         {
+            IntPtr hProc = Configuration.hProc;
             var buffer = new byte[IntPtr.Size];
             foreach(int i in offsets)
             {
@@ -81,25 +83,61 @@ namespace WinApiBindings
             return ptr;
         }
 
-        public static int ReadInt32(IntPtr hProc, IntPtr ptr)
+        public static UInt32 ReadUInt32(IntPtr ptr)
         {
+            IntPtr hProc = Configuration.hProc;
+            var buffer = new byte[4];
+            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
+            var result = BitConverter.ToUInt32(buffer, 0);
+            return result;
+        }
+        public static int ReadInt32(IntPtr ptr)
+        {
+            IntPtr hProc = Configuration.hProc;
+            var buffer = new byte[4];
+            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
+            var result = BitConverter.ToInt32(buffer, 0);
+            return result;
+        }
+        
+        public static short ReadInt16(IntPtr ptr)
+        {
+            IntPtr hProc = Configuration.hProc;
             var buffer = new byte[2];
             ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
             var result = BitConverter.ToInt16(buffer, 0);
             return result;
         }
 
-        public static int ReadByte(IntPtr hProc, IntPtr ptr)
+        public static ushort ReadUInt16(IntPtr ptr)
         {
+            IntPtr hProc = Configuration.hProc;
+            var buffer = new byte[2];
+            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
+            var result = BitConverter.ToUInt16(buffer, 0);
+            return result;
+        }
+
+        public static byte ReadByte(IntPtr ptr)
+        {
+            IntPtr hProc = Configuration.hProc;
             var buffer = new byte[1];
             ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
             var result = buffer[0];
             return result;
         }
-
-        public static string ReadString(IntPtr hProc, IntPtr ptr)
+        public static byte[] ReadBytes(IntPtr ptr, int size)
         {
-            var buffer = new byte[16];
+            IntPtr hProc = Configuration.hProc;
+            var buffer = new byte[size];
+            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);            
+            return buffer;
+        }
+
+        public static string ReadString(IntPtr ptr, int strLength = 16)
+        {
+            IntPtr hProc = Configuration.hProc;
+            var buffer = new byte[strLength];
             ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
             var result = UTF8Encoding.UTF8.GetString(buffer);
             if (result.StartsWith("\0"))
@@ -202,13 +240,13 @@ namespace WinApiBindings
         private enum SnapshotFlags : uint
         {
             HeapList = 0x00000001,
-            Process = 0x00000002,
-            Thread = 0x00000004,
-            Module = 0x00000008,
+            Process  = 0x00000002,
+            Thread   = 0x00000004,
+            Module   = 0x00000008,
             Module32 = 0x00000010,
-            Inherit = 0x80000000,
-            All = 0x0000001F,
-            NoHeaps = 0x40000000
+            Inherit  = 0x80000000,
+            All      = 0x0000001F,
+            NoHeaps  = 0x40000000
         }
     }
 }

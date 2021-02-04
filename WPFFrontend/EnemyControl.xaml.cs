@@ -15,7 +15,10 @@ namespace WPFFrontend
         {
             InitializeComponent();
             this.BGEntity = bgEntity;
-            this.DataContext = bgEntity;  
+            this.DataContext = bgEntity;
+
+            
+
             if (this.BGEntity.Protections.Count > 0)
             {
                 this.protectionsListView.Visibility = Visibility.Visible;
