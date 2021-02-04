@@ -7,7 +7,7 @@
     <ProjectGuid>{DEDF4851-555F-4F9A-B540-248BB9D3C2C2}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>BGOverlay</RootNamespace>
-    <AssemblyName>BGOverlay</AssemblyName>
+    <AssemblyName>BGOverlayAPI</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

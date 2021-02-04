@@ -33,7 +33,7 @@ namespace BGOverlay
             {
                 return;
             }
-            if (Directory.EnumerateFiles(Directory.GetCurrentDirectory()).Any(x => x == "Baldur.exe")) 
+            if (new DirectoryInfo(Directory.GetCurrentDirectory()).EnumerateFiles().Any(x => x.Name == "Baldur.exe")) 
             {
                 GameFolder = Directory.GetCurrentDirectory().Trim('\\');
                 saveConfig();
@@ -46,10 +46,7 @@ namespace BGOverlay
                 return;
             }
 
-            throw new Exception("Cannot find Baldur.exe!");
-            //OpenFileDialog openFileDialog = new OpenFileDialog();
-            //if (openFileDialog.ShowDialog() == true)
-            //    txtEditor.Text = File.ReadAllText(openFileDialog.FileName);
+            Environment.Exit(1);
         }
 
         private static void saveConfig()
@@ -59,9 +56,14 @@ namespace BGOverlay
 
         private static void loadConfig()
         {
+            if (!File.Exists("config.cfg"))
+            {
+                File.WriteAllLines("config.cfg", new string[] { $"GameFolder=none", $"Locale=en_US" });
+            }
             var config = File.ReadAllLines("config.cfg");
             GameFolder = config[0].Split('=')[1];
-            Locale     = config[1].Split('=')[1];
+            Locale = config[1].Split('=')[1];
+            
         }
     }
 }

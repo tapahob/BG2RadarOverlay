@@ -6,6 +6,8 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <StartupObject>WPFFrontend.App</StartupObject>
+    <AssemblyName>BGOverlayUI</AssemblyName>
+    <ApplicationIcon>ic.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
