@@ -71,7 +71,8 @@ namespace BGOverlay
                         var spellName = resourceManager.GetSPLReader($"{item.Resource.Trim('\0')}.SPL".ToUpper()).Name1;
                         if (spellName == "-1")
                         {
-                            spellName = item.Resource;
+                            spellName = resourceManager.GetSPLReader($"{item.Resource.Substring(0, item.Resource.Length-1).Trim('\0')}.SPL".ToUpper()).Name1;
+                            spellName = spellName == "-1" ? item.Resource : spellName;
                         }
                         spellStrings.Add(preprocess(spellName));
                         continue;
@@ -177,7 +178,7 @@ namespace BGOverlay
                 return;
             this.X                             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x008 }));
             this.Y                             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x00C }));
-            if (X == 0 && Y == 0) 
+            if (X < 0 || Y < 0) 
                 return;
             IntPtr cGameAreaPtr                = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x14 });
             this.RealId                        = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x34 }));

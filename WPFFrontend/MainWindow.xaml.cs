@@ -68,7 +68,8 @@ namespace WPFFrontend
             BGEntity entry = null;
             
             entry = ph.entityList.FirstOrDefault(
-                x => Math.Abs(x.MousePosX + x.MousePosX1 - x.X) < 18
+                x => x.X > 0 &&
+                Math.Abs(x.MousePosX + x.MousePosX1 - x.X) < 18
                 && Math.Abs(x.MousePosY + x.MousePosY1 - x.Y) < 18);
 
             if (entry == null)
