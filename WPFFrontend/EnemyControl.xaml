@@ -71,41 +71,41 @@
 
         <Border Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="4" BorderBrush="Black" BorderThickness="0" Margin="1">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Label Style="{StaticResource Attributes}" x:Name="STR" d:Content="25" Content="{Binding Reader.Strength}" ContentStringFormat="STR: {0}" HorizontalAlignment="Center"/>
-                <Label Style="{StaticResource Attributes}" x:Name="DEX" d:Content="25" Content="{Binding Reader.Dexterity}" ContentStringFormat="DEX: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="CON" d:Content="25" Content="{Binding Reader.Constitution}" ContentStringFormat="CON: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="WIS" d:Content="25" Content="{Binding Reader.Intelligence}" ContentStringFormat="INT: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="INT" d:Content="25" Content="{Binding Reader.Wisdom}" ContentStringFormat="WIS: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="CHA" d:Content="25" Content="{Binding Reader.Charisma}" ContentStringFormat="CHR: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label Style="{StaticResource Attributes}" x:Name="STR" d:Content="25" Content="{Binding DerivedStatsTemp.STR}" ContentStringFormat="STR: {0}" HorizontalAlignment="Center"/>
+                <Label Style="{StaticResource Attributes}" x:Name="DEX" d:Content="25" Content="{Binding DerivedStatsTemp.DEX}" ContentStringFormat="DEX: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label Style="{StaticResource Attributes}" x:Name="CON" d:Content="25" Content="{Binding DerivedStatsTemp.CON}" ContentStringFormat="CON: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label Style="{StaticResource Attributes}" x:Name="WIS" d:Content="25" Content="{Binding DerivedStatsTemp.WIS}" ContentStringFormat="INT: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label Style="{StaticResource Attributes}" x:Name="INT" d:Content="25" Content="{Binding DerivedStatsTemp.INT}" ContentStringFormat="WIS: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label Style="{StaticResource Attributes}" x:Name="CHA" d:Content="25" Content="{Binding DerivedStatsTemp.CHA}" ContentStringFormat="CHR: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
             </StackPanel>
         </Border>
 
         <Border Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="2" BorderBrush="Black" BorderThickness="1" Margin="1"/>
         <StackPanel Grid.Row="3" Grid.Column="1" Margin="5,5,5,5">
-            <Label x:Name="Health" Content="{Binding Reader.MaximumHP}" ContentStringFormat="Health: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="APR" Content="{Binding Reader.NumberOfAttacks}" ContentStringFormat="Attacks: {0}" d:Content="3" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="AC" Content="{Binding Reader.ArmorClassEffective}" ContentStringFormat="Armor Class: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="THAC0" Content="{Binding Reader.THAC0}" ContentStringFormat="THAC0: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="Health" Content="{Binding DerivedStatsTemp.MaxHP}" ContentStringFormat="Health: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="APR" Content="{Binding DerivedStatsTemp.NumberOfAttacks}" ContentStringFormat="Attacks: {0}" d:Content="3" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="AC" Content="{Binding DerivedStatsTemp.ArmorClass}" ContentStringFormat="Armor Class: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="THAC0" Content="{Binding DerivedStatsTemp.THAC0}" ContentStringFormat="THAC0: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
             <Label x:Name="XP" Content="{Binding Reader.XPGained}" ContentStringFormat="Experience: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
             <Label x:Name="Alignment" Content="{Binding Reader.ShortAlignment}" ContentStringFormat="Alignment: {0}"  d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SaveDeath" Content="{Binding Reader.SaveVersusDeath}" ContentStringFormat="Save vs Death: {0}"  d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SaveWands" Content="{Binding Reader.SaveVersusWands}" ContentStringFormat="Save vs Wands: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SavePolymorph" Content="{Binding Reader.SaveVersusPolymorph}" ContentStringFormat="Save vs Polymorph: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SaveBreath" Content="{Binding Reader.SaveVersusBreath}" ContentStringFormat="Save vs Breath: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SaveSpells" Content="{Binding Reader.SaveVersusSpells}" ContentStringFormat="Save vs Spells: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="SaveDeath" Content="{Binding DerivedStatsTemp.SaveVsDeath}" ContentStringFormat="Save vs Death: {0}"  d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="SaveWands" Content="{Binding DerivedStatsTemp.SaveVsWands}" ContentStringFormat="Save vs Wands: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="SavePolymorph" Content="{Binding DerivedStatsTemp.SaveVsPoly}" ContentStringFormat="Save vs Polymorph: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="SaveBreath" Content="{Binding DerivedStatsTemp.SaveVsBreath}" ContentStringFormat="Save vs Breath: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="SaveSpells" Content="{Binding DerivedStatsTemp.SaveVsSpell}" ContentStringFormat="Save vs Spells: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
         </StackPanel>
         <StackPanel Grid.Row="3" Grid.Column="2" Margin="5,5,5,5">
-            <Label x:Name="ResFire" Content="{Binding Reader.ResistFire}" ContentStringFormat="Resist Fire: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResCold" Content="{Binding Reader.ResistCold}" ContentStringFormat="Resist Cold: {0}" d:Content="3" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResElectro" Content="{Binding Reader.ResistElectricity}" ContentStringFormat="Resist Electricity: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResAcid" Content="{Binding Reader.ResistAcid}" ContentStringFormat="Resist Acid: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResMagic" Content="{Binding Reader.ResistMagic}" ContentStringFormat="Resist Magic: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResFire" Content="{Binding DerivedStatsTemp.ResistFire}" ContentStringFormat="Resist Fire: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResCold" Content="{Binding DerivedStatsTemp.ResistCold}" ContentStringFormat="Resist Cold: {0}" d:Content="3" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResElectro" Content="{Binding DerivedStatsTemp.ResistElectricity}" ContentStringFormat="Resist Electricity: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResAcid" Content="{Binding DerivedStatsTemp.ResistAcid}" ContentStringFormat="Resist Acid: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResMagic" Content="{Binding DerivedStatsTemp.ResistMagic}" ContentStringFormat="Resist Magic: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResMagicFire" Content="{Binding Reader.ResistMagicFire}" ContentStringFormat="Resist Magic Fire: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResMagicCold" Content="{Binding Reader.ResistMagicCold}" ContentStringFormat="Resist Magic Cold: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResSlashing" Content="{Binding Reader.ResistSlashing}" ContentStringFormat="Resist Slashing: {0}"  d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResCrushing" Content="{Binding Reader.ResistCrushing}" ContentStringFormat="Resist Crushing: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResPiercing" Content="{Binding Reader.ResistPiercing}" ContentStringFormat="Resist Piercing: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResMissile" Content="{Binding Reader.ResistMissile}" ContentStringFormat="Resist Missile: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResSlashing" Content="{Binding DerivedStatsTemp.ResistSlashing}" ContentStringFormat="Resist Slashing: {0}"  d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResCrushing" Content="{Binding DerivedStatsTemp.ResistCrushing}" ContentStringFormat="Resist Crushing: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResPiercing" Content="{Binding DerivedStatsTemp.ResistPiercing}" ContentStringFormat="Resist Piercing: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResMissile" Content="{Binding DerivedStatsTemp.ResistMissile}" ContentStringFormat="Resist Missile: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
         </StackPanel>
         <!--<Border Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="2" >-->
             <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">

@@ -95,8 +95,10 @@ namespace BGOverlay
                 {
                     reader = new CREReader(this, creFilename);
                     if (reader.Version == null)
-                        reader = CREReaderCache[creFilename];
-                    //CREReaderCache[creFilename] = reader;
+                    {
+                        var key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename));
+                        reader = CREReaderCache[key];
+                    }
                 }
                 catch (ArgumentException)
                 {

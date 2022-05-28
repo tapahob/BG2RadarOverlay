@@ -45,19 +45,19 @@ namespace BGOverlay
                     main = newEntity;
                 }
 
-                //if (newEntity.CurrentHP == 0
-                //    //|| newEntity.ToString() == "NO .CRE INFO"
-                //    || newEntity.Reader == null
-                //    || newEntity.Reader.EnemyAlly != 255
-                //    && newEntity.Reader.EnemyAlly != 5
-                //    && newEntity.Reader.EnemyAlly != 128
-                //    && newEntity.Reader.EnemyAlly != 28
-                //    || newEntity.Reader.Class1Level == 0
-                //    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
-                //    || newEntity.CreResourceFilename == "TIMOEN.CRE"
-                //    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS) 
-                //        continue;
-                if (newEntity.Type == 49)
+                if (newEntity.CurrentHP == 0
+                    //|| newEntity.ToString() == "NO .CRE INFO"
+                    || newEntity.Reader == null
+                    || newEntity.Reader.EnemyAlly != 255
+                    && newEntity.Reader.EnemyAlly != 5
+                    && newEntity.Reader.EnemyAlly != 128
+                    && newEntity.Reader.EnemyAlly != 28
+                    || newEntity.Reader.Class1Level == 0
+                    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
+                    || newEntity.CreResourceFilename == "TIMOEN.CRE"
+                    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS)
+                    continue;
+                if (newEntity?.AreaName == main?.AreaName && newEntity.Type == 49)
                 {
                     entityListTemp.Add(newEntity);
                 }
