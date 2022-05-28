@@ -24,17 +24,22 @@ namespace BGOverlay
                 filename = overrideCreFilename;
             } 
             else
-            {
-                var lastTry = Directory.GetFiles($"{gameDirectory}\\override").Select(x=>x.ToUpper()).FirstOrDefault(x => x.EndsWith(creFilename));
+            {   
+                var lastTry = Directory.Exists($"{gameDirectory}\\override") 
+                    ? Directory.GetFiles($"{gameDirectory}\\override").Select(x=>x.ToUpper()).FirstOrDefault(x => x.EndsWith(creFilename))
+                    : null;
                 if (lastTry == null)
                 {
                     filename = biffArchivePath;
                     if (biffArchivePath.Equals(""))
                     {
                         var test2 = resourceManager.CREResourceEntries.FirstOrDefault(x => x.FullName.EndsWith(creFilename));
-                        test2.LoadCREFiles();
-                        resourceManager.CREReaderCache[creFilename] = resourceManager.GetCREReader(test2.FullName);
-                        return;
+                        if (test2 != null)
+                        {
+                            test2.LoadCREFiles();
+                            //resourceManager.CREReaderCache[creFilename] = resourceManager.GetCREReader(test2.FullName);
+                            return; // resourceManager.CREReaderCache[creFilename];
+                        }  
                     }
                 } else
                 {

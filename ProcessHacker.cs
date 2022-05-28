@@ -29,11 +29,14 @@ namespace BGOverlay
             var entityListTemp = new ConcurrentBag<BGEntity>();
             var All = new List<BGEntity>();
             BGEntity main = null;
+            var start = modBase2 + 0x00540FE4 - 5000;
             sw.Start();
-            for (int i = 18; i < 5000; ++i)
+            //var start = FindDMAAddy(modBase2 + 0x00540FE4, new int[] { 0x0 });
+            for (int i = 0; i < 5000; ++i)
             {
-                if (ReadInt32(modBase2 + 0x541020 - 0x738 + 0x8 * i) == 65535) continue;
-                var newEntity = new BGEntity(ResourceManager, modBase2 + 0x541020 - 0x738 + 0x8 * i);
+                //if (ReadInt32(start + 0x8 * i) == 65535) 
+                //    continue;
+                var newEntity = new BGEntity(ResourceManager, start + i*0x4);
                 if (!newEntity.Loaded) 
                     continue;
                 All.Add(newEntity);
@@ -42,17 +45,18 @@ namespace BGOverlay
                     main = newEntity;
                 }
 
-                if (newEntity.CurrentHP == 0
-                    //|| newEntity.ToString() == "NO .CRE INFO"
-                    || newEntity.Reader == null
-                    || newEntity.Reader.EnemyAlly != 255
-                    && newEntity.Reader.EnemyAlly != 5
-                    && newEntity.Reader.EnemyAlly != 128
-                    && newEntity.Reader.EnemyAlly != 28
-                    || newEntity.Reader.Class1Level == 0
-                    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
-                    || newEntity.CreResourceFilename == "TIMOEN.CRE"
-                    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS) continue;
+                //if (newEntity.CurrentHP == 0
+                //    //|| newEntity.ToString() == "NO .CRE INFO"
+                //    || newEntity.Reader == null
+                //    || newEntity.Reader.EnemyAlly != 255
+                //    && newEntity.Reader.EnemyAlly != 5
+                //    && newEntity.Reader.EnemyAlly != 128
+                //    && newEntity.Reader.EnemyAlly != 28
+                //    || newEntity.Reader.Class1Level == 0
+                //    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
+                //    || newEntity.CreResourceFilename == "TIMOEN.CRE"
+                //    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS) 
+                //        continue;
                 if (newEntity.Type == 49)
                 {
                     entityListTemp.Add(newEntity);

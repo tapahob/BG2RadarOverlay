@@ -75,7 +75,6 @@ namespace WinApiBindings
             foreach(int i in offsets)
             {
                 ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
-
                 ptr = (IntPtr.Size == 4)
                     ? IntPtr.Add(new IntPtr(BitConverter.ToInt32(buffer, 0)), i)
                     : ptr = IntPtr.Add(new IntPtr(BitConverter.ToInt64(buffer, 0)), i);

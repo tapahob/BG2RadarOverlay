@@ -8,6 +8,7 @@
     <StartupObject>WPFFrontend.App</StartupObject>
     <AssemblyName>BGOverlayUI</AssemblyName>
     <ApplicationIcon>ic.ico</ApplicationIcon>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -172,7 +172,7 @@ namespace BGOverlay
             this.Loaded = false;
             // 1020 bytes CGameAIBase
             this.Id                            = WinAPIBindings.ReadInt32(entityIdPtr);
-            entityIdPtr                       += 0x4;
+            //entityIdPtr                       += 0x4;
             this.Type                          = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x004 }));
             if (Type != 49)
                 return;
@@ -191,6 +191,7 @@ namespace BGOverlay
             this.Name2                         = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x28A8, 0}), 64);
             this.Name1                         = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x364 }), 8);
             this.CreResourceFilename           = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3FC }), 8).Trim('*') + ".CRE";
+            if (this.CreResourceFilename == ".CRE") return;
             this.CurrentHP                     = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x438 }));
             //this.DerivedStats                = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xB30 }));
             //this.DerivedStatsTemp            = new CDerivedStats(entityIdPtr + 0x1454 );
@@ -200,9 +201,9 @@ namespace BGOverlay
             if (Type == 49)
             {
                 this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
-                if (Reader == null)
+                if (Reader.Class == CREReader.CLASS.ERROR)
                 {
-                    this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
+                    this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
                 }
             }
             this.Loaded = true;
