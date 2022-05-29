@@ -86,8 +86,8 @@ namespace BGOverlay
             }
             entityList = new ConcurrentBag<BGEntity>(entityListTemp);
             var ms2 = sw.Elapsed.TotalMilliseconds;
-            var nearestThings = All.Where(y => len(main, y) < 300);
-            this.NearestEnemies = entityListTemp.Where(y => len(main, y) < 300);
+            var nearestThings = All.Where(y => len(main, y) < Configuration.RadarRadius);
+            this.NearestEnemies = entityListTemp.Where(y => len(main, y) < Configuration.RadarRadius);
             TextEntries = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());
             sw.Stop();
             var ms = sw.Elapsed.TotalMilliseconds;
@@ -105,6 +105,8 @@ namespace BGOverlay
                 Thread.Sleep(3000);
             }
             this.proc       = Process.GetProcessesByName("Baldur")[0];
+            makeBorderless(proc.MainWindowHandle);
+
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, proc.Id);
             this.moduleBase = WinAPIBindings.GetModuleBaseAddress(proc, "Baldur.exe");
             this.entityList = new ConcurrentBag<BGEntity>();
@@ -117,6 +119,17 @@ namespace BGOverlay
             var x = Math.Pow(entity1.X - entity2.X, 2);
             var y = Math.Pow(entity1.Y - entity2.Y, 2);
             return Math.Sqrt(x + y);
+        }
+        
+
+        private void makeBorderless(IntPtr handle)
+        {
+            if (!Configuration.Borderless) 
+                return;
+            
+            uint currentStyle = (uint) WinAPIBindings.GetWindowLongPtr(handle, -16).ToInt64();
+            WinAPIBindings.SetWindowLong32(handle, -16, currentStyle & ~0x00800000 | 0x00400000);
+            WinAPIBindings.ShowWindow(handle.ToInt32(), 3);
         }
     }
 }

@@ -14,20 +14,23 @@ namespace WinApiBindings
         [Flags]
         public enum ProcessAccessFlags : uint
         {
-            All                     = 0x001F0FFF,
-            Terminate               = 0x00000001,
-            CreateThread            = 0x00000002,
-            VirtualMemoryOperation  = 0x00000008,
-            VirtualMemoryRead       = 0x00000010,
-            VirtualMemoryWrite      = 0x00000020,
-            DuplicateHandle         = 0x00000040,
-            CreateProcess           = 0x000000080,
-            SetQuota                = 0x00000100,
-            SetInformation          = 0x00000200,
-            QueryInformation        = 0x00000400,
+            All = 0x001F0FFF,
+            Terminate = 0x00000001,
+            CreateThread = 0x00000002,
+            VirtualMemoryOperation = 0x00000008,
+            VirtualMemoryRead = 0x00000010,
+            VirtualMemoryWrite = 0x00000020,
+            DuplicateHandle = 0x00000040,
+            CreateProcess = 0x000000080,
+            SetQuota = 0x00000100,
+            SetInformation = 0x00000200,
+            QueryInformation = 0x00000400,
             QueryLimitedInformation = 0x00001000,
-            Synchronize             = 0x00100000
+            Synchronize = 0x00100000
         }
+
+        [DllImport("user32.dll")]
+        public static extern int ShowWindow(int hwnd, int nCmdShow);
 
         public static IntPtr GetModuleBaseAddress(Process proc, string modName)
         {
@@ -74,7 +77,7 @@ namespace WinApiBindings
 
             IntPtr hProc = Configuration.hProc;
             var buffer = new byte[IntPtr.Size];
-            foreach(int i in offsets)
+            foreach (int i in offsets)
             {
                 ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
                 ptr = (IntPtr.Size == 4)
@@ -100,7 +103,7 @@ namespace WinApiBindings
             var result = BitConverter.ToInt32(buffer, 0);
             return result;
         }
-        
+
         public static short ReadInt16(IntPtr ptr)
         {
             IntPtr hProc = Configuration.hProc;
@@ -131,7 +134,7 @@ namespace WinApiBindings
         {
             IntPtr hProc = Configuration.hProc;
             var buffer = new byte[size];
-            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);            
+            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
             return buffer;
         }
 
@@ -241,13 +244,39 @@ namespace WinApiBindings
         private enum SnapshotFlags : uint
         {
             HeapList = 0x00000001,
-            Process  = 0x00000002,
-            Thread   = 0x00000004,
-            Module   = 0x00000008,
+            Process = 0x00000002,
+            Thread = 0x00000004,
+            Module = 0x00000008,
             Module32 = 0x00000010,
-            Inherit  = 0x80000000,
-            All      = 0x0000001F,
-            NoHeaps  = 0x40000000
+            Inherit = 0x80000000,
+            All = 0x0000001F,
+            NoHeaps = 0x40000000
         }
+
+        [Flags]
+        public enum ShowWindowCommands : uint
+        {
+            SW_HIDE = 0,
+            SW_SHOWNORMAL = 1,
+            SW_NORMAL = 1,
+            SW_SHOWMINIMIZED = 2,
+            SW_SHOWMAXIMIZED = 3,
+            SW_MAXIMIZE = 3,
+            SW_SHOWNOACTIVATE = 4,
+            SW_SHOW = 5,
+            SW_MINIMIZE = 6,
+            SW_SHOWMINNOACTIVE = 7,
+            SW_SHOWNA = 8,
+            SW_RESTORE = 9,
+            SW_SHOWDEFAULT = 10,
+            SW_FORCEMINIMIZE = 11,
+            SW_MAX = 11
+        }
+        
+        [DllImport("user32.dll", EntryPoint = "SetWindowLong")]
+        public static extern int SetWindowLong32(IntPtr hWnd, int nIndex, long dwNewLong);
+
+        [DllImport("user32.dll", EntryPoint = "GetWindowLong")]
+        public static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
     }
 }

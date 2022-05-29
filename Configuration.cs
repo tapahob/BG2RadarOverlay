@@ -9,14 +9,17 @@ namespace BGOverlay
         public static string GameFolder { get; private set; }
 
         public static string Locale { get; private set; }
-
+        public static bool Borderless { get; private set; }
+        public static int RadarRadius { get; private set; }
         public static IntPtr hProc { get; set; }
 
         public static void Init()
         {
+            Borderless = true;
+            RadarRadius = 300;
             loadConfig();
             detectGameFolder();
-            detectLocale();
+            detectLocale();            
         }
 
         private static void detectLocale()
@@ -51,7 +54,13 @@ namespace BGOverlay
 
         private static void saveConfig()
         {
-            File.WriteAllLines("config.cfg", new string[] { $"GameFolder={GameFolder}", $"Locale={Locale}" });
+            File.WriteAllLines("config.cfg", new string[] 
+            { 
+                $"GameFolder={GameFolder}", 
+                $"Locale={Locale}",
+                $"Borderless={Borderless}",
+                $"RadarRadius={RadarRadius}",
+            });
         }
 
         private static void loadConfig()
@@ -60,10 +69,17 @@ namespace BGOverlay
             {
                 File.WriteAllLines("config.cfg", new string[] { $"GameFolder=none", $"Locale=en_US" });
             }
-            var config = File.ReadAllLines("config.cfg");
-            GameFolder = config[0].Split('=')[1];
-            Locale = config[1].Split('=')[1];
-            
+            try
+            {
+                var config = File.ReadAllLines("config.cfg");
+                GameFolder = config[0].Split('=')[1];
+                Locale = config[1].Split('=')[1];
+                Borderless = config[2].Split('=')[1].Trim().ToLower().Equals("true");
+                RadarRadius = int.Parse(config[3].Split('=')[1].Trim());
+            } catch (Exception ex)
+            {
+                // nothing
+            }            
         }
     }
 }
