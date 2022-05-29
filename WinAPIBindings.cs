@@ -68,8 +68,10 @@ namespace WinApiBindings
             return IntPtr.Zero;
         }
 
-        public static IntPtr FindDMAAddy(IntPtr ptr, int[] offsets)
+        public static IntPtr FindDMAAddy(IntPtr ptr, int[] offsets = null)
         {
+            offsets = offsets ?? new int[] { };
+
             IntPtr hProc = Configuration.hProc;
             var buffer = new byte[IntPtr.Size];
             foreach(int i in offsets)

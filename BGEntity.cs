@@ -11,6 +11,7 @@ namespace BGOverlay
         public CREReader Reader { get; set; }
         private ResourceManager resourceManager;
 
+        public string tag { get; set; }
         public bool Loaded { get; }
         public int Id { get; private set; }
         public int X { get; private set; }

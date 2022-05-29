@@ -6,16 +6,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using WinApiBindings;
-using static WinApiBindings.WinAPIBindings;
 
 namespace BGOverlay
 {
     public class ProcessHacker
     {
         public Process proc;
-        private IntPtr hProc;
-        private IntPtr modBase;
-        private IntPtr modBase2;
+        private IntPtr hProc;        
+        private IntPtr moduleBase;
         public ConcurrentBag<BGEntity> entityList;
 
         public ObservableCollection<String> TextEntries { get; set; }
@@ -29,16 +27,38 @@ namespace BGOverlay
             var entityListTemp = new ConcurrentBag<BGEntity>();
             var All = new List<BGEntity>();
             BGEntity main = null;
-            var start = modBase2 + 0x00540FE4 - 5000;
+
+            var staticEntityList = moduleBase + 0x005408EC;
+            var test = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { }) - 4;
+            var length = WinAPIBindings.ReadInt32(test - 8);
+
+            var start = moduleBase + 0x00540FE4 - 5000;
             sw.Start();
-            //var start = FindDMAAddy(modBase2 + 0x00540FE4, new int[] { 0x0 });
-            for (int i = 0; i < 5000; ++i)
+            for (int i = 0; i < length*8; i+=8)
             {
+                var index = WinAPIBindings.ReadInt32(test + i);
+                //if (index == 0x0000FFFF)
+                //{
+                //    var t = i / 8;
+                //    break;
+                //}
+
+                var entityAddr = WinAPIBindings.FindDMAAddy(test + i + 0x4).ToString();
+                if (entityAddr.Length < 6)
+                {
+                    length++;
+                    i -= 4;
+                    continue;
+                }
+
+                var entityPtr = WinAPIBindings.FindDMAAddy(test + i + 0x4);
+
                 //if (ReadInt32(start + 0x8 * i) == 65535) 
                 //    continue;
-                var newEntity = new BGEntity(ResourceManager, start + i*0x4);
+                var newEntity = new BGEntity(ResourceManager, entityPtr);
                 if (!newEntity.Loaded) 
                     continue;
+                
                 All.Add(newEntity);
                 if (main == null && newEntity?.Reader?.EnemyAlly == 2)
                 {
@@ -48,10 +68,11 @@ namespace BGOverlay
                 if (newEntity.CurrentHP == 0
                     //|| newEntity.ToString() == "NO .CRE INFO"
                     || newEntity.Reader == null
-                    || newEntity.Reader.EnemyAlly != 255
-                    && newEntity.Reader.EnemyAlly != 5
-                    && newEntity.Reader.EnemyAlly != 128
-                    && newEntity.Reader.EnemyAlly != 28
+                    //|| 
+                    || newEntity.Reader.EnemyAlly == 128
+                    || (newEntity.Reader.EnemyAlly != 255
+                    && newEntity.Reader.EnemyAlly != 5                    
+                    && newEntity.Reader.EnemyAlly != 28)
                     || newEntity.Reader.Class1Level == 0
                     || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
                     || newEntity.CreResourceFilename == "TIMOEN.CRE"
@@ -59,7 +80,8 @@ namespace BGOverlay
                     continue;
                 if (newEntity?.AreaName == main?.AreaName && newEntity.Type == 49)
                 {
-                    entityListTemp.Add(newEntity);
+                    newEntity.tag = index.ToString();
+                    entityListTemp.Add(newEntity);                    
                 }
             }
             entityList = new ConcurrentBag<BGEntity>(entityListTemp);
@@ -69,7 +91,7 @@ namespace BGOverlay
             TextEntries = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());
             sw.Stop();
             var ms = sw.Elapsed.TotalMilliseconds;
-            //Thread.Sleep(500);
+            Thread.Sleep(500);
         }
 
         public void Init()
@@ -84,8 +106,7 @@ namespace BGOverlay
             }
             this.proc       = Process.GetProcessesByName("Baldur")[0];
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, proc.Id);
-            this.modBase    = WinAPIBindings.GetModuleBaseAddress(proc, "Baldur.exe");
-            this.modBase2   = WinAPIBindings.GetModuleBaseAddress(proc.Id, "Baldur.exe");
+            this.moduleBase = WinAPIBindings.GetModuleBaseAddress(proc, "Baldur.exe");
             this.entityList = new ConcurrentBag<BGEntity>();
             Configuration.hProc = hProc;
         }
