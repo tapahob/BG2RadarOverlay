@@ -20,13 +20,14 @@ namespace BGOverlay
         public ResourceManager ResourceManager { get; private set; }
         public IEnumerable<BGEntity> NearestEnemies { get; private set; }
 
+        private BGEntity main;
+
         public void MainLoop()
         {
-            System.Diagnostics.Stopwatch sw = new Stopwatch();
+            Stopwatch sw = new Stopwatch();
 
             var entityListTemp = new ConcurrentBag<BGEntity>();
             var All = new List<BGEntity>();
-            BGEntity main = null;
 
             var staticEntityList = moduleBase + 0x005408EC;
             var test = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { }) - 4;
@@ -60,24 +61,24 @@ namespace BGOverlay
                     continue;
                 
                 All.Add(newEntity);
-                if (main == null && newEntity?.Reader?.EnemyAlly == 2)
+                if (newEntity?.Reader?.EnemyAlly == 2)
                 {
                     main = newEntity;
                 }
 
                 if (newEntity.CurrentHP == 0
-                    //|| newEntity.ToString() == "NO .CRE INFO"
-                    || newEntity.Reader == null
-                    //|| 
-                    || newEntity.Reader.EnemyAlly == 128
-                    || (newEntity.Reader.EnemyAlly != 255
-                    && newEntity.Reader.EnemyAlly != 5                    
-                    && newEntity.Reader.EnemyAlly != 28)
+                    || newEntity.Reader == null                    
                     || newEntity.Reader.Class1Level == 0
-                    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
-                    || newEntity.CreResourceFilename == "TIMOEN.CRE"
+                    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT                    
                     || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS)
                     continue;
+
+                //if (newEntity.Reader.EnemyAlly != 255
+                //    || newEntity.Reader.EnemyAlly != 128
+                //    || newEntity.Reader.EnemyAlly != 5
+                //    || newEntity.Reader.EnemyAlly != 28)
+                //    continue;
+
                 if (newEntity?.AreaName == main?.AreaName && newEntity.Type == 49)
                 {
                     newEntity.tag = index.ToString();

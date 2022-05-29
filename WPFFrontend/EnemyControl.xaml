@@ -96,7 +96,7 @@
         </StackPanel>
         <StackPanel Grid.Row="3" Grid.Column="2" Margin="5,5,5,5">
             <Label x:Name="ResFire" Content="{Binding DerivedStatsTemp.ResistFire}" ContentStringFormat="Resist Fire: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResCold" Content="{Binding DerivedStatsTemp.ResistCold}" ContentStringFormat="Resist Cold: {0}" d:Content="3" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResCold" Content="{Binding DerivedStatsTemp.ResistCold}" ContentStringFormat="Resist Cold: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResElectro" Content="{Binding DerivedStatsTemp.ResistElectricity}" ContentStringFormat="Resist Electricity: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResAcid" Content="{Binding DerivedStatsTemp.ResistAcid}" ContentStringFormat="Resist Acid: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResMagic" Content="{Binding DerivedStatsTemp.ResistMagic}" ContentStringFormat="Resist Magic: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>

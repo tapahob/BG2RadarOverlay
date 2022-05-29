@@ -5,10 +5,32 @@
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" AllowsTransparency="True" WindowStyle="None"
-        Title="BG Overlay" Topmost="true" Height="1080" Width="1920" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" WindowState="Maximized" Closed="Window_Closed">
+        Title="BG Overlay" Topmost="true" Height="1080" Width="1920" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" WindowState="Maximized">
     <Window.Background>
         <SolidColorBrush Opacity="0" Color="White"/>
     </Window.Background>
+
+    <Window.Resources>
+        <Style x:Key="MyButton" TargetType="Button">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="border" BorderThickness="0" BorderBrush="Black" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <!--<Setter Property="Margin" Value="155 0 0 0"/>-->
+                                <Setter Property="Opacity" Value="0.7" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
     <Canvas x:Name="MainCanvas">
         <Grid x:Name="MainGrid" AllowDrop="True">
@@ -24,16 +46,19 @@
                 <ColumnDefinition Width="250"/>
                 <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
-            <DockPanel Visibility="Hidden" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" x:Name="TopPanel" VerticalAlignment="Top" Height="250">
-                <DockPanel.Background>
+            <!--<StackPanel Orientation="Vertical"   Visibility="Hidden" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" x:Name="TopPanel" VerticalAlignment="Top" Height="250">
+                --><!--<DockPanel.Background>
                     <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                         <GradientStop Color="Black" Offset="0.627"/>
                         <GradientStop Color="#00020000" Offset="1"/>
                     </LinearGradientBrush>
-                </DockPanel.Background>
-            </DockPanel>
-            <DockPanel Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" x:Name="LeftPanel" HorizontalAlignment="Left" Width="380">
-                <ListView x:Name="listView" Foreground="Black" BorderBrush="Black" BorderThickness="2" FontWeight="Bold" FontFamily="Segoe Print" HorizontalAlignment="Left" VerticalAlignment="Top" SelectionChanged="listView_SelectionChanged">
+                </DockPanel.Background>--><!--
+            </StackPanel>-->
+            <Button Style="{StaticResource ResourceKey=MyButton}" Grid.Row="0" Margin="155 -15 0 0" MaxHeight="30" Background="#01FFFFFF" HorizontalAlignment="Left" Panel.ZIndex="1" BorderThickness="0" Grid.Column="1" x:Name="MinMaxBtn" Foreground="Black" FontWeight="Bold" FontFamily="Segoe Print" VerticalAlignment="Top" Click="MinMaxBtn_Click">
+                <Image Source="/radar.png"/>
+            </Button>
+            <StackPanel x:Name="StackPanel"  Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Left" Width="380">
+                <ListView x:Name="ListView" Foreground="Black" BorderBrush="Black" BorderThickness="2" FontWeight="Bold" FontFamily="Segoe Print" HorizontalAlignment="Left" VerticalAlignment="Top" SelectionChanged="listView_SelectionChanged">
                     <ListView.Background>
                         <ImageBrush Stretch="UniformToFill" ImageSource="/pexels-photo-235985.jpeg"/>
                     </ListView.Background>
@@ -46,7 +71,10 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-            </DockPanel>
+                
+            </StackPanel>
         </Grid>
     </Canvas>
+
+   
 </Window>

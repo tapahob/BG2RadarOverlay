@@ -9,8 +9,7 @@ namespace BGOverlay
 {
     public class CDerivedStats
     {
-        public short MaxHP = 0;
-
+        public short MaxHP { get; private set; }
         public short ArmorClass { get; private set; }
         public short THAC0 { get; private set; }
         public short NumberOfAttacks { get; private set; }
@@ -54,7 +53,7 @@ namespace BGOverlay
             this.SaveVsSpell = WinAPIBindings.ReadInt16(addr + 0x1C);
 
             this.ResistFire = WinAPIBindings.ReadInt16(addr + 0x1E);
-            this.ResistCold = WinAPIBindings.ReadInt16(addr + 0x1C);
+            this.ResistCold = WinAPIBindings.ReadInt16(addr + 0x1E + 2);
             this.ResistElectricity = WinAPIBindings.ReadInt16(addr + 0x22);
             this.ResistAcid = WinAPIBindings.ReadInt16(addr + 0x24);
             this.ResistMagic = WinAPIBindings.ReadInt16(addr + 0x26);

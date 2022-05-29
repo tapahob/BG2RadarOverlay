@@ -1,7 +1,6 @@
 ﻿using BGOverlay.Resources;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using WinApiBindings;
 namespace BGOverlay
@@ -38,7 +37,7 @@ namespace BGOverlay
         public List<string> Protections 
         {
             get
-            {
+            {                
                 var allEffects = this.Reader.Effects.Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String);
                 var result = new List<String>();
                 var opCodeStrings = new List<String>();
@@ -140,6 +139,12 @@ namespace BGOverlay
                 {
                     result.Add(preprocess("Spell protections: " + string.Join(", ", spellStrings)));
                 }
+
+                var morePorts = DerivedStatsTemp.EffectImmunes.Select(y=>y.EffectId.ToString()).Where(x => 
+                !x.StartsWith("Text")
+                && !x.StartsWith("Graphics")).Select(z => preprocess(z)).Distinct().ToList();
+                var lst = new List<String>() { String.Join(", ", morePorts) };
+                result.AddRange(lst);
                 return result;
             }
         }
@@ -194,8 +199,8 @@ namespace BGOverlay
             this.CreResourceFilename           = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3FC }), 8).Trim('*') + ".CRE";
             if (this.CreResourceFilename == ".CRE") return;
             this.CurrentHP                     = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x438 }));
-            //this.DerivedStats                = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xB30 }));
-            //this.DerivedStatsTemp            = new CDerivedStats(entityIdPtr + 0x1454 );
+            this.DerivedStats                  = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xB30 }));
+            this.DerivedStatsBonus             = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1D78 }));
             this.DerivedStatsTemp              = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1454 }));
 
             //this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1D78 }));

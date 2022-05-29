@@ -20,7 +20,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="arrows.png" />
     <None Remove="pexels-photo-235985.jpeg" />
+    <None Remove="radar.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,7 +34,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="arrows.png" />
     <Resource Include="pexels-photo-235985.jpeg" />
+    <Resource Include="radar.png" />
   </ItemGroup>
 
   <ItemGroup>
