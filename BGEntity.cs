@@ -34,6 +34,16 @@ namespace BGOverlay
         public CDerivedStats DerivedStatsTemp { get; }
         public CDerivedStats DerivedStatsBonus { get; }
 
+        public String Class { 
+            get
+            {
+                return (this.Reader.KitInformation != CREReader.KIT.NONE 
+                    && this.Reader.KitInformation != CREReader.KIT.TRUECLASS)
+                    ? this.Reader.KitInformation.ToString().Replace('_', ' ')
+                    : this.Reader.Class.ToString().Replace('_', ' ');
+            }
+        }
+
         public List<string> Protections 
         {
             get
@@ -54,6 +64,7 @@ namespace BGOverlay
                         break;
                     }
                 }
+                string proficiencyStr = "Proficiency: ";
                 foreach (var item in allEffects)
                 {
                     if ($"{item.EffectName}".StartsWith("Graphics")
@@ -81,7 +92,7 @@ namespace BGOverlay
                     {
                         var amount = item.Param1;
                         var type = (Proficiency)item.Param2;
-                        result.Add($"Proficiency {type.ToString().Replace("_"," ")} +{amount}");
+                        proficiencyStr += $"{type.ToString().Replace("_"," ")} +{amount} ";
                         continue;
                     }
                     if (item.EffectName == Effect.Stat_AC_vs_Damage_Type_Modifier)
@@ -139,15 +150,22 @@ namespace BGOverlay
                 {
                     result.Add(preprocess("Spell protections: " + string.Join(", ", spellStrings)));
                 }
-
+                if (!proficiencyStr.EndsWith(": "))
+                    result.Add(proficiencyStr);
                 var morePorts = DerivedStatsTemp.EffectImmunes.Select(y=>y.EffectId.ToString()).Where(x => 
                 !x.StartsWith("Text")
                 && !x.StartsWith("Graphics")).Select(z => preprocess(z)).Distinct().ToList();
-                var lst = new List<String>() { String.Join(", ", morePorts) };
-                result.AddRange(lst);
+                if (this.DerivedStatsTemp.BackstabImmunity > 0)
+                    result.Add("Backstab Immunity " + this.DerivedStatsTemp.BackstabImmunity);
+                if (this.DerivedStatsTemp.SeeInvisible > 0)
+                    result.Add("See Invisible " + this.DerivedStatsTemp.SeeInvisible);
+                if (morePorts.Any())
+                    result.Add("Effect immunities: " + string.Join(", ", morePorts));                
                 return result;
             }
         }
+
+        public byte EnemyAlly { get; private set; }
 
         private static List<string> filter = new List<string>()
         {
@@ -186,6 +204,8 @@ namespace BGOverlay
             this.Y                             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x00C }));
             if (X < 0 || Y < 0) 
                 return;
+            this.EnemyAlly                     = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x24 }));
+            
             IntPtr cGameAreaPtr                = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x14 });
             this.RealId                        = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x34 }));
             this.AreaName                      = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
@@ -207,7 +227,7 @@ namespace BGOverlay
             if (Type == 49)
             {
                 this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
-                if (Reader.Class == CREReader.CLASS.ERROR)
+                if (Reader == null || Reader.Class == CREReader.CLASS.ERROR)
                 {
                     this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
                 }

@@ -134,7 +134,7 @@ namespace WPFFrontend
                 newMargin.Top = -this.StackPanel.ActualHeight;
                 anim.To = newMargin;
                 anim.EasingFunction = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
-                anim.Duration = TimeSpan.FromSeconds(.85);
+                anim.Duration = TimeSpan.FromSeconds(.45);
                 anim.FillBehavior = FillBehavior.HoldEnd;
                 this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
             }
@@ -147,7 +147,7 @@ namespace WPFFrontend
                 var newMargin = this.StackPanel.Margin;
                 newMargin.Top = 0;
                 anim.To = newMargin;
-                anim.EasingFunction = new BounceEase() { Bounces =1, EasingMode = EasingMode.EaseIn };                
+                anim.EasingFunction = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };                
                 anim.Duration = TimeSpan.FromSeconds(.85);
                 anim.FillBehavior = FillBehavior.HoldEnd;
                 this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);

@@ -146,7 +146,7 @@ namespace BGOverlay
 
                 reader.BaseStream.Seek(originOffset + 0x0244, SeekOrigin.Begin);
                 this.KitInformation = (KIT)reader.ReadInt32();
-                
+                                
                 reader.BaseStream.Seek(originOffset + 0x0270, SeekOrigin.Begin);
                 this.EnemyAlly = reader.ReadByte();
                 this.General   = reader.ReadByte();

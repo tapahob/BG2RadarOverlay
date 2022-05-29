@@ -23,6 +23,8 @@ namespace BGOverlay
         public short ResistElectricity { get; private set; }
         public short ResistAcid { get; private set; }
         public short ResistMagic { get; private set; }
+        public short ResistPoison { get; private set; }
+        public short ResistMagicDamage { get; private set; }
         public short ResistSlashing { get; private set; }
         public short ResistCrushing { get; private set; }
         public short ResistPiercing { get; private set; }
@@ -33,6 +35,12 @@ namespace BGOverlay
         public short DEX { get; private set; }
         public short CON { get; private set; }
         public short CHA { get; private set; }
+        public short Level1 { get; private set; }
+        public short Level2 { get; private set; }
+        public short Level3 { get; private set; }
+        public string Level { get; private set; }
+        public int BackstabImmunity { get; private set; }
+        public int SeeInvisible { get; private set; }
 
         public int[] spellImmuneLevel = new int[10];
         public List<CWeaponIdentification> WeaponImmune = new List<CWeaponIdentification>();
@@ -57,6 +65,8 @@ namespace BGOverlay
             this.ResistElectricity = WinAPIBindings.ReadInt16(addr + 0x22);
             this.ResistAcid = WinAPIBindings.ReadInt16(addr + 0x24);
             this.ResistMagic = WinAPIBindings.ReadInt16(addr + 0x26);
+            this.ResistPoison = WinAPIBindings.ReadInt16(addr + 0xC0);
+            this.ResistMagicDamage = WinAPIBindings.ReadInt16(addr + 0xBE);
 
             this.ResistSlashing = WinAPIBindings.ReadInt16(addr + 0x2C);
             this.ResistCrushing = WinAPIBindings.ReadInt16(addr + 0x2E);
@@ -69,6 +79,23 @@ namespace BGOverlay
             this.DEX = WinAPIBindings.ReadInt16(addr + 0x56);
             this.CON = WinAPIBindings.ReadInt16(addr + 0x58);
             this.CHA = WinAPIBindings.ReadInt16(addr + 0x5A);
+
+            this.Level1 = WinAPIBindings.ReadInt16(addr + 0x46);
+            this.Level2 = WinAPIBindings.ReadInt16(addr + 0x48);
+            this.Level3 = WinAPIBindings.ReadInt16(addr + 0x4A);
+
+            this.Level = "" + this.Level1;
+            if (this.Level2 > 1)
+            {
+                this.Level = this.Level + "/" + this.Level2;
+            }
+            if (this.Level3 > 1)
+            {
+                this.Level = this.Level + "/" + this.Level3;
+            }
+
+            this.BackstabImmunity = WinAPIBindings.ReadInt32(addr + 0x284);
+            this.SeeInvisible = WinAPIBindings.ReadInt32(addr + 0xD8);
 
             this.immunitiesSpellLevel(addr + 0x344);
             this.immunitiesWeapon(addr + 0x36C);

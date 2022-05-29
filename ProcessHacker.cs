@@ -61,9 +61,10 @@ namespace BGOverlay
                     continue;
                 
                 All.Add(newEntity);
-                if (newEntity?.Reader?.EnemyAlly == 2)
+                if (newEntity?.Reader?.EnemyAlly == 2 && newEntity.CreResourceFilename.EndsWith("HARBASE.CRE"))
                 {
                     main = newEntity;
+                    continue;
                 }
 
                 if (newEntity.CurrentHP == 0
