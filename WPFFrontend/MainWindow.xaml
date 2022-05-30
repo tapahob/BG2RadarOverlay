@@ -46,14 +46,6 @@
                 <ColumnDefinition Width="250"/>
                 <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
-            <!--<StackPanel Orientation="Vertical"   Visibility="Hidden" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" x:Name="TopPanel" VerticalAlignment="Top" Height="250">
-                --><!--<DockPanel.Background>
-                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                        <GradientStop Color="Black" Offset="0.627"/>
-                        <GradientStop Color="#00020000" Offset="1"/>
-                    </LinearGradientBrush>
-                </DockPanel.Background>--><!--
-            </StackPanel>-->
             <Button Style="{StaticResource ResourceKey=MyButton}" Grid.Row="0" Margin="155 -15 0 0" MaxHeight="30" Background="#01FFFFFF" HorizontalAlignment="Left" Panel.ZIndex="1" BorderThickness="0" Grid.Column="1" x:Name="MinMaxBtn" Foreground="Black" FontWeight="Bold" FontFamily="Segoe Print" VerticalAlignment="Top" Click="MinMaxBtn_Click">
                 <Image Source="/radar.png"/>
             </Button>

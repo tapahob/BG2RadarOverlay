@@ -37,8 +37,7 @@ namespace BGOverlay
                         if (test2 != null)
                         {
                             test2.LoadCREFiles();
-                            //resourceManager.CREReaderCache[creFilename] = resourceManager.GetCREReader(test2.FullName);
-                            return; // resourceManager.CREReaderCache[creFilename];
+                            return;
                         }  
                     }
                 } else

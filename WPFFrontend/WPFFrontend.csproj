@@ -21,6 +21,41 @@
 
   <ItemGroup>
     <None Remove="arrows.png" />
+    <None Remove="icons\SPWI108C00001.PNG" />
+    <None Remove="icons\SPWI114C00001.PNG" />
+    <None Remove="icons\SPWI201C00001.PNG" />
+    <None Remove="icons\SPWI212C00001.PNG" />
+    <None Remove="icons\SPWI219C00001.PNG" />
+    <None Remove="icons\SPWI311C00001.PNG" />
+    <None Remove="icons\SPWI319C00001.PNG" />
+    <None Remove="icons\SPWI320C00001.PNG" />
+    <None Remove="icons\SPWI403C00001.PNG" />
+    <None Remove="icons\SPWI405C00001.PNG" />
+    <None Remove="icons\SPWI406C00001.PNG" />
+    <None Remove="icons\SPWI408C00001.PNG" />
+    <None Remove="icons\SPWI414C00001.PNG" />
+    <None Remove="icons\SPWI418C00001.PNG" />
+    <None Remove="icons\SPWI512C00001.PNG" />
+    <None Remove="icons\SPWI522C00001.PNG" />
+    <None Remove="icons\SPWI590C00001.PNG" />
+    <None Remove="icons\SPWI591C00001.PNG" />
+    <None Remove="icons\SPWI592C00001.PNG" />
+    <None Remove="icons\SPWI593C00001.PNG" />
+    <None Remove="icons\SPWI594C00001.PNG" />
+    <None Remove="icons\SPWI595C00001.PNG" />
+    <None Remove="icons\SPWI596C00001.PNG" />
+    <None Remove="icons\SPWI597C00001.PNG" />
+    <None Remove="icons\SPWI602C00001.PNG" />
+    <None Remove="icons\SPWI606C00001.PNG" />
+    <None Remove="icons\SPWI611C00001.PNG" />
+    <None Remove="icons\SPWI618C00001.PNG" />
+    <None Remove="icons\SPWI701C00001.PNG" />
+    <None Remove="icons\SPWI702C00001.PNG" />
+    <None Remove="icons\SPWI708C00001.PNG" />
+    <None Remove="icons\SPWI801C00001.PNG" />
+    <None Remove="icons\SPWI808C00001.PNG" />
+    <None Remove="icons\SPWI902C00001.PNG" />
+    <None Remove="icons\SPWI907C00001.PNG" />
     <None Remove="pexels-photo-235985.jpeg" />
     <None Remove="radar.png" />
   </ItemGroup>
@@ -35,6 +70,41 @@
 
   <ItemGroup>
     <Resource Include="arrows.png" />
+    <Resource Include="icons\SPWI108C00001.PNG" />
+    <Resource Include="icons\SPWI114C00001.PNG" />
+    <Resource Include="icons\SPWI201C00001.PNG" />
+    <Resource Include="icons\SPWI212C00001.PNG" />
+    <Resource Include="icons\SPWI219C00001.PNG" />
+    <Resource Include="icons\SPWI311C00001.PNG" />
+    <Resource Include="icons\SPWI319C00001.PNG" />
+    <Resource Include="icons\SPWI320C00001.PNG" />
+    <Resource Include="icons\SPWI403C00001.PNG" />
+    <Resource Include="icons\SPWI405C00001.PNG" />
+    <Resource Include="icons\SPWI406C00001.PNG" />
+    <Resource Include="icons\SPWI408C00001.PNG" />
+    <Resource Include="icons\SPWI414C00001.PNG" />
+    <Resource Include="icons\SPWI418C00001.PNG" />
+    <Resource Include="icons\SPWI512C00001.PNG" />
+    <Resource Include="icons\SPWI522C00001.PNG" />
+    <Resource Include="icons\SPWI590C00001.PNG" />
+    <Resource Include="icons\SPWI591C00001.PNG" />
+    <Resource Include="icons\SPWI592C00001.PNG" />
+    <Resource Include="icons\SPWI593C00001.PNG" />
+    <Resource Include="icons\SPWI594C00001.PNG" />
+    <Resource Include="icons\SPWI595C00001.PNG" />
+    <Resource Include="icons\SPWI596C00001.PNG" />
+    <Resource Include="icons\SPWI597C00001.PNG" />
+    <Resource Include="icons\SPWI602C00001.PNG" />
+    <Resource Include="icons\SPWI606C00001.PNG" />
+    <Resource Include="icons\SPWI611C00001.PNG" />
+    <Resource Include="icons\SPWI618C00001.PNG" />
+    <Resource Include="icons\SPWI701C00001.PNG" />
+    <Resource Include="icons\SPWI702C00001.PNG" />
+    <Resource Include="icons\SPWI708C00001.PNG" />
+    <Resource Include="icons\SPWI801C00001.PNG" />
+    <Resource Include="icons\SPWI808C00001.PNG" />
+    <Resource Include="icons\SPWI902C00001.PNG" />
+    <Resource Include="icons\SPWI907C00001.PNG" />
     <Resource Include="pexels-photo-235985.jpeg" />
     <Resource Include="radar.png" />
   </ItemGroup>

@@ -28,7 +28,8 @@ namespace BGOverlay
                 reader.BaseStream.Seek(ResourceEntriesOffset, SeekOrigin.Begin);
                 for (int i = 0, offset = ResourceEntriesOffset; i < ResourceEntriesCount; ++i)
                 {
-                    resourceManager.BIFResourceEntries.Add(new BIFResourceEntry(i, reader, resourceManager));
+                    var newEntry = new BIFResourceEntry(i, reader, resourceManager);
+                    resourceManager.BIFResourceEntries[newEntry.FullName] = newEntry;
                 }
             }
         }

@@ -56,12 +56,14 @@
   <ItemGroup>
     <Compile Include="BGEntity.cs" />
     <Compile Include="BIFFReader.cs" />
+    <Compile Include="HashMap.cs" />
     <Compile Include="MouseHook.cs" />
     <Compile Include="NativeStructs\CDerivedStats.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="CREReader.cs" />
     <Compile Include="KeyReader.cs" />
     <Compile Include="NativeStructs\CGameEffect.cs" />
+    <Compile Include="NativeStructs\CImmunitySpell.cs" />
     <Compile Include="NativeStructs\CPtrList.cs" />
     <Compile Include="NativeStructs\CWeaponIdentification.cs" />
     <Compile Include="ProcessHacker.cs" />

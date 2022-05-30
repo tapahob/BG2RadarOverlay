@@ -46,6 +46,7 @@ namespace BGOverlay
         public List<CWeaponIdentification> WeaponImmune = new List<CWeaponIdentification>();
 
         public List<CGameEffect> EffectImmunes = new List<CGameEffect>();
+        public List<CImmunitySpell> SpellImmunities = new List<CImmunitySpell>();
 
         public CDerivedStats(IntPtr addr)
         {
@@ -100,7 +101,7 @@ namespace BGOverlay
             this.immunitiesSpellLevel(addr + 0x344);
             this.immunitiesWeapon(addr + 0x36C);
             this.immunitiesEffect(addr + 0x30C);
-            //this.immunitiesSpells(addr + 0x5A0);
+            this.immunitiesSpells(addr + 0x5A0);
         }
 
         private void immunitiesEffect(IntPtr intPtr)
@@ -120,7 +121,16 @@ namespace BGOverlay
 
         private void immunitiesSpells(IntPtr intPtr)
         {
-            
+            var list = new CPtrList(intPtr);
+            var count = list.Count;
+            if (count > 100)
+                return;
+            var node = list.Head;
+            for (int i = 0; i < count; ++i)
+            {
+                this.SpellImmunities.Add(new CImmunitySpell(node.Data));
+                node = node.getNext();
+            }
         }
 
         private void immunitiesSpellLevel(IntPtr intPtr)
