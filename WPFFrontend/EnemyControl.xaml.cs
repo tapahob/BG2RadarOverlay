@@ -1,10 +1,9 @@
 ﻿using BGOverlay;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
-//using System.Windows.Media;
 
 namespace WPFFrontend
 {
@@ -13,19 +12,76 @@ namespace WPFFrontend
     /// </summary>
     public partial class EnemyControl : UserControl
     {
-        public EnemyControl(BGEntity bgEntity)
+        private MainWindow mainWindow;
+
+        private Dictionary<String, BuffControl> buffs = new Dictionary<string, BuffControl>();
+
+        public EnemyControl(BGEntity bgEntity, MainWindow mainWindow)
         {
             InitializeComponent();
-            this.BGEntity = bgEntity;
+            this.mainWindow = mainWindow;
+            this.updateView(bgEntity);
+            this.MouseRightButtonUp += EnemyControl_MouseRightButtonDown;
+        }
+
+        private void EnemyControl_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            this.Label_MouseDown(null, null);
+        }
+
+        public BGEntity BGEntity { get; private set; }
+
+        private void Label_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            mainWindow.deleteMe(BGEntity.tag);
+            (this.Parent as Grid)?.Children.Remove(this);            
+        }
+
+        internal void updateView(BGEntity item)
+        {
+            this.BGEntity = item;
             this.BGEntity.LoadDerivedStats();
             this.BGEntity.loadTimedEffects();
-            this.DataContext = bgEntity;
+            this.DataContext = this.BGEntity;
+
+            foreach(var buff in buffs)
+            {
+                if (buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0)
+                {
+                    this.BuffStack.Children.Remove(buff.Value);
+                    buffs.Remove(buff.Key);
+                }                
+            }
 
             if (this.BGEntity.SpellProtection.Count > 0)
             {
                 this.BGEntity.SpellProtection.ForEach(x =>
                 {
-                    this.BuffStack.Children.Add(new Image() { Margin = new Thickness(0, 0, 3, 0), ToolTip = x.Item1, Source = new BitmapImage(new Uri($"icons/{x.Item2}00001.png", UriKind.Relative)), MaxHeight = 24 });
+                    int rounds = ((int)x.Item3 - (int)this.BGEntity.GameTime) / 15 / 6;
+                    var timeString = rounds > 10 ? $"{(float)rounds / 10}" : $"{rounds}";
+
+                    float durationFloat = rounds > 10 ? (float)rounds / 10 : rounds;
+
+                    bool isPresent = buffs.ContainsKey(x.Item1);
+                    if (isPresent)
+                    {
+                        buffs[x.Item1].BuffDuration = durationFloat;
+                        return;
+                    }
+
+                    var uri = new Uri($"icons/{x.Item2}00001.png", UriKind.Relative);
+                    if (!this.BGEntity.spellProtectionIcons.Contains(x.Item2))
+                        uri = new Uri($"icons/not_found.png", UriKind.Relative);
+
+                    var buffControl = new BuffControl() 
+                    { 
+                        BuffName = x.Item1, 
+                        BuffDuration = durationFloat, 
+                        Icon = uri, 
+                        BuffDurationAbsolute = x.Item3 
+                    };
+                    BuffStack.Children.Add(buffControl);
+                    this.buffs.Add(x.Item1, buffControl);
                 });
                 this.BuffStack.Visibility = Visibility.Visible;
             }
@@ -34,13 +90,6 @@ namespace WPFFrontend
             {
                 this.protectionsListView.Visibility = Visibility.Visible;
             }
-        }
-
-        public BGEntity BGEntity { get; }
-
-        private void Label_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            (this.Parent as Grid)?.Children.Remove(this);
         }
     }
 }

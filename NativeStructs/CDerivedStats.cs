@@ -9,9 +9,12 @@ namespace BGOverlay
 {
     public class CDerivedStats
     {
+        public uint GeneralState { get; private set; }
         public short MaxHP { get; private set; }
         public short ArmorClass { get; private set; }
         public short THAC0 { get; private set; }
+        public short HitBonus { get; private set; }
+        public int THAC0BonusRight { get; private set; }
         public short NumberOfAttacks { get; private set; }
         public short SaveVsDeath { get; private set; }
         public short SaveVsWands { get; private set; }
@@ -50,10 +53,12 @@ namespace BGOverlay
 
         public CDerivedStats(IntPtr addr)
         {
-            this.MaxHP = WinAPIBindings.ReadInt16(addr + 4);
-
+            this.GeneralState = WinAPIBindings.ReadUInt32(addr);
+            this.MaxHP = WinAPIBindings.ReadInt16(addr + 4);            
             this.ArmorClass = WinAPIBindings.ReadInt16(addr + 0x06);
             this.THAC0 = WinAPIBindings.ReadInt16(addr + 0x10);
+            this.HitBonus = WinAPIBindings.ReadInt16(addr + 0x1F4);
+            this.THAC0BonusRight = WinAPIBindings.ReadInt32(addr + 0xE4);
             this.NumberOfAttacks = WinAPIBindings.ReadInt16(addr + 0x12);
             this.SaveVsDeath = WinAPIBindings.ReadInt16(addr + 0x14);
             this.SaveVsWands = WinAPIBindings.ReadInt16(addr + 0x16);

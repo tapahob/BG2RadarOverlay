@@ -24,8 +24,6 @@ namespace BGOverlay
 
         public void MainLoop()
         {
-            Stopwatch sw = new Stopwatch();
-
             var entityListTemp = new ConcurrentBag<BGEntity>();
             var All = new List<BGEntity>();
 
@@ -33,16 +31,9 @@ namespace BGOverlay
             var test = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { }) - 4;
             var length = WinAPIBindings.ReadInt32(test - 8);
 
-            var start = moduleBase + 0x00540FE4 - 5000;
-            sw.Start();
             for (int i = 0; i < length*8; i+=8)
             {
                 var index = WinAPIBindings.ReadInt32(test + i);
-                //if (index == 0x0000FFFF)
-                //{
-                //    var t = i / 8;
-                //    break;
-                //}
 
                 var entityAddr = WinAPIBindings.FindDMAAddy(test + i + 0x4).ToString();
                 if (entityAddr.Length < 6)
@@ -54,8 +45,6 @@ namespace BGOverlay
 
                 var entityPtr = WinAPIBindings.FindDMAAddy(test + i + 0x4);
 
-                //if (ReadInt32(start + 0x8 * i) == 65535) 
-                //    continue;
                 var newEntity = new BGEntity(ResourceManager, entityPtr);
                 if (!newEntity.Loaded) 
                     continue;
@@ -64,7 +53,6 @@ namespace BGOverlay
                 if (newEntity?.Reader?.EnemyAlly == 2 && newEntity.CreResourceFilename.EndsWith("HARBASE.CRE"))
                 {
                     main = newEntity;
-                    continue;
                 }
 
                 if (newEntity.CurrentHP == 0
@@ -82,17 +70,14 @@ namespace BGOverlay
 
                 if (newEntity?.AreaName == main?.AreaName && newEntity.Type == 49)
                 {
-                    newEntity.tag = index.ToString();
+                    newEntity.tag = index;
                     entityListTemp.Add(newEntity);                    
                 }
             }
             entityList = new ConcurrentBag<BGEntity>(entityListTemp);
-            var ms2 = sw.Elapsed.TotalMilliseconds;
             var nearestThings = All.Where(y => len(main, y) < Configuration.RadarRadius);
             this.NearestEnemies = entityListTemp.Where(y => len(main, y) < Configuration.RadarRadius);
-            TextEntries = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());
-            sw.Stop();
-            var ms = sw.Elapsed.TotalMilliseconds;
+            TextEntries = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());            
             Thread.Sleep(500);
         }
 
@@ -131,7 +116,7 @@ namespace BGOverlay
             
             uint currentStyle = (uint) WinAPIBindings.GetWindowLongPtr(handle, -16).ToInt64();
             WinAPIBindings.SetWindowLong32(handle, -16, currentStyle & ~0x00800000 | 0x00400000);
-            WinAPIBindings.ShowWindow(handle.ToInt32(), 3);
+            WinAPIBindings.ShowWindow(handle.ToInt32(), 1 | 5);
         }
     }
 }

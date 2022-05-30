@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors" xmlns:wpffrontend="clr-namespace:WPFFrontend"
     x:Class="WPFFrontend.EnemyControl"
              mc:Ignorable="d" 
              Height="Auto" Width="450"
@@ -58,8 +58,8 @@
                 <Label x:Name="ClassesAndLevels" Content="{Binding Class}" d:Content="Warrior Thief Mage" HorizontalAlignment="Center" ClipToBounds="True">
 
                 </Label>
-                <Label x:Name="Race" d:Content="Humanoid" Content="{Binding Reader.Race}" ContentStringFormat="Race: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <WrapPanel x:Name="BuffStack" Orientation="Horizontal" />
+                <Label x:Name="Race" d:Content="78m" Content="{Binding Reader.Race}" ContentStringFormat="Race: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <WrapPanel x:Name="BuffStack" Orientation="Horizontal"/>
 
             </StackPanel>
         </Border>
@@ -78,10 +78,10 @@
         <Border Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="2" BorderBrush="Black" BorderThickness="1" Margin="1"/>
         <StackPanel Grid.Row="3" Grid.Column="1" Margin="5,5,5,5">
             <Label x:Name="Health" Content="{Binding DerivedStatsTemp.MaxHP}" ContentStringFormat="Health: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="APR" Content="{Binding DerivedStatsTemp.NumberOfAttacks}" ContentStringFormat="Attacks: {0}" d:Content="3" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="APR" Content="{Binding Attacks}" ContentStringFormat="Attacks: {0}" d:Content="3" HorizontalAlignment="Left" ClipToBounds="True"/>
             <Label x:Name="AC" Content="{Binding DerivedStatsTemp.ArmorClass}" ContentStringFormat="Armor Class: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="THAC0" Content="{Binding DerivedStatsTemp.THAC0}" ContentStringFormat="THAC0: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="XP" Content="{Binding Reader.XPGained}" ContentStringFormat="Experience: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="THAC0" Content="{Binding THAC0}" ContentStringFormat="THAC0: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <Label x:Name="XP" Content="{Binding Reader.XPGained}" ContentStringFormat="Experience: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True" Panel.ZIndex="1"/>
             <Label x:Name="Alignment" Content="{Binding Reader.ShortAlignment}" ContentStringFormat="Alignment: {0}"  d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
             <Label x:Name="SaveDeath" Content="{Binding DerivedStatsTemp.SaveVsDeath}" ContentStringFormat="Save vs Death: {0}"  d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
             <Label x:Name="SaveWands" Content="{Binding DerivedStatsTemp.SaveVsWands}" ContentStringFormat="Save vs Wands: {0}" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
@@ -95,7 +95,7 @@
             <Label x:Name="ResElectro" Content="{Binding DerivedStatsTemp.ResistElectricity}" ContentStringFormat="Resist Electricity: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResAcid" Content="{Binding DerivedStatsTemp.ResistAcid}" ContentStringFormat="Resist Acid: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResMagic" Content="{Binding DerivedStatsTemp.ResistMagic}" ContentStringFormat="Resist Magic: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResMagicDamage" Content="{Binding DerivedStatsTemp.ResistMagicDamage}" ContentStringFormat="Resist Magic Damage: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+            <Label x:Name="ResMagicDamage" Content="{Binding DerivedStatsTemp.ResistMagicDamage}" ContentStringFormat="Resist Magic Dmg: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResPoison" Content="{Binding DerivedStatsTemp.ResistPoison}" ContentStringFormat="Resist Poison: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResSlashing" Content="{Binding DerivedStatsTemp.ResistSlashing}" ContentStringFormat="Resist Slashing: {0}"  d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResCrushing" Content="{Binding DerivedStatsTemp.ResistCrushing}" ContentStringFormat="Resist Crushing: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>

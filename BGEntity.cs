@@ -13,9 +13,9 @@ namespace BGOverlay
         private IntPtr entityIdPtr;
         private ResourceManager resourceManager;
 
-        public string tag { get; set; }
+        public int tag { get; set; }
         public List<CGameEffect> TimedEffects { get; private set; }
-        public List<Tuple<string, string>> SpellProtection { get; private set; }
+        public List<Tuple<string, string, uint>> SpellProtection { get; private set; }
         public bool Loaded { get; }
         public int Id { get; private set; }
         public int X { get; private set; }
@@ -37,6 +37,7 @@ namespace BGOverlay
         public byte CurrentHP { get; private set; }
         public CDerivedStats DerivedStats { get; private set; }
         public CDerivedStats DerivedStatsTemp { get; private set; }
+        public int THAC0 { get; private set; }
 
         private IntPtr timedEffectsPointer;
 
@@ -150,25 +151,25 @@ namespace BGOverlay
                     }
                     result.Add(preprocess(item.EffectName.ToString()));
                 }
-                if (opCodeStrings.Any())
-                {
-                    result.Add(preprocess("Protection from " + string.Join(", ", opCodeStrings)));
-                }
+                //if (opCodeStrings.Any())
+                //{
+                //    result.Add(preprocess("Protection from " + string.Join(", ", opCodeStrings)));
+                //}
                 if (spellStrings.Any())
                 {
-                    result.Add(preprocess("Spell protections: " + string.Join(", ", spellStrings)));
+                    result.Add(preprocess("Immune to spells: " + string.Join(", ", spellStrings)));
                 }
                 if (!proficiencyStr.EndsWith(": "))
                     result.Add(proficiencyStr);
-                var morePorts = DerivedStatsTemp.EffectImmunes.Select(y=>y.EffectId.ToString()).Where(x => 
+                var inMemoryProtections = DerivedStatsTemp.EffectImmunes.Select(y=>y.EffectId.ToString()).Where(x => 
                 !x.StartsWith("Text")
                 && !x.StartsWith("Graphics")).Select(z => preprocess(z)).Distinct().ToList();
                 if (this.DerivedStatsTemp.BackstabImmunity > 0)
-                    result.Add("Backstab Immunity " + this.DerivedStatsTemp.BackstabImmunity);
+                    result.Add("Backstab Immunity");
                 if (this.DerivedStatsTemp.SeeInvisible > 0)
-                    result.Add("See Invisible " + this.DerivedStatsTemp.SeeInvisible);
-                if (morePorts.Any())
-                    result.Add("Effect immunities: " + string.Join(", ", morePorts));
+                    result.Add("See Invisible");
+                if (inMemoryProtections.Any())
+                    result.Add("Effect immunities: " + string.Join(", ", inMemoryProtections));
                 var moreSpellImmunities = DerivedStatsTemp.SpellImmunities;
                 
                 
@@ -177,6 +178,11 @@ namespace BGOverlay
         }
 
         public byte EnemyAlly { get; private set; }
+
+        private IntPtr cInfGamePtr;
+
+        public uint GameTime { get; private set; }
+        public string Attacks { get; private set; }
 
         private static List<string> filter = new List<string>()
         {
@@ -197,10 +203,6 @@ namespace BGOverlay
             return str.Replace("_"," ");
         }
 
-        public BGEntity()
-        {
-
-        }
         public BGEntity(ResourceManager resourceManager, IntPtr entityIdPtr)
         {
             this.entityIdPtr = entityIdPtr;
@@ -217,8 +219,9 @@ namespace BGOverlay
             if (X < 0 || Y < 0)
                 return;
             this.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x24 }));
-
             IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x14 });
+            this.cInfGamePtr = WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x204 });
+            this.updateTime();
             this.RealId = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x34 }));
             this.AreaName = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
             this.AreaRef = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x1E4 }), 8);
@@ -240,22 +243,16 @@ namespace BGOverlay
                 this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
                 if (Reader == null || Reader.Class == CREReader.CLASS.ERROR)
                 {
-                    this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
+                    if (resourceManager.CREReaderCache.ContainsKey(CreResourceFilename.ToUpper())) 
+                        this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
                 }
             }
-            //this.loadTimedEffects();
-            //if (this.TimedEffects.Count > 0)
-            //{
-            //    var a = this.TimedEffects.Where(x=> !x.ToString().StartsWith("Graphics") 
-            //        && !x.ToString().StartsWith("Script")
-            //        && !x.ToString().EndsWith("Sound_Effect")
-            //        && x.SourceRes != "<ERROR>");
-            //    var b = a.Select(x => x.getSpellName(resourceManager));
-            //    var bamKey = b.First().Item2;
-            //    resourceManager.BIFResourceEntries.Select(x => x.FullName.StartsWith(bamKey));
-            //    var c = 10;
-            //}
             this.Loaded = true;
+        }
+
+        private void updateTime()
+        {
+            this.GameTime = WinAPIBindings.ReadUInt32(WinAPIBindings.FindDMAAddy(cInfGamePtr, new int[] { 0x2500 }));
         }
 
         public void LoadDerivedStats()
@@ -263,10 +260,48 @@ namespace BGOverlay
             this.DerivedStats = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xB30 }));
             this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1D78 }));
             this.DerivedStatsTemp = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1454 }));
+            this.THAC0 = DerivedStats.THAC0 - DerivedStatsTemp.HitBonus - DerivedStats.THAC0BonusRight;
+            this.calcAPR();
+        }
+
+        private void calcAPR()
+        {
+            string formatStr;
+            var apr = this.DerivedStatsTemp.NumberOfAttacks;
+            int aprDisplayNum = apr;
+            
+            if ((DerivedStatsTemp.GeneralState * 0x8000) == 0)
+            {
+                // normal apr
+                if (apr < 6)
+                {
+                    formatStr = "%d";
+                }
+                else
+                {
+                    formatStr = "%d/2";
+                    aprDisplayNum = aprDisplayNum * 2 - 11;
+                }
+            }
+            else
+            {
+                //hasted
+                formatStr = "%d";
+                if (apr < 6)
+                {
+                    aprDisplayNum = aprDisplayNum * 2;
+                }
+                else
+                {
+                    aprDisplayNum = aprDisplayNum * 2 - 11;
+                }
+            }
+            this.Attacks = string.Format(formatStr, aprDisplayNum);
         }
 
         public void loadTimedEffects()
         {
+            this.updateTime();
             var intPtr = this.timedEffectsPointer;
             this.TimedEffects = new List<CGameEffect>();
             var list = new CPtrList(intPtr);
@@ -282,17 +317,15 @@ namespace BGOverlay
             this.TimedEffects = this.TimedEffects.Where(x => !x.ToString().StartsWith("Graphics")
                 && !x.ToString().StartsWith("Script")
                 && !x.ToString().EndsWith("Sound_Effect")
-                && !x.ToString().StartsWith("Extra")
                 && x.SourceRes != "<ERROR>").ToList();
-            var a = TimedEffects.Select(x => x.getSpellName(resourceManager));
-            var dif = a.Where(x => !spellProtectionIcons.Contains(x.Item2)).Distinct().ToList();
-            this.SpellProtection = a.Where(x => spellProtectionIcons.Contains(x.Item2)).Distinct().ToList();
-            var b = 10;
+            this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager)).Distinct()
+                .Where(x => !x.Item1.StartsWith("Extra")).ToList();            
+            var dif = this.SpellProtection.Where(x => !spellProtectionIcons.Contains(x.Item2)).Distinct().ToList();
+            var breakpoint = 0;
         }
 
-        private IList<string> spellProtectionIcons = new List<string>()
+        public IList<string> spellProtectionIcons = new List<string>()
         {
-            "SPWI102C",
             "SPWI108C",
             "SPWI114C",
             "SPWI201C",

@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <None Remove="arrows.png" />
+    <None Remove="icons\not_found.png" />
     <None Remove="icons\SPWI108C00001.PNG" />
     <None Remove="icons\SPWI114C00001.PNG" />
     <None Remove="icons\SPWI201C00001.PNG" />
@@ -70,6 +71,7 @@
 
   <ItemGroup>
     <Resource Include="arrows.png" />
+    <Resource Include="icons\not_found.png" />
     <Resource Include="icons\SPWI108C00001.PNG" />
     <Resource Include="icons\SPWI114C00001.PNG" />
     <Resource Include="icons\SPWI201C00001.PNG" />

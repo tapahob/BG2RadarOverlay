@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -23,8 +25,14 @@ namespace WPFFrontend
         private object _stocksLock = new object();
         private object _stocksLock2 = new object();
         private ProcessHacker ph;
-        
-        
+        private static ConcurrentDictionary<int, EnemyControl> currentControls = new ConcurrentDictionary<int, EnemyControl>();
+
+        internal void deleteMe(int tag)
+        {
+            EnemyControl trash;
+            currentControls.Remove(tag, out trash);
+        }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -44,7 +52,6 @@ namespace WPFFrontend
                 Thread.Sleep(3000);
             }
             var proc = Process.GetProcessesByName("Baldur")[0];
-
             
             Task.Factory.StartNew(() =>
             {
@@ -54,16 +61,33 @@ namespace WPFFrontend
                 while (true)
                 {
                     ph.MainLoop();
-                if (ph.NearestEnemies.Count() == EnemyTextEntries.Count && ph.NearestEnemies.All(x => EnemyTextEntries.Any(y => y.ToString() == x.ToString())))
+                    if (ph.NearestEnemies.Count() == EnemyTextEntries.Count && ph.NearestEnemies.All(x => EnemyTextEntries.Any(y => y.ToString() == x.ToString())))
+                    {
+                        foreach (var item in ph.NearestEnemies)
+                        {
+                            updateControls(item);
+                        }
                         continue;
+                    }
+                        
                     EnemyTextEntries.Clear();
-                foreach (var item in ph.NearestEnemies)
+                    foreach (var item in ph.NearestEnemies)
                     {
                         EnemyTextEntries.Add(item);
-                    }
-                    
+                        //updateControls();
+                    }                    
                 }
             });
+        }
+
+        private void updateControls(BGEntity item)
+        {
+            this.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (currentControls.ContainsKey(item.tag))
+                    currentControls[item.tag].updateView(item);
+            }));
+            
         }
 
         private void MinMaxBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
@@ -106,8 +130,10 @@ namespace WPFFrontend
             if (entry == null)
             {
                 return;
-            } 
-            MainGrid.Children.Add(new EnemyControl(entry));
+            }
+            var newControl = new EnemyControl(entry, this);
+            MainWindow.currentControls[entry.tag] = newControl;
+            MainGrid.Children.Add(newControl);
         }
 
         private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -116,7 +142,9 @@ namespace WPFFrontend
             if (list.SelectedIndex == -1) return;
             var content = (BGEntity)ListView.SelectedItem;
             if (content == null) return;
-            MainGrid.Children.Add(new EnemyControl(content));
+            var newControl = new EnemyControl(content, this);
+            MainWindow.currentControls[content.tag] = newControl;
+            MainGrid.Children.Add(newControl);
             list.SelectedIndex = -1;
         }
         bool toShow = true;

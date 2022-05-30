@@ -33,7 +33,7 @@ namespace BGOverlay.NativeStructs
             this.EffectAmount = WinAPIBindings.ReadInt32(addr + 0x14);            
         }
 
-        public Tuple<string,string> getSpellName(ResourceManager resourceManager)
+        public Tuple<string, string, uint> getSpellName(ResourceManager resourceManager)
         {
             if (this.SourceRes != "<ERROR>")
             {
@@ -46,7 +46,7 @@ namespace BGOverlay.NativeStructs
                     spellName = spellName == "-1" ? this.SourceRes : spellName;
                 }
                 var icon = splReader.IconBAM;
-                return new Tuple<string, string>(spellName, splReader.IconBAM);
+                return new Tuple<string, string, uint>(spellName, splReader.IconBAM, Duration);
             }
             return null;
         }
