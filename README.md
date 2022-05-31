@@ -1,17 +1,14 @@
 # BG2RadarOverlay
 An overlay program for Baldurs Gate 2 EE (patch 2.5) showing nearest enemies, their resistances, etc.
 
-In the last update I added opening the stats sheet with a right click on a monster, added more immunity recognisions
-
 ## Demo
 https://www.youtube.com/watch?v=bOvNzC9CPFg
 The Kobold bug is also dealt with, not sure about the spell level immunities though
 
 ## Screenshots
-![](https://raw.githubusercontent.com/tapahob/BG2RadarOverlay/master/Screenshots/scr1.jpg)
+![Screenshot 2022-05-31 144215](https://user-images.githubusercontent.com/1484801/171168801-a4b08299-96d7-45aa-987c-aa603a6e83bd.jpg)
 
 ## Requirements
-.Net Core 3.1
 BG2EE (2.5)
 
 ## Installation
