@@ -16,6 +16,7 @@ namespace BGOverlay.NativeStructs
         public uint Duration { get; private set; }
         public uint DurationType { get; private set; }
         public int EffectAmount { get; private set; }
+        public uint dWFlags { get; private set; }
 
         public CGameEffect(IntPtr addr)
         {
@@ -31,6 +32,7 @@ namespace BGOverlay.NativeStructs
             this.Duration = WinAPIBindings.ReadUInt32(addr + 0x20);
             this.DurationType = WinAPIBindings.ReadUInt32(addr + 0x1C);
             this.EffectAmount = WinAPIBindings.ReadInt32(addr + 0x14);            
+            this.dWFlags = WinAPIBindings.ReadUInt32(addr + 0x18);
         }
 
         public Tuple<string, string, uint> getSpellName(ResourceManager resourceManager)

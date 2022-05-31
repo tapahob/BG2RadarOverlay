@@ -40,6 +40,7 @@ namespace BGOverlay
         public int THAC0 { get; private set; }
 
         private IntPtr timedEffectsPointer;
+        private IntPtr equipedEffectsPointer;
 
         public CDerivedStats DerivedStatsBonus { get; private set; }
 
@@ -183,6 +184,8 @@ namespace BGOverlay
 
         public uint GameTime { get; private set; }
         public string Attacks { get; private set; }
+        public List<CGameEffect> EquipedEffects { get; private set; }
+        public List<Tuple<string, string, uint>> SpellEquipEffects { get; private set; }
 
         private static List<string> filter = new List<string>()
         {
@@ -235,6 +238,7 @@ namespace BGOverlay
             if (this.CreResourceFilename == ".CRE") return;
             this.CurrentHP = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x438 }));
             this.timedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x33A8 });
+            this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x337C });
 
 
             //this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1D78 }));
@@ -266,27 +270,30 @@ namespace BGOverlay
 
         private void calcAPR()
         {
+            this.loadEquipedEffects();
+
             string formatStr;
-            var apr = this.DerivedStatsTemp.NumberOfAttacks;
+            var apr = this.DerivedStats.NumberOfAttacks;
             int aprDisplayNum = apr;
             
-            if ((DerivedStatsTemp.GeneralState * 0x8000) == 0)
+            if ((DerivedStatsTemp.GeneralState * 0x8000) == 0 
+                || (this.EquipedEffects.Any(x => x.EffectId == Effect.Stat_Attacks_Per_Round_Modifier && x.dWFlags == 3)))
             {
                 // normal apr
                 if (apr < 6)
                 {
-                    formatStr = "%d";
+                    formatStr = "{0}";
                 }
                 else
                 {
-                    formatStr = "%d/2";
+                    formatStr = "{0}/2";
                     aprDisplayNum = aprDisplayNum * 2 - 11;
                 }
             }
             else
             {
                 //hasted
-                formatStr = "%d";
+                formatStr = "{0}";
                 if (apr < 6)
                 {
                     aprDisplayNum = aprDisplayNum * 2;
@@ -297,6 +304,27 @@ namespace BGOverlay
                 }
             }
             this.Attacks = string.Format(formatStr, aprDisplayNum);
+        }
+
+        private void loadEquipedEffects()
+        {
+            var intPtr = this.equipedEffectsPointer;
+            this.EquipedEffects = new List<CGameEffect>();
+            var list = new CPtrList(intPtr);
+            var count = list.Count;
+            if (count > 300)
+                return;
+            var node = list.Head;
+            for (int i = 0; i < count; ++i)
+            {
+                this.EquipedEffects.Add(new CGameEffect(node.Data));
+                node = node.getNext();
+            }
+            this.SpellEquipEffects = this.EquipedEffects.Where(x => !x.ToString().StartsWith("Graphics")
+                && !x.ToString().StartsWith("Script")
+                && !x.ToString().EndsWith("Sound_Effect")
+                && x.SourceRes != "<ERROR>").Select(x => x.getSpellName(resourceManager)).Distinct()
+                .Where(x => x.Item1 != null).ToList();            
         }
 
         public void loadTimedEffects()
@@ -319,7 +347,7 @@ namespace BGOverlay
                 && !x.ToString().EndsWith("Sound_Effect")
                 && x.SourceRes != "<ERROR>").ToList();
             this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager)).Distinct()
-                .Where(x => !x.Item1.StartsWith("Extra")).ToList();            
+                .Where(x => x.Item1 != null && !x.Item1.StartsWith("Extra")).ToList();            
             var dif = this.SpellProtection.Where(x => !spellProtectionIcons.Contains(x.Item2)).Distinct().ToList();
             var breakpoint = 0;
         }

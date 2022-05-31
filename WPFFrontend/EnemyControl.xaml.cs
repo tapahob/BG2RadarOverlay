@@ -40,7 +40,7 @@ namespace WPFFrontend
         internal void updateView(BGEntity item)
         {
             this.BGEntity = item;
-            this.BGEntity.LoadDerivedStats();
+            this.BGEntity.LoadDerivedStats();            
             this.BGEntity.loadTimedEffects();
             this.DataContext = this.BGEntity;
 
