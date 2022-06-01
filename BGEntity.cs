@@ -44,20 +44,20 @@ namespace BGOverlay
 
         public CDerivedStats DerivedStatsBonus { get; private set; }
 
-        public String Class { 
+        public String Class {
             get
             {
-                return (this.Reader.KitInformation != CREReader.KIT.NONE 
+                return (this.Reader.KitInformation != CREReader.KIT.NONE
                     && this.Reader.KitInformation != CREReader.KIT.TRUECLASS)
                     ? this.Reader.KitInformation.ToString().Replace('_', ' ')
                     : this.Reader.Class.ToString().Replace('_', ' ');
             }
         }
 
-        public List<string> Protections 
+        public List<string> Protections
         {
             get
-            {                
+            {
                 var allEffects = this.Reader.Effects.Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String);
                 var result = new List<String>();
                 var opCodeStrings = new List<String>();
@@ -66,9 +66,9 @@ namespace BGOverlay
                 {
                     result.Add($"Requires +{DerivedStatsTemp.WeaponImmune.Count} weapons to be hit");
                 }
-                for (int i = 9; i>0; --i)
+                for (int i = 9; i > 0; --i)
                 {
-                    if(DerivedStatsTemp.spellImmuneLevel[i] > 0)
+                    if (DerivedStatsTemp.spellImmuneLevel[i] > 0)
                     {
                         result.Add($"Immune to spells up to level {i}");
                         break;
@@ -92,7 +92,7 @@ namespace BGOverlay
                         var spellName = resourceManager.GetSPLReader($"{item.Resource.Trim('\0')}.SPL".ToUpper()).Name1;
                         if (spellName == "-1")
                         {
-                            spellName = resourceManager.GetSPLReader($"{item.Resource.Substring(0, item.Resource.Length-1).Trim('\0')}.SPL".ToUpper()).Name1;
+                            spellName = resourceManager.GetSPLReader($"{item.Resource.Substring(0, item.Resource.Length - 1).Trim('\0')}.SPL".ToUpper()).Name1;
                             spellName = spellName == "-1" ? item.Resource : spellName;
                         }
                         spellStrings.Add(preprocess(spellName));
@@ -102,7 +102,7 @@ namespace BGOverlay
                     {
                         var amount = item.Param1;
                         var type = (Proficiency)item.Param2;
-                        proficiencyStr += $"{type.ToString().Replace("_"," ")} +{amount} ";
+                        proficiencyStr += $"{type.ToString().Replace("_", " ")} +{amount} ";
                         continue;
                     }
                     if (item.EffectName == Effect.Stat_AC_vs_Damage_Type_Modifier)
@@ -110,7 +110,7 @@ namespace BGOverlay
                         var amount = item.Param1;
                         var type = item.Param2;
 
-                        switch(type)
+                        switch (type)
                         {
                             case 0:
                                 result.Add($"AC Bonus +{amount}");
@@ -130,7 +130,7 @@ namespace BGOverlay
                             case 16:
                                 result.Add($"Set AC to {amount}");
                                 break;
-                        }                        
+                        }
                         continue;
                     }
                     if (item.EffectName == Effect.Stat_THAC0_Modifier)
@@ -162,7 +162,7 @@ namespace BGOverlay
                 }
                 if (!proficiencyStr.EndsWith(": "))
                     result.Add(proficiencyStr);
-                var inMemoryProtections = DerivedStatsTemp.EffectImmunes.Select(y=>y.EffectId.ToString()).Where(x => 
+                var inMemoryProtections = DerivedStatsTemp.EffectImmunes.Select(y => y.EffectId.ToString()).Where(x =>
                 !x.StartsWith("Text")
                 && !x.StartsWith("Graphics")).Select(z => preprocess(z)).Distinct().ToList();
                 if (this.DerivedStatsTemp.BackstabImmunity > 0)
@@ -172,8 +172,8 @@ namespace BGOverlay
                 if (inMemoryProtections.Any())
                     result.Add("Effect immunities: " + string.Join(", ", inMemoryProtections));
                 var moreSpellImmunities = DerivedStatsTemp.SpellImmunities;
-                
-                
+
+
                 return result;
             }
         }
@@ -186,6 +186,8 @@ namespace BGOverlay
         public string Attacks { get; private set; }
         public List<CGameEffect> EquipedEffects { get; private set; }
         public List<Tuple<string, string, uint>> SpellEquipEffects { get; private set; }
+
+        public string HPString { get { return $"{this.CurrentHP}/{this.DerivedStatsTemp.MaxHP}"; } }
 
         private static List<string> filter = new List<string>()
         {
@@ -240,15 +242,14 @@ namespace BGOverlay
             this.timedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x33A8 });
             this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x337C });
 
-
-            //this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1D78 }));
             if (Type == 49)
             {
                 this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
                 if (Reader == null || Reader.Class == CREReader.CLASS.ERROR)
                 {
-                    if (resourceManager.CREReaderCache.ContainsKey(CreResourceFilename.ToUpper())) 
+                    if (resourceManager.CREReaderCache.ContainsKey(CreResourceFilename.ToUpper()))
                         this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
+                    else return;
                 }
             }
             this.Loaded = true;

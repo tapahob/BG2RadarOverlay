@@ -1,6 +1,7 @@
 ﻿using BGOverlay;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -46,7 +47,8 @@ namespace WPFFrontend
 
             foreach(var buff in buffs)
             {
-                if (buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0)
+                if (buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0
+                        || !this.BGEntity.SpellProtection.Any(x => x.Item1 == buff.Key))
                 {
                     this.BuffStack.Children.Remove(buff.Value);
                     buffs.Remove(buff.Key);

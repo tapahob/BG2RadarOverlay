@@ -53,6 +53,7 @@ namespace BGOverlay
                 if (newEntity?.Reader?.EnemyAlly == 2 && newEntity.CreResourceFilename.EndsWith("HARBASE.CRE"))
                 {
                     main = newEntity;
+                    continue;
                 }
 
                 if (newEntity.CurrentHP == 0
@@ -108,7 +109,6 @@ namespace BGOverlay
             return Math.Sqrt(x + y);
         }
         
-
         private void makeBorderless(IntPtr handle)
         {
             if (!Configuration.Borderless) 
