@@ -11,7 +11,8 @@ namespace BGOverlay
         public SPLReader(ResourceManager resourceManager, string splFilename)
         {
             splFilename = splFilename.ToUpper();
-            var overrideSPLs = Directory.GetFiles($"{Configuration.GameFolder}\\override", "*.SPL").Select(x => x.ToUpper()).ToList();
+            var overrideDir = $"{Configuration.GameFolder}\\override";
+            var overrideSPLs = Directory.Exists(overrideDir) ? Directory.GetFiles(overrideDir, "*.SPL").Select(x => x.ToUpper()).ToList() : new List<string>();
             var filename = $"{Configuration.GameFolder}\\override\\{splFilename}".ToUpper();
             var originalOffset = 0;
             if (!overrideSPLs.Contains(filename))

@@ -20,7 +20,7 @@ namespace BGOverlay.NativeStructs
 
         public CGameEffect(IntPtr addr)
         {
-            addr = WinAPIBindings.FindDMAAddy(addr, new int[] { 0x04 });
+            addr = WinAPIBindings.FindDMAAddy(addr, new int[] { 0x8 });
             //addr += 4;
             this.Version = WinAPIBindings.ReadString(addr, 8);
             this.EffectId = (Effect) WinAPIBindings.ReadUInt32(addr + 0x08);

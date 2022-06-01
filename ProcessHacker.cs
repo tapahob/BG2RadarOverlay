@@ -27,23 +27,26 @@ namespace BGOverlay
             var entityListTemp = new ConcurrentBag<BGEntity>();
             var All = new List<BGEntity>();
 
-            var staticEntityList = moduleBase + 0x005408EC;
-            var test = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { }) - 4;
-            var length = WinAPIBindings.ReadInt32(test - 8);
+            var staticEntityList = moduleBase + 0x68D438 + 0x18;
+            var test = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { });
+            var length = WinAPIBindings.ReadInt32(moduleBase + 0x68D434);
 
-            for (int i = 0; i < length*8; i+=8)
+            // First i = 32016
+            for (int i = 32016; i < length*16; i+=16)
             {
                 var index = WinAPIBindings.ReadInt32(test + i);
-
-                var entityAddr = WinAPIBindings.FindDMAAddy(test + i + 0x4).ToString();
-                if (entityAddr.Length < 6)
-                {
-                    length++;
-                    i -= 4;
+                if (index == 65535)
                     continue;
-                }
 
-                var entityPtr = WinAPIBindings.FindDMAAddy(test + i + 0x4);
+                //var entityAddr = WinAPIBindings.FindDMAAddy(test + i + 0x8).ToString();
+                //if (entityAddr.Length < 6)
+                //{
+                //    length++;
+                //    i -= 4;
+                //    continue;
+                //}
+
+                var entityPtr = WinAPIBindings.FindDMAAddy(test + i + 0x8);
 
                 var newEntity = new BGEntity(ResourceManager, entityPtr);
                 if (!newEntity.Loaded) 
@@ -69,7 +72,9 @@ namespace BGOverlay
                 //    || newEntity.Reader.EnemyAlly != 28)
                 //    continue;
 
-                if (newEntity?.AreaName == main?.AreaName && newEntity.Type == 49)
+                if (newEntity?.AreaName == main?.AreaName
+                    //&& newEntity.Type == 49
+                    )
                 {
                     newEntity.tag = index;
                     entityListTemp.Add(newEntity);                    
