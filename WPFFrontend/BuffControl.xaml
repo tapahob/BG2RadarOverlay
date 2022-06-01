@@ -5,12 +5,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WPFFrontend"
              mc:Ignorable="d" 
-             Width="24" Height="24" x:Name="buffMain" MaxHeight="24" MaxWidth="24" MinHeight="24"
-             d:DesignHeight="24" d:DesignWidth="24" Padding="0">
+             Width="40" Height="40" x:Name="buffMain" MaxHeight="40" MaxWidth="40" MinWidth="40" MinHeight="40"
+             d:DesignHeight="40" d:DesignWidth="40" Padding="0">
     <Grid>
-        <Image x:Name="Image" d:Source="/icons/not_found.png"/>
-        <Label FontSize="12" x:Name="Label1" Panel.ZIndex="7" FontFamily="Bahnschrift Condensed" d:Content="99" Padding="0" Foreground="Black" IsHitTestVisible="False" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Margin="1,14,0,0">
-        </Label>
-        <Label FontSize="12" x:Name="Label2" Panel.ZIndex="10" FontFamily="Bahnschrift Condensed" d:Content="99" Padding="0" Foreground="White" IsHitTestVisible="False" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Margin="0,13,0,0"/>
+        <Image x:Name="Image" d:Source="/icons/SPWI114C00001.png" Width="40" Height="40"/>
+        <Label FontSize="16" x:Name="Label1" Panel.ZIndex="7" FontFamily="Bahnschrift Condensed" d:Content="99" Padding="0" Foreground="Black" IsHitTestVisible="False" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Margin="1,25,0,0"/>
+        <Label FontSize="16" x:Name="Label2" Panel.ZIndex="10" FontFamily="Bahnschrift Condensed" d:Content="99" Padding="0" Foreground="White" IsHitTestVisible="False" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Margin="0,25,0,0"/>
     </Grid>
 </UserControl>
