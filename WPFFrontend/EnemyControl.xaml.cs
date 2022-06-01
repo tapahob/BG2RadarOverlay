@@ -17,9 +17,10 @@ namespace WPFFrontend
 
         private Dictionary<String, BuffControl> buffs = new Dictionary<string, BuffControl>();
 
-        public EnemyControl(BGEntity bgEntity, MainWindow mainWindow)
+        public EnemyControl(BGEntity bgEntity, MainWindow mainWindow, int left)
         {
             InitializeComponent();
+            this.UserControl.Margin = new Thickness(left, 0, 0, 0);
             this.mainWindow = mainWindow;
             this.updateView(bgEntity);
             this.MouseRightButtonUp += EnemyControl_MouseRightButtonDown;
@@ -32,7 +33,7 @@ namespace WPFFrontend
 
         public BGEntity BGEntity { get; private set; }
 
-        private void Label_MouseDown(object sender, MouseButtonEventArgs e)
+        public void Label_MouseDown(object sender, MouseButtonEventArgs e)
         {
             mainWindow.deleteMe(BGEntity.tag);
             (this.Parent as Grid)?.Children.Remove(this);            

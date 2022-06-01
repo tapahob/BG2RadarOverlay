@@ -12,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Animation;
 using BGOverlay;
+using System.IO;
 
 namespace WPFFrontend
 {
@@ -118,6 +119,35 @@ namespace WPFFrontend
             this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
+        private void addOrRemove(BGEntity bgEntity, int left)
+        {
+            EnemyControl enemyControl;
+            if (!MainWindow.currentControls.TryGetValue(bgEntity.tag, out enemyControl))
+            {
+                enemyControl = new EnemyControl(bgEntity, this, left);
+                MainWindow.currentControls[bgEntity.tag] = enemyControl;
+                MainGrid.Children.Add(enemyControl);
+            }
+            else
+            {
+                MainWindow.currentControls[bgEntity.tag].Label_MouseDown(null, null);
+
+                MainWindow.currentControls.Remove(bgEntity.tag, out enemyControl);
+            }
+        }
+        
+        private int left(BGEntity entity)
+        {
+            if (entity.MousePosX > 650)
+            {
+                return (int)((entity.MousePosX - 650) * 1.53) - 200;
+            }
+            else
+            {
+                return -(int)((650 - entity.MousePosX) * 1.53) + 500;
+            }
+        }
+        
         private void MouseHook_MouseEvent()
         {
             BGEntity entry = null;
@@ -131,9 +161,10 @@ namespace WPFFrontend
             {
                 return;
             }
-            var newControl = new EnemyControl(entry, this);
-            MainWindow.currentControls[entry.tag] = newControl;
-            MainGrid.Children.Add(newControl);
+
+            int left = this.left(entry);
+
+            addOrRemove(entry, left);
         }
 
         private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -142,9 +173,8 @@ namespace WPFFrontend
             if (list.SelectedIndex == -1) return;
             var content = (BGEntity)ListView.SelectedItem;
             if (content == null) return;
-            var newControl = new EnemyControl(content, this);
-            MainWindow.currentControls[content.tag] = newControl;
-            MainGrid.Children.Add(newControl);
+
+            this.addOrRemove(content, 0);
             list.SelectedIndex = -1;
         }
         bool toShow = true;
