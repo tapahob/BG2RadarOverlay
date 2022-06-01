@@ -32,7 +32,7 @@ namespace BGOverlay
             var length = WinAPIBindings.ReadInt32(moduleBase + 0x68D434);
 
             // First i = 32016
-            for (int i = 0; i < length*16; i+=16)
+            for (int i = 32016; i < length*16; i+=16)
             {
                 var index = WinAPIBindings.ReadInt32(test + i);
                 if (index == 65535)

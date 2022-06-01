@@ -103,10 +103,10 @@ namespace BGOverlay
             this.BackstabImmunity = WinAPIBindings.ReadInt32(addr + 0x284);
             this.SeeInvisible = WinAPIBindings.ReadInt32(addr + 0xD8);
 
-            this.immunitiesSpellLevel(addr + 0x344);
-            this.immunitiesWeapon(addr + 0x36C);
-            this.immunitiesEffect(addr + 0x30C);
-            this.immunitiesSpells(addr + 0x5A0);
+            this.immunitiesSpellLevel(addr + 0x398);
+            this.immunitiesWeapon(addr + 0x3C0);
+            this.immunitiesEffect(addr + 0x328);
+            this.immunitiesSpells(addr + 0x760);
         }
 
         private void immunitiesEffect(IntPtr intPtr)

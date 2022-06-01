@@ -234,9 +234,9 @@ namespace BGOverlay
             this.AreaName = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
             this.MousePosX = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 }));
             this.MousePosY = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 + 4 }));
-            this.CInfinityPtr = cGameAreaPtr + 0x5C8;
-            this.MousePosX1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(CInfinityPtr, new int[] { 0xC0 }));
-            this.MousePosY1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(CInfinityPtr, new int[] { 0xC4 }));
+            this.CInfinityPtr = cGameAreaPtr + 0x5C8;            
+            this.MousePosX1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 }));
+            this.MousePosY1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
             this.Name2 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0}), 64);
             this.Name1 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);            
             this.CurrentHP = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
@@ -260,14 +260,14 @@ namespace BGOverlay
 
         private void updateTime()
         {
-            this.GameTime = WinAPIBindings.ReadUInt32(WinAPIBindings.FindDMAAddy(cInfGamePtr, new int[] { 0x2500 }));
+            this.GameTime = WinAPIBindings.ReadUInt32(WinAPIBindings.FindDMAAddy(cInfGamePtr, new int[] { 0x3FA0 }));
         }
 
         public void LoadDerivedStats()
         {
-            this.DerivedStats = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xB30 }));
-            this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1D78 }));
-            this.DerivedStatsTemp = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1454 }));
+            this.DerivedStats = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1120 }));
+            this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x2A70 }));
+            this.DerivedStatsTemp = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1DC8 }));
             this.THAC0 = DerivedStats.THAC0 - DerivedStatsTemp.HitBonus - DerivedStats.THAC0BonusRight;
             this.calcAPR();
         }
