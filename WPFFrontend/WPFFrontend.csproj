@@ -8,15 +8,15 @@
     <StartupObject>WPFFrontend.App</StartupObject>
     <AssemblyName>BGOverlayUI</AssemblyName>
     <ApplicationIcon>ic.ico</ApplicationIcon>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>X64</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>X64</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>X64</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>

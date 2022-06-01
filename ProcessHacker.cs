@@ -38,14 +38,6 @@ namespace BGOverlay
                 if (index == 65535)
                     continue;
 
-                //var entityAddr = WinAPIBindings.FindDMAAddy(test + i + 0x8).ToString();
-                //if (entityAddr.Length < 6)
-                //{
-                //    length++;
-                //    i -= 4;
-                //    continue;
-                //}
-
                 var entityPtr = WinAPIBindings.FindDMAAddy(test + i + 0x8);
 
                 var newEntity = new BGEntity(ResourceManager, entityPtr);
