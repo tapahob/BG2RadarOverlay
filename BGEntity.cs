@@ -76,6 +76,13 @@ namespace BGOverlay
                         break;
                     }
                 }
+                var thiefStr = "";
+                if (this.DerivedStatsTemp.BackstabImmunity > 0)
+                    thiefStr += "Backstab Immunity\t";
+                if (this.DerivedStatsTemp.SeeInvisible > 0)
+                    thiefStr += "See Invisible";
+                if (thiefStr != "")
+                    result.Add(thiefStr);
                 string proficiencyStr = "Proficiency: ";
                 foreach (var item in allEffects)
                 {
@@ -152,7 +159,11 @@ namespace BGOverlay
                         }
                         continue;
                     }
-                    result.Add(preprocess(item.EffectName.ToString()));
+                    var effectName = item.EffectName.ToString();
+                    if (!effectName.StartsWith("Colour") 
+                        && !effectName.StartsWith("Protection_Backstab")
+                        && !effectName.EndsWith("by_Script"))
+                        result.Add(preprocess(effectName));
                 }
                 //if (opCodeStrings.Any())
                 //{
@@ -166,11 +177,9 @@ namespace BGOverlay
                     result.Add(proficiencyStr);
                 var inMemoryProtections = DerivedStatsTemp.EffectImmunes.Select(y => y.EffectId.ToString()).Where(x =>
                 !x.StartsWith("Text")
-                && !x.StartsWith("Graphics")).Select(z => preprocess(z)).Distinct().ToList();
-                if (this.DerivedStatsTemp.BackstabImmunity > 0)
-                    result.Add("Backstab Immunity");
-                if (this.DerivedStatsTemp.SeeInvisible > 0)
-                    result.Add("See Invisible");
+                && !x.StartsWith("Graphics")
+                && !x.Contains("RGB")
+                && !x.StartsWith("Colour")).Select(z => preprocess(z)).Distinct().ToList();                
                 if (inMemoryProtections.Any())
                     result.Add("Effect immunities: " + string.Join(", ", inMemoryProtections));
                 var moreSpellImmunities = DerivedStatsTemp.SpellImmunities;

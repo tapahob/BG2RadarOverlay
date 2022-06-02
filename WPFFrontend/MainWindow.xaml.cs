@@ -36,6 +36,11 @@ namespace WPFFrontend
 
         public MainWindow()
         {
+            while (Process.GetProcessesByName("Baldur").Length == 0)
+            {
+                Thread.Sleep(3000);
+            }
+
             InitializeComponent();
             MouseHook.MouseEvent += MouseHook_MouseEvent;
             MouseHook.InstallHook();

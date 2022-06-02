@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Windows.Forms;
 using WinApiBindings;
 
 namespace BGOverlay
@@ -110,10 +111,11 @@ namespace BGOverlay
         {
             if (!Configuration.Borderless) 
                 return;
-            
-            uint currentStyle = (uint) WinAPIBindings.GetWindowLongPtr(handle, -16).ToInt64();
-            WinAPIBindings.SetWindowLong32(handle, -16, currentStyle & ~0x00800000 | 0x00400000);
-            WinAPIBindings.ShowWindow(handle.ToInt32(), 1 | 5);
+            var bounds = Screen.PrimaryScreen.Bounds;
+            //uint currentStyle = (uint) WinAPIBindings.GetWindowLongPtr(handle, -16).ToInt64();
+            WinAPIBindings.SetWindowLong32(handle, -16, (uint)WinAPIBindings.WindowStyles.WS_MAXIMIZE);
+            WinAPIBindings.ShowWindow(handle.ToInt32(), 5);
+            WinAPIBindings.SetWindowPos(handle, IntPtr.Zero, 0, 0, bounds.Width, bounds.Height, 0x4000);
         }
     }
 }
