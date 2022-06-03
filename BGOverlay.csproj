@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\Winook.1.3.2\build\net45\Winook.props" Condition="Exists('packages\Winook.1.3.2\build\net45\Winook.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -14,6 +15,8 @@
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -41,9 +44,6 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Gma.System.MouseKeyHook, Version=5.6.130.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\MouseKeyHook.5.6.0\lib\net40\Gma.System.MouseKeyHook.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -56,27 +56,26 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BGEntity.cs" />
-    <Compile Include="BIFFReader.cs" />
-    <Compile Include="HashMap.cs" />
-    <Compile Include="MouseHook.cs" />
+    <Compile Include="Readers\BIFFReader.cs" />
+    <Compile Include="EnemyAlly.cs" />
     <Compile Include="NativeStructs\CDerivedStats.cs" />
     <Compile Include="Configuration.cs" />
-    <Compile Include="CREReader.cs" />
-    <Compile Include="KeyReader.cs" />
+    <Compile Include="Readers\CREReader.cs" />
+    <Compile Include="Readers\KeyReader.cs" />
     <Compile Include="NativeStructs\CGameEffect.cs" />
     <Compile Include="NativeStructs\CImmunitySpell.cs" />
     <Compile Include="NativeStructs\CPtrList.cs" />
     <Compile Include="NativeStructs\CWeaponIdentification.cs" />
     <Compile Include="ProcessHacker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ResourceManager.cs" />
+    <Compile Include="Resources\ResourceManager.cs" />
     <Compile Include="Resources\BIFEntry.cs" />
     <Compile Include="Resources\BIFFV1FileEntry.cs" />
     <Compile Include="Resources\BIFResourceEntry.cs" />
     <Compile Include="Resources\EffectEntry.cs" />
     <Compile Include="Resources\TLKEntry.cs" />
-    <Compile Include="SPLReader.cs" />
-    <Compile Include="TLKReader.cs" />
+    <Compile Include="Readers\SPLReader.cs" />
+    <Compile Include="Readers\TLKReader.cs" />
     <Compile Include="WinAPIBindings.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -88,4 +87,10 @@
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\Winook.1.3.2\build\net45\Winook.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Winook.1.3.2\build\net45\Winook.props'))" />
+  </Target>
 </Project>

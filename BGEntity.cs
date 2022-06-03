@@ -30,6 +30,8 @@ namespace BGOverlay
         public IntPtr CInfinityPtr { get; private set; }
         public int MousePosX1 { get; }
         public int MousePosY1 { get; }
+        public int ViewportHeight { get; private set; }
+        public int ViewportWidth { get; private set; }
         public byte Name2Len { get; }
         public string Name2 { get; }
         public string Name1 { get; private set; }
@@ -160,9 +162,14 @@ namespace BGOverlay
                         continue;
                     }
                     var effectName = item.EffectName.ToString();
-                    if (!effectName.StartsWith("Colour") 
-                        && !effectName.StartsWith("Protection_Backstab")
-                        && !effectName.EndsWith("by_Script"))
+                    if (!effectName.StartsWith("Colour")
+                        && !(item.EffectName == Effect.Script_Scripting_State_Modifier)
+                        && !(item.EffectName == Effect.Apply_Effects_List) //TODO: implement it properly
+                        && !(item.EffectName == Effect.HP_Minimum_Limit)
+                        && !(item.EffectName == Effect.Protection_Backstab)
+                        && !(item.EffectName == Effect.Spell_Effect_Invisible_Detection_by_Script)
+                        && !(item.EffectName == Effect.State_Set_State)
+                        )
                         result.Add(preprocess(effectName));
                 }
                 //if (opCodeStrings.Any())
@@ -183,8 +190,6 @@ namespace BGOverlay
                 if (inMemoryProtections.Any())
                     result.Add("Effect immunities: " + string.Join(", ", inMemoryProtections));
                 var moreSpellImmunities = DerivedStatsTemp.SpellImmunities;
-
-
                 return result;
             }
         }
@@ -234,10 +239,11 @@ namespace BGOverlay
             if (X < 0 || Y < 0)
                 return;
             this.CreResourceFilename = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x540 }), 8).Trim('*') + ".CRE";
-            if (this.CreResourceFilename == ".CRE") 
-                return;
+
             IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
-            this.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));            
+            this.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
+            if (this.CreResourceFilename == ".CRE")
+                return;
             this.cInfGamePtr = WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x228 });
             this.updateTime();
             this.AreaName = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
@@ -246,6 +252,8 @@ namespace BGOverlay
             this.CInfinityPtr = cGameAreaPtr + 0x5C8;            
             this.MousePosX1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 }));
             this.MousePosY1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
+            this.ViewportHeight = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
+            this.ViewportWidth = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
             this.Name2 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0}), 64);
             this.Name1 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);            
             this.CurrentHP = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
@@ -421,5 +429,15 @@ namespace BGOverlay
             }
             return $"{this.Name2} HP:{CurrentHP}";
         }
+
+        public static Dictionary<ushort, string> EnemyAllyDict = new Dictionary<ushort, string>
+        {
+            { 0, "Anyone" },
+            { 1, "Inanimate" },
+            { 2, "Regular party members" },
+            { 3, "Familiars" },
+            { 4, "Ally" },
+            { 128, "Neutral" }, 
+        };
     }
 }

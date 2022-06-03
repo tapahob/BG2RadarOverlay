@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WPFFrontend"
              mc:Ignorable="d" 
-             Width="40" Height="40" x:Name="buffMain" MaxHeight="40" MaxWidth="40" MinWidth="40" MinHeight="40"
+             Width="40" Height="40" x:Name="buffMain"
              d:DesignHeight="40" d:DesignWidth="40" Padding="0">
     <Grid>
         <Image x:Name="Image" d:Source="/icons/SPWI114C00001.png" Width="40" Height="40"/>

@@ -42,11 +42,32 @@ namespace WPFFrontend
         internal void updateView(BGEntity item)
         {
             this.BGEntity = item;
-            this.BGEntity.LoadDerivedStats();            
+            if (item.Type != 49)
+                return;
+            this.BGEntity.LoadDerivedStats();
             this.BGEntity.loadTimedEffects();
             this.DataContext = this.BGEntity;
 
-            foreach(var buff in buffs)
+            if (Configuration.BigBuffIcons && BuffStack.Columns == 16)
+            {
+                BuffStack.Columns = 8;
+                foreach(var buff in buffs) 
+                {
+                    buff.Value.Invalidate();
+                }
+            }
+
+            if (!Configuration.BigBuffIcons && BuffStack.Columns == 8)
+            {
+                BuffStack.Columns = 16;
+                foreach (var buff in buffs)
+                {
+                    buff.Value.Invalidate();
+                }
+            }
+
+
+            foreach (var buff in buffs)
             {
                 if (buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0
                         || !this.BGEntity.SpellProtection.Any(x => x.Item1 == buff.Key))

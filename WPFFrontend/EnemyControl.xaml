@@ -50,10 +50,8 @@
         <Border Grid.RowSpan="7" Grid.ColumnSpan="4" BorderThickness="5" BorderBrush="#FF151313"/>
         <Label Grid.Row="1" Grid.Column="1" Content="{Binding DerivedStatsTemp.Level}" d:Content="41" ContentStringFormat="Lv{0}" />
         <Label Grid.Row="1" Grid.Column="2" Content="X" d:Content="X" HorizontalAlignment="Right" MouseDown="Label_MouseDown" Margin="0,0,3,0"/>
-        <Image Source="/icons/SPWI108C00001.PNG" Margin="100" MinWidth="100" Panel.ZIndex="5999"/>
         <Border Grid.ColumnSpan="2" Grid.Row="1" Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="1">
             <StackPanel Margin="5,5,5,5">
-                
                 <Label x:Name="EnemyName" d:Content="Дуэргар" HorizontalAlignment="Center"  FontFamily="Segoe Print" FontWeight="Bold" ClipToBounds="True" Content="{Binding Name2}"/>
                 <Label x:Name="ClassesAndLevels" Content="{Binding Class}" d:Content="Warrior Thief Mage" HorizontalAlignment="Center" ClipToBounds="True">
 

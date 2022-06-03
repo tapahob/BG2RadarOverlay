@@ -12,7 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Animation;
 using BGOverlay;
-using System.IO;
+using Winook;
 
 namespace WPFFrontend
 {
@@ -27,6 +27,7 @@ namespace WPFFrontend
         private object _stocksLock2 = new object();
         private ProcessHacker ph;
         private static ConcurrentDictionary<int, EnemyControl> currentControls = new ConcurrentDictionary<int, EnemyControl>();
+        private OptionsControl options = new OptionsControl();
 
         internal void deleteMe(int tag)
         {
@@ -36,17 +37,10 @@ namespace WPFFrontend
 
         public MainWindow()
         {
-            while (Process.GetProcessesByName("Baldur").Length == 0)
-            {
-                Thread.Sleep(3000);
-            }
-
             InitializeComponent();
-            MouseHook.MouseEvent += MouseHook_MouseEvent;
-            MouseHook.InstallHook();
-
+            MainGrid.Children.Add(options);
             this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
-            this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;
+            this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;            
 
             EnemyTextEntries = new ObservableCollection<BGEntity>();
             BindingOperations.EnableCollectionSynchronization(EnemyTextEntries, _stocksLock);
@@ -58,7 +52,15 @@ namespace WPFFrontend
                 Thread.Sleep(3000);
             }
             var proc = Process.GetProcessesByName("Baldur")[0];
-            
+            var hook = new MouseHook(proc.Id, MouseMessageTypes.Click);
+
+            hook.AddHandler(MouseMessageCode.RightButtonUp, MouseHook_MouseEvent);
+            hook.InstallAsync();
+            this.Closed += (o, e) =>
+            {
+                hook.Uninstall();
+            };
+
             Task.Factory.StartNew(() =>
             {
                 ph = new ProcessHacker();
@@ -79,8 +81,7 @@ namespace WPFFrontend
                     EnemyTextEntries.Clear();
                     foreach (var item in ph.NearestEnemies)
                     {
-                        EnemyTextEntries.Add(item);
-                        //updateControls();
+                        EnemyTextEntries.Add(item);                        
                     }                    
                 }
             });
@@ -153,23 +154,29 @@ namespace WPFFrontend
             }
         }
         
-        private void MouseHook_MouseEvent()
+        private void MouseHook_MouseEvent(object sender, MouseMessageEventArgs e)
         {
-            BGEntity entry = null;
-            
-            entry = ph.entityList.FirstOrDefault(
-                x => x.X > 0 &&
-                Math.Abs(x.MousePosX + x.MousePosX1 - x.X) < 18
-                && Math.Abs(x.MousePosY + x.MousePosY1 - x.Y) < 18);
-
-            if (entry == null)
+            this.Dispatcher.BeginInvoke(new Action(() =>
             {
-                return;
-            }
+                if (e.MessageCode != (int)MouseMessageCode.RightButtonUp)
+                    return;
 
-            int left = this.left(entry);
+                BGEntity entry = null;
 
-            addOrRemove(entry, left);
+                entry = ph.entityList.FirstOrDefault(
+                    x => x.X > 0 &&
+                    Math.Abs(x.MousePosX + x.MousePosX1 - x.X) < 18
+                    && Math.Abs(x.MousePosY + x.MousePosY1 - x.Y) < 18);
+
+                if (entry == null)
+                {
+                    return;
+                }
+
+                int left = this.left(entry);
+
+                addOrRemove(entry, left);
+            }));            
         }
 
         private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -179,17 +186,24 @@ namespace WPFFrontend
             var content = (BGEntity)ListView.SelectedItem;
             if (content == null) return;
 
+            //var bounds = ph.getScreenDimensions();
+            //var x = bounds.Size.Width * (content.X - content.MousePosX1) / content.ViewportWidth;
+            //var y = bounds.Size.Height * (content.Y - content.MousePosY1) / content.ViewportHeight;
+
+            //DebugPointer.Margin = new Thickness(x, y, 0, 0);
+
             this.addOrRemove(content, 0);
             list.SelectedIndex = -1;
         }
-        bool toShow = true;
+        bool toShowEnemyList = true;
+        private MouseHook mouseHook;
+
         private void MinMaxBtn_Click(object sender, RoutedEventArgs e)
-        {
-            toShow = !toShow;
-            //this.listView.Visibility = this.listView.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
+        {                        
+            toShowEnemyList = !toShowEnemyList;
+            //this.listView.Visibility = this.listView.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;            
             
-            
-            if (!toShow)
+            if (!toShowEnemyList)
             {                
                 ThicknessAnimation anim = new ThicknessAnimation();
                 anim.From = this.StackPanel.Margin;
@@ -216,6 +230,12 @@ namespace WPFFrontend
                 this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
             }
             
+        }
+
+        private void MinMaxBtn_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            options.Init();
+            options.Visibility = options.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 }

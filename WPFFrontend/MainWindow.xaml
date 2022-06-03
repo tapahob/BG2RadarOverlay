@@ -33,6 +33,7 @@
     </Window.Resources>
 
     <Canvas x:Name="MainCanvas">
+        <Image Visibility="Collapsed" x:Name="DebugPointer" Source="/icons/not_found.png" Height="10"/>
         <Grid x:Name="MainGrid" AllowDrop="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="250"/>
@@ -46,7 +47,7 @@
                 <ColumnDefinition Width="250"/>
                 <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
-            <Button Style="{StaticResource ResourceKey=MyButton}" Grid.Row="0" Margin="155 -15 0 0" MaxHeight="30" Background="#01FFFFFF" HorizontalAlignment="Left" Panel.ZIndex="1" BorderThickness="0" Grid.Column="1" x:Name="MinMaxBtn" Foreground="Black" FontWeight="Bold" FontFamily="Segoe Print" VerticalAlignment="Top" Click="MinMaxBtn_Click">
+            <Button Style="{StaticResource ResourceKey=MyButton}" Grid.Row="0" Margin="155 -15 0 0" MaxHeight="30" Background="#01FFFFFF" HorizontalAlignment="Left" Panel.ZIndex="1" BorderThickness="0" Grid.Column="1" x:Name="MinMaxBtn" Foreground="Black" FontWeight="Bold" FontFamily="Segoe Print" VerticalAlignment="Top" MouseRightButtonDown="MinMaxBtn_MouseRightButtonDown" Click="MinMaxBtn_Click">
                 <Image Source="/radar.png"/>
             </Button>
             <StackPanel x:Name="StackPanel"  Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Left" Width="380">
@@ -63,7 +64,6 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                
             </StackPanel>
         </Grid>
     </Canvas>

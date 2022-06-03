@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
@@ -31,9 +32,10 @@ namespace BGOverlay
             var staticEntityList = moduleBase + 0x68D438 + 0x18;
             var test = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { });
             var length = WinAPIBindings.ReadInt32(moduleBase + 0x68D434);
+            var marginOfError = 500;
 
             // First i = 32016
-            for (int i = 32016; i < length*16; i+=16)
+            for (int i = 2000 * 16; i < length*16 + marginOfError; i+=16)
             {
                 var index = WinAPIBindings.ReadInt32(test + i);
                 if (index == 65535)
@@ -42,42 +44,50 @@ namespace BGOverlay
                 var entityPtr = WinAPIBindings.FindDMAAddy(test + i + 0x8);
 
                 var newEntity = new BGEntity(ResourceManager, entityPtr);
-                if (!newEntity.Loaded) 
+                if (!newEntity.Loaded)
                     continue;
-                
+
                 All.Add(newEntity);
-                if (newEntity?.Reader?.EnemyAlly == 2 && newEntity.CreResourceFilename.EndsWith("HARBASE.CRE"))
-                {
-                    main = newEntity;
-                    continue;
-                }
 
                 if (newEntity.CurrentHP == 0
-                    || newEntity.Reader == null                    
-                    || newEntity.Reader.Class1Level == 0
-                    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT                    
-                    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS)
+                    || newEntity.Reader == null
+                    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
+                    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS
+                    || newEntity.AreaName == "<ERROR>"
+                    )
                     continue;
+
+                if (Configuration.HidePartyMembers)
+                {
+                    if (newEntity.EnemyAlly == 2)
+                        continue;
+                }
+
+                if (Configuration.HideNeutrals)
+                {
+                    if (newEntity.EnemyAlly == 128)
+                        continue;
+                }
+
+                if (Configuration.HideAllies)
+                {
+                    if (newEntity.EnemyAlly == 4)
+                        continue;
+                }
 
                 //if (newEntity.Reader.EnemyAlly != 255
                 //    || newEntity.Reader.EnemyAlly != 128
                 //    || newEntity.Reader.EnemyAlly != 5
                 //    || newEntity.Reader.EnemyAlly != 28)
                 //    continue;
-
-                if (newEntity?.AreaName == main?.AreaName
-                    //&& newEntity.Type == 49
-                    )
-                {
-                    newEntity.tag = index;
-                    entityListTemp.Add(newEntity);                    
-                }
+                newEntity.tag = index;
+                entityListTemp.Add(newEntity);                    
             }
             entityList = new ConcurrentBag<BGEntity>(entityListTemp);
-            var nearestThings = All.Where(y => len(main, y) < Configuration.RadarRadius);
-            this.NearestEnemies = entityListTemp.Where(y => len(main, y) < Configuration.RadarRadius);
+            var nearestThings = All.Where(y => clip(y));
+            this.NearestEnemies = entityListTemp.Where(y => clip(y));
             TextEntries = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());            
-            Thread.Sleep(500);
+            Thread.Sleep(Configuration.RefreshTimeMS);
         }
 
         public void Init()
@@ -99,23 +109,19 @@ namespace BGOverlay
             Configuration.hProc = hProc;
         }
 
-        double len(BGEntity entity1, BGEntity entity2)
+        bool clip(BGEntity entity1)
         {
-            if (entity1 == null || entity2 == null) return 99999;
-            var x = Math.Pow(entity1.X - entity2.X, 2);
-            var y = Math.Pow(entity1.Y - entity2.Y, 2);
-            return Math.Sqrt(x + y);
+            var checkX = entity1.X > entity1.MousePosX1 && entity1.X < entity1.MousePosX1 + entity1.ViewportWidth;
+            var checkY = entity1.Y > entity1.MousePosY1 && entity1.Y < entity1.MousePosY1 + entity1.ViewportHeight;
+            return checkY & checkX;
         }
         
-        private void makeBorderless(IntPtr handle)
+        public void makeBorderless(IntPtr handle)
         {
+            Configuration.HWndPtr = handle;
             if (!Configuration.Borderless) 
                 return;
-            var bounds = Screen.PrimaryScreen.Bounds;
-            //uint currentStyle = (uint) WinAPIBindings.GetWindowLongPtr(handle, -16).ToInt64();
-            WinAPIBindings.SetWindowLong32(handle, -16, (uint)WinAPIBindings.WindowStyles.WS_MAXIMIZE);
-            WinAPIBindings.ShowWindow(handle.ToInt32(), 5);
-            WinAPIBindings.SetWindowPos(handle, IntPtr.Zero, 0, 0, bounds.Width, bounds.Height, 0x4000);
+            Configuration.ForceBorderless();            
         }
     }
 }
