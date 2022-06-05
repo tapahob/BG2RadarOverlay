@@ -1,4 +1,5 @@
-﻿using BGOverlay.Resources;
+﻿using BGOverlay.Readers;
+using BGOverlay.Resources;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,6 +17,7 @@ namespace BGOverlay
             BiffReaderCache    = new Dictionary<string, BIFFReader>();
             CREReaderCache     = new Dictionary<string, CREReader>();
             SPLReaderCache     = new Dictionary<string, SPLReader>();
+            BAMReaderCache     = new Dictionary<string, BAMReader>();
         }
         public List<BIFResourceEntry> CREResourceEntries            => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.CRE).ToList();
         public List<BIFResourceEntry> SPLResourceEntries            => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.SPL).ToList();
@@ -26,6 +28,7 @@ namespace BGOverlay
         public Dictionary<string, BIFFReader> BiffReaderCache           = null;
         public Dictionary<string, CREReader> CREReaderCache             = null;
         public Dictionary<string, SPLReader> SPLReaderCache             = null;
+        public Dictionary<string, BAMReader> BAMReaderCache             = null;
 
         public void Init()
         {
@@ -60,10 +63,12 @@ namespace BGOverlay
         public SPLReader GetSPLReader(string splFilename)
         {
             splFilename = splFilename.ToUpper();
-            SPLReader reader;
-            if (!SPLReaderCache.TryGetValue(splFilename, out reader))
+            if (!SPLReaderCache.TryGetValue(splFilename, out var reader))
             {
                 reader = new SPLReader(this, splFilename);
+
+                if (reader.Name1 == null)
+                    return null;
                 SPLReaderCache[splFilename] = reader;
             }
             return reader;
@@ -107,6 +112,20 @@ namespace BGOverlay
 
             }
 
+            return reader;
+        }
+
+        public BAMReader GetBAMReader(string bamFilename)
+        {
+            if (bamFilename.Trim('\0') == "")
+                return null;
+            bamFilename = bamFilename.ToUpper();
+            BAMReader reader;
+            if (!BAMReaderCache.TryGetValue(bamFilename, out reader))
+            {
+                reader = new BAMReader(this, bamFilename);
+                BAMReaderCache[bamFilename] = reader;
+            }
             return reader;
         }
     }

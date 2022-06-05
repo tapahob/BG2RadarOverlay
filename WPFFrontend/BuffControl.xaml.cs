@@ -18,13 +18,13 @@ namespace WPFFrontend
         }
         public float BuffDuration { get { return 0; } set { this.Label1.Content = value; this.Label2.Content = value; } }
         public float BuffDurationAbsolute { get; set; }
-        public Uri Icon 
+        public BitmapSource Icon 
         {
             get { return _icon; }
-            set { this.Image.Source = new BitmapImage(value); } 
+            set { this.Image.Source = value; } 
         }
 
-        private Uri _icon;
+        private BitmapSource _icon;
 
         public BuffControl()
         {

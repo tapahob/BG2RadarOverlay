@@ -56,7 +56,7 @@
                 <Label x:Name="ClassesAndLevels" Content="{Binding Class}" d:Content="Warrior Thief Mage" HorizontalAlignment="Center" ClipToBounds="True">
 
                 </Label>
-                <Label x:Name="Race" d:Content="78m" Content="{Binding Reader.Race}" ContentStringFormat="Race: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label x:Name="Race" d:Content="78m" Content="{Binding Race}" ContentStringFormat="Race: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
                 <UniformGrid x:Name="BuffStack" Columns="8"/>
 
             </StackPanel>
@@ -64,7 +64,7 @@
 
         <Border Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="4" BorderBrush="Black" BorderThickness="0" Margin="1">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Label Style="{StaticResource Attributes}" x:Name="STR" d:Content="25" Content="{Binding DerivedStatsTemp.STR}" ContentStringFormat="STR: {0}" HorizontalAlignment="Center"/>
+                <Label Style="{StaticResource Attributes}" x:Name="STR" d:Content="18/00" Content="{Binding DerivedStatsTemp.STRString}" ContentStringFormat="STR: {0}" HorizontalAlignment="Center"/>
                 <Label Style="{StaticResource Attributes}" x:Name="DEX" d:Content="25" Content="{Binding DerivedStatsTemp.DEX}" ContentStringFormat="DEX: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
                 <Label Style="{StaticResource Attributes}" x:Name="CON" d:Content="25" Content="{Binding DerivedStatsTemp.CON}" ContentStringFormat="CON: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
                 <Label Style="{StaticResource Attributes}" x:Name="WIS" d:Content="25" Content="{Binding DerivedStatsTemp.WIS}" ContentStringFormat="INT: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>

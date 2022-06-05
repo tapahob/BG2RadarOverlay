@@ -5,6 +5,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 
 namespace WPFFrontend
 {
@@ -36,7 +38,7 @@ namespace WPFFrontend
         public void Label_MouseDown(object sender, MouseButtonEventArgs e)
         {
             mainWindow.deleteMe(BGEntity.tag);
-            (this.Parent as Grid)?.Children.Remove(this);            
+            (this.Parent as Grid)?.Children.Remove(this);
         }
 
         internal void updateView(BGEntity item)
@@ -90,18 +92,26 @@ namespace WPFFrontend
                     if (isPresent)
                     {
                         buffs[x.Item1].BuffDuration = durationFloat;
-                        return;
+                        return;                    
                     }
-
-                    var uri = new Uri($"icons/{x.Item2}00001.png", UriKind.Relative);
-                    if (!this.BGEntity.spellProtectionIcons.Contains(x.Item2))
-                        uri = new Uri($"icons/not_found.png", UriKind.Relative);
+                    BitmapSource newIcon;
+                    if (x.Item2 != null)
+                    {
+                       newIcon = Imaging.CreateBitmapSourceFromHBitmap(
+                       x.Item2.GetHbitmap(),
+                       IntPtr.Zero,
+                       Int32Rect.Empty,
+                       BitmapSizeOptions.FromWidthAndHeight(x.Item2.Width, x.Item2.Height));
+                    } else
+                    {
+                        newIcon = new BitmapImage(new Uri($"icons/not_found.png", UriKind.Relative));
+                    }                    
 
                     var buffControl = new BuffControl() 
                     { 
                         BuffName = x.Item1, 
                         BuffDuration = durationFloat, 
-                        Icon = uri, 
+                        Icon = newIcon, 
                         BuffDurationAbsolute = x.Item3 
                     };
                     BuffStack.Children.Add(buffControl);

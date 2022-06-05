@@ -30,7 +30,9 @@ namespace BGOverlay
         public short ResistCrushing { get; private set; }
         public short ResistPiercing { get; private set; }
         public short ResistMissile { get; private set; }
+        public string STRString { get { return STRExceptional > 0 ? $"{STR}/{STRExceptional}" : $"{STR}"; } }
         public short STR { get; private set; }
+        public short STRExceptional { get; private set; }
         public short INT { get; private set; }
         public short WIS { get; private set; }
         public short DEX { get; private set; }
@@ -78,6 +80,7 @@ namespace BGOverlay
             this.ResistMissile = WinAPIBindings.ReadInt16(addr + 0x32);
 
             this.STR = WinAPIBindings.ReadInt16(addr + 0x4E);
+            this.STRExceptional = WinAPIBindings.ReadInt16(addr + 0x50);
             this.INT = WinAPIBindings.ReadInt16(addr + 0x52);
             this.WIS = WinAPIBindings.ReadInt16(addr + 0x54);
             this.DEX = WinAPIBindings.ReadInt16(addr + 0x56);

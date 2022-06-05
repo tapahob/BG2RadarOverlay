@@ -5,8 +5,8 @@ An overlay program for Baldurs Gate 2 EE showing nearest enemies, their resistan
 Most of the stats are taken directly from the memory.
 
 ## Screenshots
+![screen2](https://user-images.githubusercontent.com/1484801/172044039-3dde5348-54f1-48e2-9754-4920b6180d7f.jpg)
 
-![Screenshot 2022-05-31 144215](https://user-images.githubusercontent.com/1484801/171168801-a4b08299-96d7-45aa-987c-aa603a6e83bd.jpg)
 
 ## Requirements
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -21,7 +20,7 @@ namespace BGOverlay
         public static IntPtr HWndPtr { get; set; }
         public static bool BigBuffIcons { get; set; }
 
-        private static readonly string version = "2.0.2";
+        private static readonly string version = "2.0.3";
 
         public static void Init()
         {
