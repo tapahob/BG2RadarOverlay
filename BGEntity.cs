@@ -2,8 +2,11 @@
 using BGOverlay.Resources;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using WinApiBindings;
+using static BGOverlay.CREReader;
+
 namespace BGOverlay
 {
     public class BGEntity
@@ -15,7 +18,7 @@ namespace BGOverlay
 
         public int tag { get; set; }
         public List<CGameEffect> TimedEffects { get; private set; }
-        public List<Tuple<string, string, uint>> SpellProtection { get; private set; }
+        public List<Tuple<string, Bitmap, uint>> SpellProtection { get; private set; }
         public bool Loaded { get; }
         public int Id { get; private set; }
         public int X { get; private set; }
@@ -46,15 +49,32 @@ namespace BGOverlay
         private IntPtr equipedEffectsPointer;
         private IntPtr curSpellPtr;
 
+        public int isInvisible { get; private set; }
         public CDerivedStats DerivedStatsBonus { get; private set; }
 
-        public String Class {
+        public string Race
+        {
             get
             {
+                if (this.CreResourceFilename == "HARBASE.CRE")
+                {
+                    return this.RACE.ToString()[0] + this.RACE.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-"); 
+                }
+                return this.Reader.Race.ToString()[0] + this.Reader.Race.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-");
+            }
+        }
+
+        public string Class {
+            get
+            {
+                if (this.CreResourceFilename == "HARBASE.CRE")
+                {
+                    return this.CLASS.ToString()[0] + this.CLASS.ToString().ToLower().Substring(1).Replace('_', ' ');
+                }
                 return (this.Reader.KitInformation != CREReader.KIT.NONE
                     && this.Reader.KitInformation != CREReader.KIT.TRUECLASS)
                     ? this.Reader.KitInformation.ToString().Replace('_', ' ')
-                    : this.Reader.Class.ToString().Replace('_', ' ');
+                    : this.Reader.Class.ToString()[0] + this.Reader.Class.ToString().ToLower().Substring(1).Replace('_', ' ');
             }
         }
 
@@ -172,16 +192,20 @@ namespace BGOverlay
                         )
                         result.Add(preprocess(effectName));
                 }
-                //if (opCodeStrings.Any())
-                //{
-                //    result.Add(preprocess("Protection from " + string.Join(", ", opCodeStrings)));
-                //}
+
+                if (opCodeStrings.Any())
+                {
+                    result.Add(preprocess("Protection from " + string.Join(", ", opCodeStrings)));
+                }
+
+
                 if (spellStrings.Any())
                 {
                     result.Add(preprocess("Immune to spells: " + string.Join(", ", spellStrings)));
                 }
                 if (!proficiencyStr.EndsWith(": "))
                     result.Add(proficiencyStr);
+                
                 var inMemoryProtections = DerivedStatsTemp.EffectImmunes.Select(y => y.EffectId.ToString()).Where(x =>
                 !x.StartsWith("Text")
                 && !x.StartsWith("Graphics")
@@ -195,13 +219,15 @@ namespace BGOverlay
         }
 
         public byte EnemyAlly { get; private set; }
+        public RACE RACE { get; private set; }
+        public CLASS CLASS { get; private set; }
 
         private IntPtr cInfGamePtr;
 
         public uint GameTime { get; private set; }
         public string Attacks { get; private set; }
         public List<CGameEffect> EquipedEffects { get; private set; }
-        public List<Tuple<string, string, uint>> SpellEquipEffects { get; private set; }
+        public List<Tuple<string, Bitmap, uint>> SpellEquipEffects { get; private set; }
 
         public string HPString { get { return $"{this.CurrentHP}/{this.DerivedStatsTemp.MaxHP}"; } }
 
@@ -241,7 +267,10 @@ namespace BGOverlay
             this.CreResourceFilename = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x540 }), 8).Trim('*') + ".CRE";
 
             IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
-            this.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
+            this.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));           
+            this.RACE = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
+            this.CLASS = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
+
             if (this.CreResourceFilename == ".CRE")
                 return;
             this.cInfGamePtr = WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x228 });
@@ -260,17 +289,16 @@ namespace BGOverlay
             this.timedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
             this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x49B0 });
             
+            //TODO: ~!!
             this.curSpellPtr = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
+            this.isInvisible = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
 
-            if (Type == 49)
+            this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
+            if (Reader == null || Reader.Class == CREReader.CLASS.ERROR)
             {
-                this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
-                if (Reader == null || Reader.Class == CREReader.CLASS.ERROR)
-                {
-                    if (resourceManager.CREReaderCache.ContainsKey(CreResourceFilename.ToUpper()))
-                        this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
-                    else return;
-                }
+                if (resourceManager.CREReaderCache.ContainsKey(CreResourceFilename.ToUpper()))
+                    this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
+                else return;
             }
             this.Loaded = true;
         }
@@ -341,11 +369,11 @@ namespace BGOverlay
                 this.EquipedEffects.Add(new CGameEffect(node.Data));
                 node = node.getNext();
             }
-            this.SpellEquipEffects = this.EquipedEffects.Where(x => !x.ToString().StartsWith("Graphics")
+            this.SpellEquipEffects = this.EquipedEffects.Where(x => x != null && !x.ToString().StartsWith("Graphics")
                 && !x.ToString().StartsWith("Script")
                 && !x.ToString().EndsWith("Sound_Effect")
                 && x.SourceRes != "<ERROR>").Select(x => x.getSpellName(resourceManager)).Distinct()
-                .Where(x => x.Item1 != null).ToList();            
+                .Where(x => x != null && x.Item1 != null).ToList();            
         }
 
         public void loadTimedEffects()
@@ -368,49 +396,8 @@ namespace BGOverlay
                 && !x.ToString().EndsWith("Sound_Effect")
                 && x.SourceRes != "<ERROR>").ToList();
             this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager)).Distinct()
-                .Where(x => x.Item1 != null && !x.Item1.StartsWith("Extra")).ToList();            
-            var dif = this.SpellProtection.Where(x => !spellProtectionIcons.Contains(x.Item2)).Distinct().ToList();
-            var breakpoint = 0;
+                .Where(x => x != null && x.Item3 > 0 && x.Item1 != null && !x.Item1.StartsWith("Extra")).ToList();            
         }
-
-        public IList<string> spellProtectionIcons = new List<string>()
-        {
-            "SPWI108C",
-            "SPWI114C",
-            "SPWI201C",
-            "SPWI212C",
-            "SPWI219C",
-            "SPWI310C",
-            "SPWI311C",
-            "SPWI319C",
-            "SPWI320C",
-            "SPWI403C",
-            "SPWI405C",
-            "SPWI406C",
-            "SPWI408C",
-            "SPWI414C",
-            "SPWI418C",
-            "SPWI512C",
-            "SPWI522C",
-            "SPWI590C",
-            "SPWI591C",
-            "SPWI592C",
-            "SPWI593C",
-            "SPWI594C",
-            "SPWI595C",
-            "SPWI596C",
-            "SPWI597C",
-            "SPWI602C",
-            "SPWI606C",
-            "SPWI611C",
-            "SPWI618C",
-            "SPWI701C",
-            "SPWI702C",
-            "SPWI708C",
-            "SPWI801C",
-            "SPWI902C",
-            "SPWI907C",
-        };
 
         public override string ToString()
         {

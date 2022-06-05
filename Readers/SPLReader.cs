@@ -12,10 +12,10 @@ namespace BGOverlay
         {
             splFilename = splFilename.ToUpper();
             var overrideDir = $"{Configuration.GameFolder}\\override";
-            var overrideSPLs = Directory.Exists(overrideDir) ? Directory.GetFiles(overrideDir, "*.SPL").Select(x => x.ToUpper()).ToList() : new List<string>();
+            //var overrideSPLs = Directory.Exists(overrideDir) ? Directory.GetFiles(overrideDir, "*.SPL").Select(x => x.ToUpper()).ToList() : new List<string>();
             var filename = $"{Configuration.GameFolder}\\override\\{splFilename}".ToUpper();
             var originalOffset = 0;
-            if (!overrideSPLs.Contains(filename))
+            if (!new FileInfo(filename).Exists)
             {
                 var bifResourceEntry = resourceManager.SPLResourceEntries.FirstOrDefault(x => x.FullName == splFilename);
                 if (bifResourceEntry == null)
