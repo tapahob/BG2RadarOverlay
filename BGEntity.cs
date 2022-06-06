@@ -267,7 +267,7 @@ namespace BGOverlay
             this.CreResourceFilename = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x540 }), 8).Trim('*') + ".CRE";
 
             IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
-            this.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));           
+            this.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
             this.RACE = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
             this.CLASS = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
 
@@ -278,29 +278,33 @@ namespace BGOverlay
             this.AreaName = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
             this.MousePosX = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 }));
             this.MousePosY = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 + 4 }));
-            this.CInfinityPtr = cGameAreaPtr + 0x5C8;            
+            this.CInfinityPtr = cGameAreaPtr + 0x5C8;
             this.MousePosX1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 }));
             this.MousePosY1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
             this.ViewportHeight = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
             this.ViewportWidth = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
-            this.Name2 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0}), 64);
-            this.Name1 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);            
+            this.Name2 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0 }), 64);
+            this.Name1 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);
             this.CurrentHP = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
             this.timedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
             this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x49B0 });
-            
+
             //TODO: ~!!
             this.curSpellPtr = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
             this.isInvisible = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
 
+            //LoadCREResource(resourceManager);
+            this.Loaded = true;
+        }
+
+        public void LoadCREResource()
+        {
             this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
             if (Reader == null || Reader.Class == CREReader.CLASS.ERROR)
             {
                 if (resourceManager.CREReaderCache.ContainsKey(CreResourceFilename.ToUpper()))
                     this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
-                else return;
             }
-            this.Loaded = true;
         }
 
         private void updateTime()
@@ -396,7 +400,7 @@ namespace BGOverlay
                 && !x.ToString().EndsWith("Sound_Effect")
                 && x.SourceRes != "<ERROR>").ToList();
             this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager)).Distinct()
-                .Where(x => x != null && x.Item3 > 0 && x.Item1 != null && !x.Item1.StartsWith("Extra")).ToList();            
+                .Where(x => x != null && x.Item1 != "-1" && x.Item1 != null && !x.Item1.StartsWith("Extra")).ToList();            
         }
 
         public override string ToString()
@@ -405,15 +409,7 @@ namespace BGOverlay
         }
 
         private string additionalInfo()
-        {
-            if (Reader == null)
-            {
-                return "NO .CRE INFO";
-            }
-            if (Reader.ShortName == "<NO TEXT>")
-            {
-                throw new Exception();
-            }
+        {            
             return $"{this.Name2} HP:{CurrentHP}";
         }
 

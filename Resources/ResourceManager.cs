@@ -66,9 +66,6 @@ namespace BGOverlay
             if (!SPLReaderCache.TryGetValue(splFilename, out var reader))
             {
                 reader = new SPLReader(this, splFilename);
-
-                if (reader.Name1 == null)
-                    return null;
                 SPLReaderCache[splFilename] = reader;
             }
             return reader;
@@ -103,6 +100,10 @@ namespace BGOverlay
                     {
                         var key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename));
                         reader = CREReaderCache[key];
+                    }
+                    else
+                    {
+                        CREReaderCache[creFilename] = reader;
                     }
                 }
                 catch (ArgumentException)

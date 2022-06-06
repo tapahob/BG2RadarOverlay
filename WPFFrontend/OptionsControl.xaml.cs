@@ -1,7 +1,9 @@
 ﻿using BGOverlay;
+using System;
 using System.Text.RegularExpressions;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 
 namespace WPFFrontend
 {
@@ -11,6 +13,7 @@ namespace WPFFrontend
     public partial class OptionsControl : UserControl
     {
         private bool initializedOnce = false;
+        private bool hidden = true;
 
         public OptionsControl()
         {
@@ -22,6 +25,24 @@ namespace WPFFrontend
             this.EnableBorderlessMode.Click += updateConfig;
             this.RefreshRate.TextChanged += updateConfig;
             this.BigBuffIcons.Click += updateConfig;
+            this.MouseUp += OptionsControl_MouseUp;
+            this.CloseBtn.MouseUp += Label_MouseDown;
+        }
+
+        private void OptionsControl_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e != null && e.ChangedButton != MouseButton.Right)
+                return;
+            this.hidden = true;
+            ThicknessAnimation anim = new ThicknessAnimation();
+            anim.From = this.Margin;
+            var newMargin = this.Margin;
+            newMargin.Top = -this.ActualHeight;
+            anim.To = newMargin;
+            anim.EasingFunction = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
+            anim.Duration = TimeSpan.FromSeconds(.45);
+            //anim.FillBehavior = FillBehavior.HoldEnd;
+            this.BeginAnimation(UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
         }
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -38,7 +59,7 @@ namespace WPFFrontend
         private void Save_Click(object sender, System.Windows.RoutedEventArgs e)
         {            
             Configuration.SaveConfig();
-            this.Visibility = System.Windows.Visibility.Collapsed;
+            this.Label_MouseDown(null, null);
         }
 
         private void updateConfig(object sender, object args)
@@ -63,11 +84,28 @@ namespace WPFFrontend
             this.BigBuffIcons.IsChecked = Configuration.BigBuffIcons;
         }
 
+        public void Show()
+        {
+            if (this.hidden == false)
+                return;
+            this.Visibility = System.Windows.Visibility.Visible;
+            this.hidden = false;
+            ThicknessAnimation anim = new ThicknessAnimation();
+            var margin1 = this.Margin;
+            margin1.Top /= 2;
+            anim.From = margin1;
+            var newMargin = this.Margin;
+            newMargin.Top = 0;
+            anim.To = newMargin;
+            anim.EasingFunction = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };
+            anim.Duration = TimeSpan.FromSeconds(.85);
+            anim.FillBehavior = FillBehavior.HoldEnd;
+            this.BeginAnimation(UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
+        }
+
         private void Label_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            this.Visibility = System.Windows.Visibility.Collapsed;
-            this.initializedOnce = false;
-            this.Init();
+            OptionsControl_MouseUp(null, null);
         }
     }
 }

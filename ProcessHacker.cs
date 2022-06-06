@@ -49,13 +49,13 @@ namespace BGOverlay
 
                 All.Add(newEntity);
 
-                if (newEntity.CurrentHP == 0
-                    || newEntity.Reader == null
-                    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
-                    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS
-                    || newEntity.AreaName == "<ERROR>"
-                    )
-                    continue;
+                //if (newEntity.CurrentHP == 0
+                //    || newEntity.Reader == null
+                //    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
+                //    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS
+                //    || newEntity.AreaName == "<ERROR>"
+                //    )
+                //    continue;
 
                 if (Configuration.HidePartyMembers)
                 {

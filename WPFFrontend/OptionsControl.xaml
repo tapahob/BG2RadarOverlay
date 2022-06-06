@@ -2,15 +2,15 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"  
              xmlns:local="clr-namespace:WPFFrontend"
              Grid.Column="2" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="2"
              mc:Ignorable="d" Visibility="Collapsed" d:Visibility="Visible"
-             VerticalAlignment="Top" HorizontalAlignment="Center">
+             VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="9000">
     <UserControl.Background>
         <ImageBrush ImageSource="/pexels-photo-235985.jpeg" Stretch="UniformToFill"/>
     </UserControl.Background>
-    <Grid >
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="15"/>
             <RowDefinition Height="*"/>
@@ -31,7 +31,7 @@
             <ColumnDefinition Width="180"/>
             <ColumnDefinition Width="10"/>
         </Grid.ColumnDefinitions>
-        <Label Grid.Row="1" Grid.Column="3" Content="X" FontSize="16" HorizontalAlignment="Right" MouseDown="Label_MouseDown" FontFamily="Segoe Print"  Margin="0,0,3,0"/>
+        <Label x:Name="CloseBtn" Grid.Row="1" Grid.Column="3" Content="X" FontSize="16" HorizontalAlignment="Right" FontFamily="Segoe Print" Margin="0,0,3,0"/>
         <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="18" Content="Options" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Width="80"/>
         <Border Grid.RowSpan="11" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
         <Border Grid.Row="3"  Grid.Column="1" Grid.ColumnSpan="1" BorderThickness="1" BorderBrush="#FF151313"/>
@@ -57,7 +57,7 @@
             <Label Content="Performance" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center"/>
             <StackPanel Orientation="Horizontal">
                 <Label Content="Refresh Rate (ms):" FontFamily="Segoe Print" FontWeight="Bold" />
-                <TextBox x:Name="RefreshRate" PreviewTextInput="TextBox_PreviewTextInput" MinWidth="50" Text="300" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
+                <TextBox x:Name="RefreshRate" MinWidth="50" Text="300" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
             </StackPanel>
         </StackPanel>
         <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click"/>

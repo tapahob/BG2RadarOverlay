@@ -46,6 +46,7 @@ namespace WPFFrontend
             this.BGEntity = item;
             if (item.Type != 49)
                 return;
+            this.BGEntity.LoadCREResource();
             this.BGEntity.LoadDerivedStats();
             this.BGEntity.loadTimedEffects();
             this.DataContext = this.BGEntity;
@@ -91,7 +92,7 @@ namespace WPFFrontend
                     bool isPresent = buffs.ContainsKey(x.Item1);
                     if (isPresent)
                     {
-                        buffs[x.Item1].BuffDuration = durationFloat;
+                        buffs[x.Item1].BuffDuration = x.Item3 == uint.MaxValue ? float.MaxValue : durationFloat;
                         return;                    
                     }
                     BitmapSource newIcon;
@@ -110,7 +111,7 @@ namespace WPFFrontend
                     var buffControl = new BuffControl() 
                     { 
                         BuffName = x.Item1, 
-                        BuffDuration = durationFloat, 
+                        BuffDuration = x.Item3 == uint.MaxValue ? float.MaxValue : durationFloat, 
                         Icon = newIcon, 
                         BuffDurationAbsolute = x.Item3 
                     };
