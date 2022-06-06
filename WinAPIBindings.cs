@@ -14,19 +14,19 @@ namespace WinApiBindings
         [Flags]
         public enum ProcessAccessFlags : uint
         {
-            All = 0x001F0FFF,
-            Terminate = 0x00000001,
-            CreateThread = 0x00000002,
-            VirtualMemoryOperation = 0x00000008,
-            VirtualMemoryRead = 0x00000010,
-            VirtualMemoryWrite = 0x00000020,
-            DuplicateHandle = 0x00000040,
-            CreateProcess = 0x000000080,
-            SetQuota = 0x00000100,
-            SetInformation = 0x00000200,
-            QueryInformation = 0x00000400,
+            All                     = 0x001F0FFF,
+            Terminate               = 0x00000001,
+            CreateThread            = 0x00000002,
+            VirtualMemoryOperation  = 0x00000008,
+            VirtualMemoryRead       = 0x00000010,
+            VirtualMemoryWrite      = 0x00000020,
+            DuplicateHandle         = 0x00000040,
+            CreateProcess           = 0x000000080,
+            SetQuota                = 0x00000100,
+            SetInformation          = 0x00000200,
+            QueryInformation        = 0x00000400,
             QueryLimitedInformation = 0x00001000,
-            Synchronize = 0x00100000
+            Synchronize             = 0x00100000
         }
 
         [DllImport("user32.dll")]
@@ -244,33 +244,33 @@ namespace WinApiBindings
         private enum SnapshotFlags : uint
         {
             HeapList = 0x00000001,
-            Process = 0x00000002,
-            Thread = 0x00000004,
-            Module = 0x00000008,
+            Process  = 0x00000002,
+            Thread   = 0x00000004,
+            Module   = 0x00000008,
             Module32 = 0x00000010,
-            Inherit = 0x80000000,
-            All = 0x0000001F,
-            NoHeaps = 0x40000000
+            Inherit  = 0x80000000,
+            All      = 0x0000001F,
+            NoHeaps  = 0x40000000
         }
 
         [Flags]
         public enum ShowWindowCommands : uint
         {
-            SW_HIDE = 0,
-            SW_SHOWNORMAL = 1,
-            SW_NORMAL = 1,
-            SW_SHOWMINIMIZED = 2,
-            SW_SHOWMAXIMIZED = 3,
-            SW_MAXIMIZE = 3,
-            SW_SHOWNOACTIVATE = 4,
-            SW_SHOW = 5,
-            SW_MINIMIZE = 6,
+            SW_HIDE            = 0,
+            SW_SHOWNORMAL      = 1,
+            SW_NORMAL          = 1,
+            SW_SHOWMINIMIZED   = 2,
+            SW_SHOWMAXIMIZED   = 3,
+            SW_MAXIMIZE        = 3,
+            SW_SHOWNOACTIVATE  = 4,
+            SW_SHOW            = 5,
+            SW_MINIMIZE        = 6,
             SW_SHOWMINNOACTIVE = 7,
-            SW_SHOWNA = 8,
-            SW_RESTORE = 9,
-            SW_SHOWDEFAULT = 10,
-            SW_FORCEMINIMIZE = 11,
-            SW_MAX = 11
+            SW_SHOWNA          = 8,
+            SW_RESTORE         = 9,
+            SW_SHOWDEFAULT     = 10,
+            SW_FORCEMINIMIZE   = 11,
+            SW_MAX             = 11
         }
         
         [DllImport("user32.dll", EntryPoint = "SetWindowLong")]
@@ -289,36 +289,33 @@ namespace WinApiBindings
         [Flags]
         public enum WindowStyles : uint
         {
-            WS_OVERLAPPED = 0x00000000,
-            WS_POPUP = 0x80000000,
-            WS_CHILD = 0x40000000,
-            WS_MINIMIZE = 0x20000000,
-            WS_VISIBLE = 0x10000000,
-            WS_DISABLED = 0x08000000,
-            WS_CLIPSIBLINGS = 0x04000000,
-            WS_CLIPCHILDREN = 0x02000000,
-            WS_MAXIMIZE = 0x01000000,
-            WS_BORDER = 0x00800000,
-            WS_DLGFRAME = 0x00400000,
-            WS_VSCROLL = 0x00200000,
-            WS_HSCROLL = 0x00100000,
-            WS_SYSMENU = 0x00080000,
-            WS_THICKFRAME = 0x00040000,
-            WS_GROUP = 0x00020000,
-            WS_TABSTOP = 0x00010000,
-
-            WS_MINIMIZEBOX = 0x00020000,
-            WS_MAXIMIZEBOX = 0x00010000,
-
-            WS_CAPTION = WS_BORDER | WS_DLGFRAME,
-            WS_TILED = WS_OVERLAPPED,
-            WS_ICONIC = WS_MINIMIZE,
-            WS_SIZEBOX = WS_THICKFRAME,
-            WS_TILEDWINDOW = WS_OVERLAPPEDWINDOW,
-
+            WS_OVERLAPPED       = 0x00000000,
+            WS_POPUP            = 0x80000000,
+            WS_CHILD            = 0x40000000,
+            WS_MINIMIZE         = 0x20000000,
+            WS_VISIBLE          = 0x10000000,
+            WS_DISABLED         = 0x08000000,
+            WS_CLIPSIBLINGS     = 0x04000000,
+            WS_CLIPCHILDREN     = 0x02000000,
+            WS_MAXIMIZE         = 0x01000000,
+            WS_BORDER           = 0x00800000,
+            WS_DLGFRAME         = 0x00400000,
+            WS_VSCROLL          = 0x00200000,
+            WS_HSCROLL          = 0x00100000,
+            WS_SYSMENU          = 0x00080000,
+            WS_THICKFRAME       = 0x00040000,
+            WS_GROUP            = 0x00020000,
+            WS_TABSTOP          = 0x00010000,
+            WS_MINIMIZEBOX      = 0x00020000,
+            WS_MAXIMIZEBOX      = 0x00010000,
+            WS_CAPTION          = WS_BORDER | WS_DLGFRAME,
+            WS_TILED            = WS_OVERLAPPED,
+            WS_ICONIC           = WS_MINIMIZE,
+            WS_SIZEBOX          = WS_THICKFRAME,
+            WS_TILEDWINDOW      = WS_OVERLAPPEDWINDOW,
             WS_OVERLAPPEDWINDOW = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
-            WS_POPUPWINDOW = WS_POPUP | WS_BORDER | WS_SYSMENU,
-            WS_CHILDWINDOW = WS_CHILD,
+            WS_POPUPWINDOW      = WS_POPUP | WS_BORDER | WS_SYSMENU,
+            WS_CHILDWINDOW      = WS_CHILD,
         }
         }
     }

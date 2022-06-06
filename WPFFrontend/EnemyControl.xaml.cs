@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
 namespace WPFFrontend
@@ -23,7 +24,7 @@ namespace WPFFrontend
         {
             InitializeComponent();
             this.UserControl.Margin = new Thickness(left, 0, 0, 0);
-            this.mainWindow = mainWindow;
+            this.mainWindow         = mainWindow;
             this.updateView(bgEntity);
             this.MouseRightButtonUp += EnemyControl_MouseRightButtonDown;
         }
@@ -37,8 +38,21 @@ namespace WPFFrontend
 
         public void Label_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            mainWindow.deleteMe(BGEntity.tag);
-            (this.Parent as Grid)?.Children.Remove(this);
+            var ofs                 = this.RenderTransform.Value.OffsetY;
+            ThicknessAnimation anim = new ThicknessAnimation();
+            anim.From               = this.Margin;
+            var newMargin           = this.Margin;
+            newMargin.Top           = -this.ActualHeight - ofs;
+            anim.To                 = newMargin;
+            anim.EasingFunction     = new BackEase() { Amplitude = .5, EasingMode = EasingMode.EaseIn };
+            anim.Duration           = TimeSpan.FromSeconds(.45);
+            anim.Completed         += (o, e) =>
+            {
+                mainWindow.deleteMe(BGEntity.tag);
+                (this.Parent as Grid)?.Children.Remove(this);
+            };
+            anim.FillBehavior = FillBehavior.HoldEnd;
+            this.BeginAnimation(System.Windows.Controls.UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
         internal void updateView(BGEntity item)

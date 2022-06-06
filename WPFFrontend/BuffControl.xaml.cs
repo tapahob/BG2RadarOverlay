@@ -51,9 +51,9 @@ namespace WPFFrontend
                 Label2.FontSize = 16;
                 Label2.Margin = new System.Windows.Thickness(0, 25, 0, 0);
 
-                this.Width = 40;
-                this.Height = 40;
-                Image.Width = 40;
+                this.Width   = 40;
+                this.Height  = 40;
+                Image.Width  = 40;
                 Image.Height = 40;
             }
             if (!Configuration.BigBuffIcons && Label1.FontSize == 16)
@@ -64,9 +64,9 @@ namespace WPFFrontend
                 Label2.FontSize = 12;
                 Label2.Margin = new System.Windows.Thickness(0, 13, 0, 0);
 
-                this.Width = 24;
-                this.Height = 24;
-                Image.Width = 24;
+                this.Width   = 24;
+                this.Height  = 24;
+                Image.Width  = 24;
                 Image.Height = 24;
             }
         }

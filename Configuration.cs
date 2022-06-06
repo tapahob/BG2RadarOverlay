@@ -26,15 +26,15 @@ namespace BGOverlay
 
         public static void Init()
         {
-            Borderless = true;
+            Borderless       = true;
             HidePartyMembers = false;
-            HideNeutrals = false;
-            HideAllies = false;
-            ShowTraps = false;
-            RefreshTimeMS = 300;
-            Locale = "en_US";
-            GameFolder = "None";
-            BigBuffIcons = true;
+            HideNeutrals     = false;
+            HideAllies       = false;
+            ShowTraps        = false;
+            RefreshTimeMS    = 300;
+            Locale           = "en_US";
+            GameFolder       = "None";
+            BigBuffIcons     = true;
             loadConfig();
             detectLocale();
             detectGameFolder();            

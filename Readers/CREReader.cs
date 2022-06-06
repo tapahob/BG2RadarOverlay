@@ -15,13 +15,13 @@ namespace BGOverlay
         public CREReader(ResourceManager resourceManager, String creFilename = "DUERGAR.CRE", int originOffset = 0, string biffArchivePath = "")
         {
             this.resourceManager = resourceManager;
-            var filename = creFilename;
+            var filename         = creFilename;
             var overrideCreFilename = $"{gameDirectory}\\override\\{creFilename}";
             if (File.Exists(overrideCreFilename))
             {
-                originOffset = 0;
+                originOffset    = 0;
                 biffArchivePath = "";
-                filename = overrideCreFilename;
+                filename        = overrideCreFilename;
             } 
             else
             {   
@@ -50,7 +50,7 @@ namespace BGOverlay
             {
                 reader.BaseStream.Seek(originOffset, SeekOrigin.Begin);
                 this.Signature = new string(reader.ReadChars(4));
-                this.Version = new string(reader.ReadChars(4));
+                this.Version   = new string(reader.ReadChars(4));
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
                 this.LongName = text?.Text;
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);

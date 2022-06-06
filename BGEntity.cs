@@ -73,8 +73,8 @@ namespace BGOverlay
                 }
                 return (this.Reader.KitInformation != CREReader.KIT.NONE
                     && this.Reader.KitInformation != CREReader.KIT.TRUECLASS)
-                    ? this.Reader.KitInformation.ToString().Replace('_', ' ')
-                    : this.Reader.Class.ToString()[0] + this.Reader.Class.ToString().ToLower().Substring(1).Replace('_', ' ');
+                        ? this.Reader.KitInformation.ToString().Replace('_', ' ')
+                        : this.Reader.Class.ToString()[0] + this.Reader.Class.ToString().ToLower().Substring(1).Replace('_', ' ');
             }
         }
 
@@ -82,10 +82,10 @@ namespace BGOverlay
         {
             get
             {
-                var allEffects = this.Reader.Effects.Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String);
-                var result = new List<String>();
+                var allEffects    = this.Reader.Effects.Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String);
+                var result        = new List<String>();
                 var opCodeStrings = new List<String>();
-                var spellStrings = new List<String>();
+                var spellStrings  = new List<String>();
                 if (DerivedStatsTemp.WeaponImmune.Count > 0)
                 {
                     result.Add($"Requires +{DerivedStatsTemp.WeaponImmune.Count} weapons to be hit");
@@ -252,11 +252,11 @@ namespace BGOverlay
 
         public BGEntity(ResourceManager resourceManager, IntPtr entityIdPtr)
         {
-            this.entityIdPtr = entityIdPtr;
+            this.entityIdPtr     = entityIdPtr;
             this.resourceManager = resourceManager;
-            this.Loaded = false;
+            this.Loaded          = false;
             // 1020 bytes CGameAIBase
-            this.Id = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x48 }));
+            this.Id   = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x48 }));
             this.Type = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x8 }));
             if (Type != 49)
                 return;
@@ -267,26 +267,26 @@ namespace BGOverlay
             this.CreResourceFilename = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x540 }), 8).Trim('*') + ".CRE";
 
             IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
-            this.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
-            this.RACE = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
-            this.CLASS = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
+            this.EnemyAlly      = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
+            this.RACE           = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
+            this.CLASS          = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
 
             if (this.CreResourceFilename == ".CRE")
                 return;
             this.cInfGamePtr = WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x228 });
             this.updateTime();
-            this.AreaName = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
-            this.MousePosX = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 }));
-            this.MousePosY = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 + 4 }));
-            this.CInfinityPtr = cGameAreaPtr + 0x5C8;
-            this.MousePosX1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 }));
-            this.MousePosY1 = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
-            this.ViewportHeight = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
-            this.ViewportWidth = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
-            this.Name2 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0 }), 64);
-            this.Name1 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);
-            this.CurrentHP = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
-            this.timedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
+            this.AreaName              = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
+            this.MousePosX             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 }));
+            this.MousePosY             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 + 4 }));
+            this.CInfinityPtr          = cGameAreaPtr + 0x5C8;
+            this.MousePosX1            = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 }));
+            this.MousePosY1            = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
+            this.ViewportHeight        = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
+            this.ViewportWidth         = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
+            this.Name2                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0 }), 64);
+            this.Name1                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);
+            this.CurrentHP             = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
+            this.timedEffectsPointer   = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
             this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x49B0 });
 
             //TODO: ~!!
@@ -314,10 +314,10 @@ namespace BGOverlay
 
         public void LoadDerivedStats()
         {
-            this.DerivedStats = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1120 }));
+            this.DerivedStats      = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1120 }));
             this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x2A70 }));
-            this.DerivedStatsTemp = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1DC8 }));
-            this.THAC0 = DerivedStats.THAC0 - DerivedStatsTemp.HitBonus - DerivedStats.THAC0BonusRight;
+            this.DerivedStatsTemp  = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1DC8 }));
+            this.THAC0             = DerivedStats.THAC0 - DerivedStatsTemp.HitBonus - DerivedStats.THAC0BonusRight;
             this.calcAPR();
         }
 
@@ -361,10 +361,10 @@ namespace BGOverlay
 
         private void loadEquipedEffects()
         {
-            var intPtr = this.equipedEffectsPointer;
+            var intPtr          = this.equipedEffectsPointer;
             this.EquipedEffects = new List<CGameEffect>();
-            var list = new CPtrList(intPtr);
-            var count = list.Count;
+            var list            = new CPtrList(intPtr);
+            var count           = list.Count;
             if (count > 300)
                 return;
             var node = list.Head;
@@ -383,10 +383,10 @@ namespace BGOverlay
         public void loadTimedEffects()
         {
             this.updateTime();
-            var intPtr = this.timedEffectsPointer;
+            var intPtr        = this.timedEffectsPointer;
             this.TimedEffects = new List<CGameEffect>();
-            var list = new CPtrList(intPtr);
-            var count = list.Count;
+            var list          = new CPtrList(intPtr);
+            var count         = list.Count;
             if (count > 300)
                 return;
             var node = list.Head;
