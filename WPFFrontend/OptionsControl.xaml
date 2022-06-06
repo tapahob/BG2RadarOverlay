@@ -33,6 +33,7 @@
         </Grid.ColumnDefinitions>
         <Label x:Name="CloseBtn" Grid.Row="1" Grid.Column="3" Content="X" FontSize="16" HorizontalAlignment="Right" FontFamily="Segoe Print" Margin="0,0,3,0"/>
         <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="18" Content="Options" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Width="80"/>
+        <Label x:Name="Version" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="10" d:Content="Ver. 2.0.3.2" Content="{Binding Configuration.Version}" FontFamily="Segoe Print" HorizontalAlignment="Center" Margin="0,26,0,30" Grid.RowSpan="2" Width="80"/>
         <Border Grid.RowSpan="11" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
         <Border Grid.Row="3"  Grid.Column="1" Grid.ColumnSpan="1" BorderThickness="1" BorderBrush="#FF151313"/>
         <StackPanel Grid.Row="3" Grid.Column="1" Margin="5,5,5,5">

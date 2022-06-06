@@ -18,7 +18,7 @@ namespace WPFFrontend
         public OptionsControl()
         {
             InitializeComponent();
-
+            this.Version.Content = $"Ver. {Configuration.Version}";
             this.HidePartyMembers.Click += updateConfig;
             this.HideNeutrals.Click += updateConfig;
             this.HideAllies.Click += updateConfig;
@@ -74,11 +74,9 @@ namespace WPFFrontend
 
         public void Init()
         {
-            if (this.initializedOnce)
-                return;
             this.HidePartyMembers.IsChecked = Configuration.HidePartyMembers;
             this.HideNeutrals.IsChecked = Configuration.HideNeutrals;
-            this.HideNeutrals.IsChecked = Configuration.HideAllies;
+            this.HideAllies.IsChecked = Configuration.HideAllies;
             this.EnableBorderlessMode.IsChecked = Configuration.Borderless;
             this.RefreshRate.Text = Configuration.RefreshTimeMS.ToString();
             this.BigBuffIcons.IsChecked = Configuration.BigBuffIcons;

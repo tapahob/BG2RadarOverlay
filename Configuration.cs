@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -20,7 +21,8 @@ namespace BGOverlay
         public static IntPtr HWndPtr { get; set; }
         public static bool BigBuffIcons { get; set; }
 
-        private static readonly string version = "2.0.3";
+        private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
+        public static readonly string Version = "2.0.3.2";
 
         public static void Init()
         {
@@ -72,7 +74,7 @@ namespace BGOverlay
         {
             File.WriteAllLines("config.cfg", new string[] 
             { 
-                $"Version={version}",
+                $"Version={Version}",
                 $"GameFolder={GameFolder}", 
                 $"Locale={Locale}",
                 $"Borderless={Borderless}",
@@ -94,25 +96,38 @@ namespace BGOverlay
             try
             {
                 var config = File.ReadAllLines("config.cfg");
-                var version = config[0].Split('=')[1].Trim();
-                if (version != Configuration.version)
+                foreach (var line in config)
+                {
+                    var split = line.Split('=');
+                    storedConfig[split[0]] = split[1];
+                }
+
+                var version = getProperty("Version", Configuration.Version); ;                
+                GameFolder       = getProperty("GameFolder", "None");
+                Locale           = getProperty("Locale", "en_US");
+                Borderless       = getProperty("Borderless", "true").Equals("true");
+                HidePartyMembers = getProperty("HidePartyMembers", "false").Equals("true");
+                RefreshTimeMS    = int.Parse(getProperty("RefreshTimeMs", "300"));
+                ShowTraps        = getProperty("ShowTraps", "false").Equals("true");
+                HideNeutrals     = getProperty("HideNeutrals", "false").Equals("true");
+                HideAllies       = getProperty("HideAllies", "false").Equals("true");
+                BigBuffIcons     = getProperty("BigBuffIcons", "false").Equals("true");
+                if (version != Configuration.Version)
                 {
                     File.Delete("config.cfg");
                     loadConfig();
                 }
-                GameFolder = config[1].Split('=')[1].Trim();
-                Locale = config[2].Split('=')[1].Trim();
-                Borderless = config[3].Split('=')[1].Trim().ToLower().Equals("true");
-                HidePartyMembers = config[4].Split('=')[1].Trim().ToLower().Equals("true");
-                RefreshTimeMS = int.Parse(config[5].Split('=')[1].Trim());
-                ShowTraps = config[6].Split('=')[1].Trim().ToLower().Equals("true");
-                HideNeutrals = config[7].Split('=')[1].Trim().ToLower().Equals("true");
-                HideAllies = config[8].Split('=')[1].Trim().ToLower().Equals("true");
-                BigBuffIcons = config[9].Split('=')[1].Trim().ToLower().Equals("true");
             } catch (Exception ex)
             {
                 // nothing
             }            
+        }
+
+        private static string getProperty(string key, string def)
+        {
+            if (!storedConfig.TryGetValue(key, out var value))
+                return def;
+            return value.Trim().ToLower();
         }
 
         public static void ForceBorderless()
