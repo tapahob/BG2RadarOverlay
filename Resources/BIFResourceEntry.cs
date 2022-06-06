@@ -60,13 +60,13 @@ namespace BGOverlay.Resources
 
         public BIFResourceEntry(int index, BinaryReader reader, ResourceManager resourceManager)
         {
-            this.Index = index;
-            this.ResourceName = new string(reader.ReadChars(8)).Trim('\0').ToUpper();
-            this.ResourceType = reader.ReadInt16() & 0xffff;
+            this.Index           = index;
+            this.ResourceName    = new string(reader.ReadChars(8)).Trim('\0').ToUpper();
+            this.ResourceType    = reader.ReadInt16() & 0xffff;
             this.ResourceLocator = reader.ReadInt32();
-            this.Ext = (Extension)ResourceType;
-            this.BiffEntry = resourceManager.BIFEntries.FirstOrDefault(x => x.Index == ((ResourceLocator >> 20) & 0xfff));
-            this.FullName = $"{ResourceName}.{Ext.ToString().Substring(Ext.ToString().Length-3, 3)}".ToUpper();
+            this.Ext             = (Extension)ResourceType;
+            this.BiffEntry       = resourceManager.BIFEntries.FirstOrDefault(x => x.Index == ((ResourceLocator >> 20) & 0xfff));
+            this.FullName        = $"{ResourceName}.{Ext.ToString().Substring(Ext.ToString().Length-3, 3)}".ToUpper();
             this.resourceManager = resourceManager;
         }
 
@@ -74,8 +74,8 @@ namespace BGOverlay.Resources
         {
             if (Ext == Extension.CRE)
             {
-                var bifArchive = BiffEntry.FileName.Substring(BiffEntry.FileName.LastIndexOf('/') + 1);
-                var allEntries = resourceManager.GetBIFFReader(bifArchive).BIFFV1FileEntries;
+                var bifArchive    = BiffEntry.FileName.Substring(BiffEntry.FileName.LastIndexOf('/') + 1);
+                var allEntries    = resourceManager.GetBIFFReader(bifArchive).BIFFV1FileEntries;
                 var biffFileEntry = allEntries[ResourceLocator & 0xfffff];
                 if (biffFileEntry.Ext != Extension.CRE)
                 {

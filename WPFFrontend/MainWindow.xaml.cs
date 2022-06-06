@@ -108,7 +108,7 @@ namespace WPFFrontend
             anim.EasingFunction = new BackEase() { Amplitude = .7, EasingMode = EasingMode.EaseOut };
             anim.FillBehavior = FillBehavior.HoldEnd;
             this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
-            this.MinMaxBtn.Opacity = .05;
+            this.MinMaxBtn.Opacity = .25;
         }
 
         private void MinMaxBtn_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
@@ -235,7 +235,7 @@ namespace WPFFrontend
         private void MinMaxBtn_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             options.Init();
-            options.Visibility = options.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            options.Show();
         }
     }
 }

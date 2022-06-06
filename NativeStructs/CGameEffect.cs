@@ -53,7 +53,7 @@ namespace BGOverlay.NativeStructs
                 //}                
                 if (splReader.Name1 != "-1" && splReader.IconBAM != null)
                     this.Icon = resourceManager.GetBAMReader(splReader.IconBAM)?.Image;
-                return new Tuple<string, Bitmap, uint>(spellName, this.Icon, Duration);
+                return new Tuple<string, Bitmap, uint>(spellName, this.Icon, DurationType == 1 ? uint.MaxValue : Duration);
             }
             return null;
         }

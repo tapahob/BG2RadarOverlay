@@ -19,8 +19,8 @@ namespace BGOverlay
             SPLReaderCache     = new Dictionary<string, SPLReader>();
             BAMReaderCache     = new Dictionary<string, BAMReader>();
         }
-        public List<BIFResourceEntry> CREResourceEntries            => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.CRE).ToList();
-        public List<BIFResourceEntry> SPLResourceEntries            => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.SPL).ToList();
+        public List<BIFResourceEntry> CREResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.CRE).ToList();
+        public List<BIFResourceEntry> SPLResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.SPL).ToList();
 
         public Dictionary<int, TLKEntry> StringRefs                     = null;
         public List<BIFEntry> BIFEntries                                = null; 
@@ -66,9 +66,6 @@ namespace BGOverlay
             if (!SPLReaderCache.TryGetValue(splFilename, out var reader))
             {
                 reader = new SPLReader(this, splFilename);
-
-                if (reader.Name1 == null)
-                    return null;
                 SPLReaderCache[splFilename] = reader;
             }
             return reader;
@@ -103,6 +100,10 @@ namespace BGOverlay
                     {
                         var key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename));
                         reader = CREReaderCache[key];
+                    }
+                    else
+                    {
+                        CREReaderCache[creFilename] = reader;
                     }
                 }
                 catch (ArgumentException)

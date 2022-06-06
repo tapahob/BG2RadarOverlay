@@ -30,9 +30,9 @@ namespace BGOverlay
             var All = new List<BGEntity>();
 
             var staticEntityList = moduleBase + 0x68D438 + 0x18;
-            var test = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { });
-            var length = WinAPIBindings.ReadInt32(moduleBase + 0x68D434);
-            var marginOfError = 500;
+            var test             = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { });
+            var length           = WinAPIBindings.ReadInt32(moduleBase + 0x68D434);
+            var marginOfError    = 500;
 
             // First i = 32016
             for (int i = 2000 * 16; i < length*16 + marginOfError; i+=16)
@@ -48,15 +48,6 @@ namespace BGOverlay
                     continue;
 
                 All.Add(newEntity);
-
-                if (newEntity.CurrentHP == 0
-                    || newEntity.Reader == null
-                    || newEntity.Reader.Class == CREReader.CLASS.INNOCENT
-                    || newEntity.Reader.Class == CREReader.CLASS.NO_CLASS
-                    || newEntity.AreaName == "<ERROR>"
-                    )
-                    continue;
-
                 if (Configuration.HidePartyMembers)
                 {
                     if (newEntity.EnemyAlly == 2)
@@ -74,26 +65,20 @@ namespace BGOverlay
                     if (newEntity.EnemyAlly == 4)
                         continue;
                 }
-
-                //if (newEntity.Reader.EnemyAlly != 255
-                //    || newEntity.Reader.EnemyAlly != 128
-                //    || newEntity.Reader.EnemyAlly != 5
-                //    || newEntity.Reader.EnemyAlly != 28)
-                //    continue;
                 newEntity.tag = index;
                 entityListTemp.Add(newEntity);                    
             }
-            entityList = new ConcurrentBag<BGEntity>(entityListTemp);
-            var nearestThings = All.Where(y => clip(y));
+            entityList          = new ConcurrentBag<BGEntity>(entityListTemp);
+            var nearestThings   = All.Where(y => clip(y));
             this.NearestEnemies = entityListTemp.Where(y => clip(y));
-            TextEntries = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());            
+            TextEntries         = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());            
             Thread.Sleep(Configuration.RefreshTimeMS);
         }
 
         public void Init()
         {
             Configuration.Init();
-            this.TextEntries = new ObservableCollection<string>();
+            this.TextEntries     = new ObservableCollection<string>();
             this.ResourceManager = new ResourceManager();
             ResourceManager.Init();
             while (Process.GetProcessesByName("Baldur").Length == 0)

@@ -15,12 +15,12 @@ namespace BGOverlay.Readers
         {
             public FrameEntry(BinaryReader reader)
             {
-                this.Width = reader.ReadInt16();
-                this.Height = reader.ReadInt16();
-                this.CenterX = reader.ReadInt16();
-                this.CenterY = reader.ReadInt16();
-                var frameData = reader.ReadInt32();
-                this.FrameData = frameData & 0x7fffffff;                
+                this.Width      = reader.ReadInt16();
+                this.Height     = reader.ReadInt16();
+                this.CenterX    = reader.ReadInt16();
+                this.CenterY    = reader.ReadInt16();
+                var frameData   = reader.ReadInt32();
+                this.FrameData  = frameData & 0x7fffffff;                
                 this.Compressed = (frameData & 0x80000000) == 0;
             }
 
@@ -60,9 +60,9 @@ namespace BGOverlay.Readers
                     return;
                 }
                 var resourceLocator = bifResourceEntry.ResourceLocator;
-                var bifFilePath = bifResourceEntry.BiffEntry.FileName;
-                var allEntries = resourceManager.GetBIFFReader(bifFilePath.Substring(bifFilePath.LastIndexOf('/') + 1)).BIFFV1FileEntries;
-                var biffFileEntry = allEntries[resourceLocator & 0xfffff];
+                var bifFilePath     = bifResourceEntry.BiffEntry.FileName;
+                var allEntries      = resourceManager.GetBIFFReader(bifFilePath.Substring(bifFilePath.LastIndexOf('/') + 1)).BIFFV1FileEntries;
+                var biffFileEntry   = allEntries[resourceLocator & 0xfffff];
                 if (biffFileEntry.Ext != Extension.BAM)
                 {
                     throw new Exception();
@@ -75,7 +75,7 @@ namespace BGOverlay.Readers
             {
                 reader.BaseStream.Seek(originalOffset, SeekOrigin.Begin);
                 this.Signature = new String(reader.ReadChars(4)); // BAMC ><
-                this.Version = new String(reader.ReadChars(4));                
+                this.Version   = new String(reader.ReadChars(4));                
                 if (this.Signature == "BAMC")
                 {
                     var size = reader.ReadInt32();
@@ -86,7 +86,7 @@ namespace BGOverlay.Readers
                     {
                         ms.Seek(0, SeekOrigin.Begin);
                         this.Signature = new String(reader2.ReadChars(4)); // BAMC ><
-                        this.Version = new String(reader2.ReadChars(4));
+                        this.Version   = new String(reader2.ReadChars(4));
                         InitHeader(reader2);
                         LoadResources(0, reader2);
                         LoadImage(0, reader2);
@@ -123,14 +123,13 @@ namespace BGOverlay.Readers
                 BAMPalette[i] = reader.ReadUInt32();
             }
 
-            int frameIdx = 0;            
-            int srcWidth = Frames[frameIdx].Width;
-            int srcHeight = Frames[frameIdx].Height;
-            var dstHeight = 32;
-            var dstWidth = 32;
-            
+            int frameIdx      = 0;            
+            int srcWidth      = Frames[frameIdx].Width;
+            int srcHeight     = Frames[frameIdx].Height;
+            var dstHeight     = 32;
+            var dstWidth      = 32;            
             bool isCompressed = Frames[frameIdx].Compressed;
-            int ofsData = Frames[frameIdx].FrameData;
+            int ofsData       = Frames[frameIdx].FrameData;
 
             int left, top, maxWidth, maxHeight, srcOfs, dstOfs ,count = 0;
             uint color = 0;
@@ -197,7 +196,7 @@ namespace BGOverlay.Readers
             for (int i = 0; i < 256; ++i)
                 pal.Entries[i] = Color.FromArgb(unchecked((int) BAMPalette[i]));
             img.Palette = pal;
-            this.Image = img;
+            this.Image  = img;
         }
 
         private void LoadResources(int originalOffset, BinaryReader reader)
@@ -215,11 +214,11 @@ namespace BGOverlay.Readers
 
         private void InitHeader(BinaryReader reader)
         {
-            this.CountEntries = reader.ReadInt16();
-            this.CountCycles = reader.ReadByte();
-            this.ColorIndex = reader.ReadByte() & 0xff;
-            this.OffsetFrameEntries = reader.ReadInt32();
-            this.OffsetFramePalette = reader.ReadInt32();
+            this.CountEntries                = reader.ReadInt16();
+            this.CountCycles                 = reader.ReadByte();
+            this.ColorIndex                  = reader.ReadByte() & 0xff;
+            this.OffsetFrameEntries          = reader.ReadInt32();
+            this.OffsetFramePalette          = reader.ReadInt32();
             this.OffsetFrameFrameLookupTable = reader.ReadInt32();
         }
 

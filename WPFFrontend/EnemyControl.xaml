@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:i="http://schemas.microsoft.com/xaml/behaviors" xmlns:wpffrontend="clr-namespace:WPFFrontend"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors" 
+             xmlns:wpffrontend="clr-namespace:WPFFrontend"
     x:Class="WPFFrontend.EnemyControl"
              mc:Ignorable="d" 
              Height="Auto" Width="450"
@@ -54,11 +55,9 @@
             <StackPanel Margin="5,5,5,5">
                 <Label x:Name="EnemyName" d:Content="Дуэргар" HorizontalAlignment="Center"  FontFamily="Segoe Print" FontWeight="Bold" ClipToBounds="True" Content="{Binding Name2}"/>
                 <Label x:Name="ClassesAndLevels" Content="{Binding Class}" d:Content="Warrior Thief Mage" HorizontalAlignment="Center" ClipToBounds="True">
-
                 </Label>
                 <Label x:Name="Race" d:Content="78m" Content="{Binding Race}" ContentStringFormat="Race: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
                 <UniformGrid x:Name="BuffStack" Columns="8"/>
-
             </StackPanel>
         </Border>
 
@@ -100,14 +99,12 @@
             <Label x:Name="ResPiercing" Content="{Binding DerivedStatsTemp.ResistPiercing}" ContentStringFormat="Resist Piercing: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResMissile" Content="{Binding DerivedStatsTemp.ResistMissile}" ContentStringFormat="Resist Missile: {0}" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
         </StackPanel>
-        <!--<Border Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="2" >-->
-            <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}" FontFamily="Segoe print" FontSize="18" FontWeight="Bold" Foreground="Black" TextWrapping="Wrap"/>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
-        <!--</Border>-->
+        <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}" FontFamily="Segoe print" FontSize="18" FontWeight="Bold" Foreground="Black" TextWrapping="Wrap"/>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
     </Grid>
 </UserControl>

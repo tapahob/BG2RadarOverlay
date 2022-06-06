@@ -30,10 +30,10 @@ namespace BGOverlay.Resources
             this.ParentResource = new string(reader.ReadChars(8));
 
             reader.BaseStream.Seek(offset + 0x0060 - 16, SeekOrigin.Begin);
-            this.Param3 = reader.ReadInt32();
-            this.Param4 = reader.ReadInt32();
-            this.Param5 = reader.ReadInt32();
-            this.Param6 = reader.ReadInt32();
+            this.Param3    = reader.ReadInt32();
+            this.Param4    = reader.ReadInt32();
+            this.Param5    = reader.ReadInt32();
+            this.Param6    = reader.ReadInt32();
             this.Resource2 = new string(reader.ReadChars(8));
             this.Resource3 = new string(reader.ReadChars(8));
 
