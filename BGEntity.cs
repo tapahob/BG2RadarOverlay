@@ -56,7 +56,7 @@ namespace BGOverlay
         {
             get
             {
-                if (this.CreResourceFilename == "HARBASE.CRE")
+                if (this.Reader.Race != this.RACE)
                 {
                     return this.RACE.ToString()[0] + this.RACE.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-"); 
                 }
@@ -67,7 +67,7 @@ namespace BGOverlay
         public string Class {
             get
             {
-                if (this.CreResourceFilename == "HARBASE.CRE")
+                if (this.CLASS != this.Reader.Class)
                 {
                     return this.CLASS.ToString()[0] + this.CLASS.ToString().ToLower().Substring(1).Replace('_', ' ');
                 }
@@ -86,9 +86,32 @@ namespace BGOverlay
                 var result        = new List<String>();
                 var opCodeStrings = new List<String>();
                 var spellStrings  = new List<String>();
-                if (DerivedStatsTemp.WeaponImmune.Count > 0)
+                if (DerivedStats.WeaponImmune.Count > 0)
                 {
-                    result.Add($"Requires +{DerivedStatsTemp.WeaponImmune.Count} weapons to be hit");
+                    var a = this.TimedEffects.Where(x => x.EffectId == Effect.Protection_from_Weapons);
+                    
+                    if (a.Any())
+                    {
+                        if (a.Any(x => x.dWFlags == 1))
+                        {
+                            var str = $"Protected from Magic";
+                            if (a.Any(x => x.dWFlags == 2))
+                            {
+                                str += " and Normal";
+                            }
+                            str += " Weapons";
+                            result.Add(str);
+                        }
+                        else
+                        {
+                            var c = a.Where(x => x.dWFlags != 1).Count();
+                            var b = Math.Max(c, DerivedStats.WeaponImmune.Count);
+                            result.Add($"Requires +{b} weapons to be hit");
+                        }
+                    } else
+                    {
+                        result.Add($"Requires +{DerivedStats.WeaponImmune.Count} weapons to be hit");
+                    }                                             
                 }
                 for (int i = 9; i > 0; --i)
                 {
@@ -99,9 +122,9 @@ namespace BGOverlay
                     }
                 }
                 var thiefStr = "";
-                if (this.DerivedStatsTemp.BackstabImmunity > 0)
+                if (this.DerivedStats.BackstabImmunity > 0)
                     thiefStr += "Backstab Immunity\t";
-                if (this.DerivedStatsTemp.SeeInvisible > 0)
+                if (this.DerivedStats.SeeInvisible > 0)
                     thiefStr += "See Invisible";
                 if (thiefStr != "")
                     result.Add(thiefStr);
@@ -206,14 +229,14 @@ namespace BGOverlay
                 if (!proficiencyStr.EndsWith(": "))
                     result.Add(proficiencyStr);
                 
-                var inMemoryProtections = DerivedStatsTemp.EffectImmunes.Select(y => y.EffectId.ToString()).Where(x =>
+                var inMemoryProtections = DerivedStats.EffectImmunes.Select(y => y.EffectId.ToString()).Where(x =>
                 !x.StartsWith("Text")
                 && !x.StartsWith("Graphics")
                 && !x.Contains("RGB")
                 && !x.StartsWith("Colour")).Select(z => preprocess(z)).Distinct().ToList();                
                 if (inMemoryProtections.Any())
                     result.Add("Effect immunities: " + string.Join(", ", inMemoryProtections));
-                var moreSpellImmunities = DerivedStatsTemp.SpellImmunities;
+                var moreSpellImmunities = DerivedStats.SpellImmunities;
                 return result;
             }
         }

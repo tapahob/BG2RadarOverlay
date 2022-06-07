@@ -57,12 +57,12 @@ namespace WPFFrontend
 
         internal void updateView(BGEntity item)
         {
-            this.BGEntity = item;
+            this.BGEntity = item;            
             if (item.Type != 49)
                 return;
             this.BGEntity.LoadCREResource();
-            this.BGEntity.LoadDerivedStats();
             this.BGEntity.loadTimedEffects();
+            this.BGEntity.LoadDerivedStats();            
             this.DataContext = this.BGEntity;
 
             if (Configuration.BigBuffIcons && BuffStack.Columns == 16)

@@ -47,6 +47,9 @@ namespace BGOverlay
                 if (!newEntity.Loaded)
                     continue;
 
+                if (newEntity.Name2 == "<ERROR>" || newEntity.CurrentHP == 0)
+                    continue;
+
                 All.Add(newEntity);
                 if (Configuration.HidePartyMembers)
                 {
