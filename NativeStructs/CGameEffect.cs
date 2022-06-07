@@ -10,6 +10,8 @@ namespace BGOverlay.NativeStructs
         public string Version { get; }
         public Effect EffectId { get; }
         public string Res { get; }
+        public string Res2 { get; private set; }
+        public string Res3 { get; private set; }
         public string SourceRes { get; }
         public string ScriptName { get; }
         public int Done { get; private set; }
@@ -24,17 +26,19 @@ namespace BGOverlay.NativeStructs
         {
             addr = WinAPIBindings.FindDMAAddy(addr, new int[] { 0x8 });
             //addr += 4;
-            this.Version = WinAPIBindings.ReadString(addr, 8);
-            this.EffectId = (Effect) WinAPIBindings.ReadUInt32(addr + 0x08);
-            this.Res = WinAPIBindings.ReadString(addr + 0x28, 8);
-            this.SourceRes = WinAPIBindings.ReadString(addr + 0x8C, 8);
-            this.ScriptName = WinAPIBindings.ReadString(addr + 0xA0, 32);
-            this.Done = WinAPIBindings.ReadInt32(addr + 0x110);
+            this.Version      = WinAPIBindings.ReadString(addr, 8);
+            this.EffectId     = (Effect) WinAPIBindings.ReadUInt32(addr + 0x08);
+            this.Res          = WinAPIBindings.ReadString(addr + 0x28, 8);
+            this.Res2         = WinAPIBindings.ReadString(addr + 0x68, 8);
+            this.Res3         = WinAPIBindings.ReadString(addr + 0x70, 8);
+            this.SourceRes    = WinAPIBindings.ReadString(addr + 0x8C, 8);
+            this.ScriptName   = WinAPIBindings.ReadString(addr + 0xA0, 32);
+            this.Done         = WinAPIBindings.ReadInt32(addr + 0x110);
             this.DurationTemp = WinAPIBindings.ReadUInt32(addr + 0x118);
-            this.Duration = WinAPIBindings.ReadUInt32(addr + 0x20);
+            this.Duration     = WinAPIBindings.ReadUInt32(addr + 0x20);
             this.DurationType = WinAPIBindings.ReadUInt32(addr + 0x1C);
             this.EffectAmount = WinAPIBindings.ReadInt32(addr + 0x14);            
-            this.dWFlags = WinAPIBindings.ReadUInt32(addr + 0x18);
+            this.dWFlags      = WinAPIBindings.ReadUInt32(addr + 0x18);
         }
 
         public Tuple<string, Bitmap, uint> getSpellName(ResourceManager resourceManager)

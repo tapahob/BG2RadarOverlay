@@ -22,7 +22,7 @@ namespace BGOverlay
         public static bool BigBuffIcons { get; set; }
 
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
-        public static readonly string Version = "2.0.3.2";
+        public static readonly string Version = "2.0.3.3";
 
         public static void Init()
         {
