@@ -56,7 +56,7 @@ namespace BGOverlay
         {
             get
             {
-                if (this.Reader.Race != this.RACE)
+                if (this.Reader == null || this.Reader.Race != this.RACE)
                 {
                     return this.RACE.ToString()[0] + this.RACE.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-"); 
                 }
@@ -67,7 +67,7 @@ namespace BGOverlay
         public string Class {
             get
             {
-                if (this.CLASS != this.Reader.Class)
+                if (this.Reader == null || this.CLASS != this.Reader.Class)
                 {
                     return this.CLASS.ToString()[0] + this.CLASS.ToString().ToLower().Substring(1).Replace('_', ' ');
                 }
@@ -82,7 +82,9 @@ namespace BGOverlay
         {
             get
             {
-                var allEffects    = this.Reader.Effects.Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String);
+                var allEffects    = this.Reader?.Effects
+                    .Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String)
+                    ?? new List<EffectEntry>();
                 var result        = new List<String>();
                 var opCodeStrings = new List<String>();
                 var spellStrings  = new List<String>();
