@@ -2,7 +2,7 @@
 An overlay program for Baldurs Gate 2 EE showing nearest enemies, their resistances, buffs and its durations in realtime.
 
 ## Demo
-https://www.youtube.com/watch?v=ThjT_1KUZvs
+https://youtu.be/3C8xLqw2dHU
 
 ## Screenshots
 ![screen2](https://user-images.githubusercontent.com/1484801/172044039-3dde5348-54f1-48e2-9754-4920b6180d7f.jpg)
