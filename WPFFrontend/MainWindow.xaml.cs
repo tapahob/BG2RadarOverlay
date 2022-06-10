@@ -206,27 +206,29 @@ namespace WPFFrontend
             if (!toShowEnemyList)
             {                
                 ThicknessAnimation anim = new ThicknessAnimation();
-                anim.From = this.StackPanel.Margin;
-                var newMargin = this.StackPanel.Margin;
-                newMargin.Top = -this.StackPanel.ActualHeight;
-                anim.To = newMargin;
-                anim.EasingFunction = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
-                anim.Duration = TimeSpan.FromSeconds(.45);
-                anim.FillBehavior = FillBehavior.HoldEnd;
+                anim.From               = this.StackPanel.Margin;
+                var newMargin           = this.StackPanel.Margin;
+                newMargin.Top           = -this.StackPanel.ActualHeight;
+                anim.To                 = newMargin;
+                anim.EasingFunction     = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
+                anim.Duration           = TimeSpan.FromSeconds(.45);
+                anim.FillBehavior       = FillBehavior.HoldEnd;
+                anim.Completed += (o, e) => this.StackPanel.Visibility = Visibility.Collapsed;
                 this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
             }
             else
             {
                 ThicknessAnimation anim = new ThicknessAnimation();
-                var newMargin1 = this.StackPanel.Margin;
-                newMargin1.Top /= 2;
-                anim.From = newMargin1;                
-                var newMargin = this.StackPanel.Margin;
-                newMargin.Top = 0;
-                anim.To = newMargin;
-                anim.EasingFunction = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };                
-                anim.Duration = TimeSpan.FromSeconds(.85);
-                anim.FillBehavior = FillBehavior.HoldEnd;
+                var newMargin1          = this.StackPanel.Margin;
+                newMargin1.Top         /= 2;
+                anim.From               = newMargin1;                
+                var newMargin           = this.StackPanel.Margin;
+                newMargin.Top           = 0;
+                anim.To                 = newMargin;
+                anim.EasingFunction     = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };                
+                anim.Duration           = TimeSpan.FromSeconds(.85);
+                anim.FillBehavior       = FillBehavior.HoldEnd;
+                this.StackPanel.Visibility = Visibility.Visible;
                 this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
             }
             
