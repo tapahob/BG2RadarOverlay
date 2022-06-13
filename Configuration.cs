@@ -20,9 +20,16 @@ namespace BGOverlay
         public static bool HideAllies { get; set; }
         public static IntPtr HWndPtr { get; set; }
         public static bool BigBuffIcons { get; set; }
+        public static string Font1 { get; set; }
+        public static string Font2 { get; set; }
+        public static string Font3 { get; set; }
+        public static string FontSize1 { get; set; }
+        public static string FontSize2 { get; set; }
+        public static string FontSize3Big { get; set; }
+        public static string FontSize3Small { get; set; }
 
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
-        public static readonly string Version = "2.0.3.3";
+        public static readonly string Version = "2.0.3.4";
 
         public static void Init()
         {
@@ -35,6 +42,13 @@ namespace BGOverlay
             Locale           = "en_US";
             GameFolder       = "None";
             BigBuffIcons     = true;
+            Font1            = "Segoe Print";
+            Font2            = "Ink Free";
+            Font3            = "Bahnschrift Condensed";
+            FontSize1        = "12";
+            FontSize2        = "16";
+            FontSize3Big     = "16";
+            FontSize3Small   = "16";
             loadConfig();
             detectLocale();
             detectGameFolder();            
@@ -84,6 +98,13 @@ namespace BGOverlay
                 $"HideNeutrals={HideNeutrals}",
                 $"HideAllies={HideAllies}",
                 $"BigBuffIcons={BigBuffIcons}",
+                $"Font1={Font1}",
+                $"Font2={Font2}",
+                $"Font3={Font3}",
+                $"FontSize1={FontSize1}",
+                $"FontSize2={FontSize2}",
+                $"FontSize3Big={FontSize3Big}",
+                $"FontSize3Small={FontSize3Small}",
             });
         }
 
@@ -112,11 +133,20 @@ namespace BGOverlay
                 HideNeutrals     = getProperty("HideNeutrals", "false").Equals("true");
                 HideAllies       = getProperty("HideAllies", "false").Equals("true");
                 BigBuffIcons     = getProperty("BigBuffIcons", "false").Equals("true");
+                Font1            = getProperty("Font1", "Segoe Print");
+                Font2            = getProperty("Font2", "Ink Free");
+                Font3            = getProperty("Font3", "Bahnschrift Condensed");
+                FontSize1        = getProperty("FontSize1", "12");
+                FontSize2        = getProperty("FontSize2", "16");
+                FontSize3Big     = getProperty("FontSize3Small", "12");
+                FontSize3Small   = getProperty("FontSize3Big", "16");
+
                 if (version != Configuration.Version)
                 {
                     File.Delete("config.cfg");
                     loadConfig();
                 }
+                
             } catch (Exception ex)
             {
                 // nothing

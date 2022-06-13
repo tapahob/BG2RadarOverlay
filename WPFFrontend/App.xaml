@@ -1,9 +1,66 @@
 ﻿<Application x:Class="WPFFrontend.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:WPFFrontend"
+             xmlns:local="clr-namespace:WPFFrontend" xmlns:system="clr-namespace:System;assembly=System.Runtime"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+            <!--BoldCyrilic-->
+            <FontFamily x:Key="FontFamily1">Segoe Print</FontFamily>
+            <system:Double x:Key="FontSize1">16</system:Double>
+            
+            <!--The rest-->
+            <FontFamily x:Key="FontFamily2">Ink Free</FontFamily>
+            <system:Double x:Key="FontSize2">16</system:Double>
+            
+            <FontFamily x:Key="FontFamilyBuff">Bahnschrift Condensed</FontFamily>
+            <system:Double x:Key="FontSize3Big">16</system:Double>
+            <system:Double x:Key="FontSize3Small">12</system:Double>
+
+            <Style TargetType="{x:Type Label}">
+                <Setter Property="FontSize" Value="{DynamicResource FontSize2}" />
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily2}" />
+                <Setter Property="FontWeight" Value="Bold" />
+            </Style>
+
+            <Style TargetType="{x:Type Label}" BasedOn="{StaticResource {x:Type Label}}" x:Key="Attributes">
+                <Setter Property="FontSize" Value="16" />
+            </Style>
+
+            <Style TargetType="{x:Type Label}" BasedOn="{StaticResource {x:Type Label}}" x:Key="Bold">
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily1}" />
+            </Style>
+
+            <Style TargetType="{x:Type Label}" BasedOn="{StaticResource Bold}" x:Key="BoldSmall">
+                <Setter Property="FontSize" Value="12" />
+            </Style>
+
+            <Style TargetType="{x:Type Label}" BasedOn="{StaticResource Bold}" x:Key="BoldHeader">
+                <Setter Property="FontSize" Value="18" />
+            </Style>
+
+            <Style TargetType="{x:Type TextBlock}" x:Key="Protections">
+                <Setter Property="FontSize" Value="{DynamicResource FontSize1}" />
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily1}" />
+                <Setter Property="FontWeight" Value="Bold" />
+            </Style>
+
+            <Style TargetType="{x:Type TextBlock}" x:Key="EnemyList">
+                <Setter Property="FontSize" Value="{DynamicResource FontSize1}" />
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily1}" />
+                <Setter Property="FontWeight" Value="Bold" />
+            </Style>
+
+            <Style TargetType="Label" x:Key="BuffTimerBig">
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamilyBuff}" />
+                <Setter Property="FontSize" Value="{DynamicResource FontSize3Big}" />
+            </Style>
+            <Style TargetType="Label" BasedOn="{StaticResource BuffTimerBig}" x:Key="BuffTimerSmall">
+                <Setter Property="FontSize" Value="{DynamicResource FontSize3Small}" />
+            </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

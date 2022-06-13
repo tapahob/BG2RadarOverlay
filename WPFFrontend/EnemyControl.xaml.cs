@@ -49,7 +49,7 @@ namespace WPFFrontend
             anim.Completed         += (o, e) =>
             {
                 mainWindow.deleteMe(BGEntity.tag);
-                (this.Parent as Grid)?.Children.Remove(this);
+                (this.Parent as Grid).Children.Remove(this);
             };
             anim.FillBehavior = FillBehavior.HoldEnd;
             this.BeginAnimation(System.Windows.Controls.UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
@@ -86,7 +86,7 @@ namespace WPFFrontend
 
             foreach (var buff in buffs)
             {
-                if (buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0
+                if ((buff.Value.BuffDurationAbsolute != 0 && buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0)
                         || !this.BGEntity.SpellProtection.Any(x => x.Item1 == buff.Key))
                 {
                     this.BuffStack.Children.Remove(buff.Value);

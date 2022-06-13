@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using BGOverlay;
 using Winook;
@@ -27,7 +28,7 @@ namespace WPFFrontend
         private object _stocksLock2 = new object();
         private ProcessHacker ph;
         private static ConcurrentDictionary<int, EnemyControl> currentControls = new ConcurrentDictionary<int, EnemyControl>();
-        private OptionsControl options = new OptionsControl();
+        private OptionsControl options;
 
         internal void deleteMe(int tag)
         {
@@ -38,6 +39,10 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
+            ph = new ProcessHacker();
+            ph.Init();
+            UpdateStyles();
+            options = new OptionsControl();
             MainGrid.Children.Add(options);
             this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
             this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;            
@@ -63,9 +68,6 @@ namespace WPFFrontend
 
             Task.Factory.StartNew(() =>
             {
-                ph = new ProcessHacker();
-                ph.Init();
-                
                 while (true)
                 {
                     ph.MainLoop();
@@ -85,6 +87,18 @@ namespace WPFFrontend
                     }                    
                 }
             });
+        }
+
+        private void UpdateStyles()
+        {
+            var app                         = System.Windows.Application.Current;
+            app.Resources["FontFamily1"]    = new FontFamily(Configuration.Font1);
+            app.Resources["FontFamily2"]    = new FontFamily(Configuration.Font2);
+            app.Resources["FontFamilyBuff"] = new FontFamily(Configuration.Font3);
+            app.Resources["FontSize1"]      = Convert.ToDouble(Configuration.FontSize1);
+            app.Resources["FontSize2"]      = Convert.ToDouble(Configuration.FontSize2);
+            app.Resources["FontSize3Big"]   = Convert.ToDouble(Configuration.FontSize3Big);
+            app.Resources["FontSize3Small"] = Convert.ToDouble(Configuration.FontSize3Small);
         }
 
         private void updateControls(BGEntity item)
