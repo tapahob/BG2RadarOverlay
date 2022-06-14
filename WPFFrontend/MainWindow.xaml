@@ -31,7 +31,8 @@
     </Window.Resources>
     <Canvas x:Name="MainCanvas">
         <Image Visibility="Collapsed" x:Name="DebugPointer" Source="/icons/not_found.png" Height="10"/>
-        <Grid x:Name="MainGrid" AllowDrop="True">
+        <Grid x:Name="MainGrid" AllowDrop="True" Width="{Binding ActualWidth, ElementName=MainCanvas}" 
+          Height="{Binding ActualHeight, ElementName=MainCanvas}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="250"/>
                 <RowDefinition Height="*"/>

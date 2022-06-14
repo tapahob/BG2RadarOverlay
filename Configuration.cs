@@ -138,8 +138,8 @@ namespace BGOverlay
                 Font3            = getProperty("Font3", "Bahnschrift Condensed");
                 FontSize1        = getProperty("FontSize1", "12");
                 FontSize2        = getProperty("FontSize2", "16");
-                FontSize3Big     = getProperty("FontSize3Small", "12");
-                FontSize3Small   = getProperty("FontSize3Big", "16");
+                FontSize3Big     = getProperty("FontSize3Big", "16");
+                FontSize3Small   = getProperty("FontSize3Small", "12");
 
                 if (version != Configuration.Version)
                 {

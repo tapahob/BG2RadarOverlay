@@ -21,7 +21,7 @@ namespace WPFFrontend
 
         public OptionsControl()
         {
-            InitializeComponent();            
+            InitializeComponent();   
             this.Version.Content             = $"Ver. {Configuration.Version}";
             this.HidePartyMembers.Click     += updateConfig;
             this.HideNeutrals.Click         += updateConfig;
@@ -41,9 +41,9 @@ namespace WPFFrontend
 
         private void OptionsControl_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (e != null && e.ChangedButton != MouseButton.Right)
+            if (this.hidden || e != null && e.ChangedButton != MouseButton.Right)
                 return;
-            this.hidden             = true;
+            
             var ofs                 = this.RenderTransform.Value.OffsetY;
             ThicknessAnimation anim = new ThicknessAnimation();
             anim.From               = this.Margin;
@@ -53,7 +53,8 @@ namespace WPFFrontend
             anim.EasingFunction     = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
             anim.Duration           = TimeSpan.FromSeconds(.45);
             anim.Completed         += (o, e) => 
-            {                 
+            {
+                this.hidden = true;
                 this.Margin = new Thickness(0, -this.ActualHeight, 0, 0);
             };
             anim.FillBehavior = FillBehavior.HoldEnd;
@@ -108,19 +109,20 @@ namespace WPFFrontend
                 OptionsControl_MouseUp(null, null);
                 return;
             }
+            
             this.Margin = new Thickness(0, -this.ActualHeight, 0, 0);
-            this.Visibility         = System.Windows.Visibility.Visible;
-            this.hidden             = false;
+            this.Visibility         = System.Windows.Visibility.Visible;            
             ThicknessAnimation anim = new ThicknessAnimation();
             var margin1             = this.Margin;
             margin1.Top            /= 2;
-            anim.From               = margin1;
+            anim.From               = margin1;            
             var newMargin           = this.Margin;
             newMargin.Top           = 0;
             anim.To                 = newMargin;
             anim.EasingFunction     = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };
             anim.Duration           = TimeSpan.FromSeconds(.85);
-            anim.FillBehavior       = FillBehavior.HoldEnd;
+            //anim.FillBehavior       = FillBehavior.HoldEnd;
+            anim.Completed += (o,e) => this.hidden = false;
             this.BeginAnimation(UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
         }
 
@@ -133,6 +135,9 @@ namespace WPFFrontend
         {
             var button = (Button)sender;
             var dialog = new FontDialog();
+            var split = button.Content.ToString().Split(",");
+            dialog.Font = new System.Drawing.Font(split[0].Trim(), float.Parse(split[1].Trim()));
+
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 var str = $"{dialog.Font.Name}, {Convert.ToInt32(dialog.Font.Size)}";

@@ -43,7 +43,7 @@ namespace WPFFrontend
             ph.Init();
             UpdateStyles();
             options = new OptionsControl();
-            MainGrid.Children.Add(options);
+            MainGrid.Children.Add(options);   
             this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
             this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;            
 
@@ -139,14 +139,14 @@ namespace WPFFrontend
             this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
-        private void addOrRemove(BGEntity bgEntity, int left)
+        private void addOrRemove(BGEntity bgEntity)
         {
             EnemyControl enemyControl;
             if (!MainWindow.currentControls.TryGetValue(bgEntity.tag, out enemyControl))
             {
-                enemyControl = new EnemyControl(bgEntity, this, left);
+                enemyControl = new EnemyControl(bgEntity, this);
                 MainWindow.currentControls[bgEntity.tag] = enemyControl;
-                MainGrid.Children.Add(enemyControl);
+                MainCanvas.Children.Add(enemyControl);
             }
             else
             {
@@ -154,19 +154,7 @@ namespace WPFFrontend
 
                 MainWindow.currentControls.Remove(bgEntity.tag, out enemyControl);
             }
-        }
-        
-        private int left(BGEntity entity)
-        {
-            if (entity.MousePosX > 650)
-            {
-                return (int)((entity.MousePosX - 650) * 1.53) - 200;
-            }
-            else
-            {
-                return -(int)((650 - entity.MousePosX) * 1.53) + 500;
-            }
-        }
+        }        
         
         private void MouseHook_MouseEvent(object sender, MouseMessageEventArgs e)
         {
@@ -187,9 +175,7 @@ namespace WPFFrontend
                     return;
                 }
 
-                int left = this.left(entry);
-
-                addOrRemove(entry, left);
+                addOrRemove(entry);
             }));            
         }
 
@@ -206,7 +192,7 @@ namespace WPFFrontend
 
             //DebugPointer.Margin = new Thickness(x, y, 0, 0);
 
-            this.addOrRemove(content, 0);
+            this.addOrRemove(content);
             list.SelectedIndex = -1;
         }
         bool toShowEnemyList = true;
