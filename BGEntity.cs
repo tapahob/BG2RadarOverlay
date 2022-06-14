@@ -237,7 +237,7 @@ namespace BGOverlay
                 && !x.Contains("RGB")
                 && !x.StartsWith("Colour")).Select(z => preprocess(z)).Distinct().ToList();                
                 if (inMemoryProtections.Any())
-                    result.Add("Effect immunities: " + string.Join(", ", inMemoryProtections));
+                    result.Add("Effect immunities: " + string.Join(", ", inMemoryProtections.OrderBy(o => o)));
                 var moreSpellImmunities = DerivedStats.SpellImmunities;
                 return result;
             }
