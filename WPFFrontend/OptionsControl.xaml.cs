@@ -3,8 +3,12 @@ using System;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
+using Button = System.Windows.Controls.Button;
+using UserControl = System.Windows.Controls.UserControl;
 
 namespace WPFFrontend
 {
@@ -17,7 +21,7 @@ namespace WPFFrontend
 
         public OptionsControl()
         {
-            InitializeComponent();            
+            InitializeComponent();   
             this.Version.Content             = $"Ver. {Configuration.Version}";
             this.HidePartyMembers.Click     += updateConfig;
             this.HideNeutrals.Click         += updateConfig;
@@ -27,13 +31,19 @@ namespace WPFFrontend
             this.BigBuffIcons.Click         += updateConfig;
             this.MouseUp                    += OptionsControl_MouseUp;
             this.CloseBtn.MouseUp           += Label_MouseDown;
+            var app = System.Windows.Application.Current;
+            this.Font1.Content = $"{Configuration.Font1}, {Configuration.FontSize1}";
+            this.Font2.Content = $"{Configuration.Font2}, {Configuration.FontSize2}";
+            this.Font3.Content = Configuration.BigBuffIcons 
+                ? $"{Configuration.Font3}, {Configuration.FontSize3Big}"
+                : $"{Configuration.Font3}, {Configuration.FontSize3Small}";
         }
 
         private void OptionsControl_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (e != null && e.ChangedButton != MouseButton.Right)
+            if (this.hidden || e != null && e.ChangedButton != MouseButton.Right)
                 return;
-            this.hidden             = true;
+            
             var ofs                 = this.RenderTransform.Value.OffsetY;
             ThicknessAnimation anim = new ThicknessAnimation();
             anim.From               = this.Margin;
@@ -43,10 +53,11 @@ namespace WPFFrontend
             anim.EasingFunction     = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
             anim.Duration           = TimeSpan.FromSeconds(.45);
             anim.Completed         += (o, e) => 
-            {                 
+            {
+                this.hidden = true;
                 this.Margin = new Thickness(0, -this.ActualHeight, 0, 0);
             };
-            //anim.FillBehavior = FillBehavior.HoldEnd;
+            anim.FillBehavior = FillBehavior.HoldEnd;
             this.BeginAnimation(UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
         }
 
@@ -75,6 +86,10 @@ namespace WPFFrontend
             Configuration.Borderless       = (bool)this.EnableBorderlessMode.IsChecked;
             Configuration.RefreshTimeMS    = int.Parse(this.RefreshRate.Text);
             Configuration.BigBuffIcons     = (bool)this.BigBuffIcons.IsChecked;
+
+            this.Font3.Content = Configuration.BigBuffIcons 
+                ? $"{Configuration.Font3}, {Configuration.FontSize3Big}"
+                : $"{Configuration.Font3}, {Configuration.FontSize3Small}";
         }
 
         public void Init()
@@ -94,19 +109,20 @@ namespace WPFFrontend
                 OptionsControl_MouseUp(null, null);
                 return;
             }
+            
             this.Margin = new Thickness(0, -this.ActualHeight, 0, 0);
-            this.Visibility         = System.Windows.Visibility.Visible;
-            this.hidden             = false;
+            this.Visibility         = System.Windows.Visibility.Visible;            
             ThicknessAnimation anim = new ThicknessAnimation();
             var margin1             = this.Margin;
             margin1.Top            /= 2;
-            anim.From               = margin1;
+            anim.From               = margin1;            
             var newMargin           = this.Margin;
             newMargin.Top           = 0;
             anim.To                 = newMargin;
             anim.EasingFunction     = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };
             anim.Duration           = TimeSpan.FromSeconds(.85);
-            anim.FillBehavior       = FillBehavior.HoldEnd;
+            //anim.FillBehavior       = FillBehavior.HoldEnd;
+            anim.Completed += (o,e) => this.hidden = false;
             this.BeginAnimation(UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
         }
 
@@ -114,5 +130,45 @@ namespace WPFFrontend
         {
             OptionsControl_MouseUp(null, null);
         }
+
+        private void SelectFont(object sender, RoutedEventArgs e)
+        {
+            var button = (Button)sender;
+            var dialog = new FontDialog();
+            var split = button.Content.ToString().Split(",");
+            dialog.Font = new System.Drawing.Font(split[0].Trim(), float.Parse(split[1].Trim()));
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                var str = $"{dialog.Font.Name}, {Convert.ToInt32(dialog.Font.Size)}";
+                button.Content = str;
+                var app = System.Windows.Application.Current;
+                switch (button.Name)
+                {
+                    case "Font1":
+                        app.Resources["FontFamily1"] = new FontFamily(dialog.Font.Name);
+                        app.Resources["FontSize1"] = Convert.ToDouble(dialog.Font.Size);
+                        Configuration.Font1 = dialog.Font.Name;
+                        Configuration.FontSize1 = Convert.ToInt32(dialog.Font.Size).ToString();
+                        break;
+                    case "Font2":
+                        app.Resources["FontFamily2"] = new FontFamily(dialog.Font.Name);
+                        app.Resources["FontSize2"] = Convert.ToDouble(dialog.Font.Size);
+                        Configuration.Font2 = dialog.Font.Name;
+                        Configuration.FontSize2 = Convert.ToInt32(dialog.Font.Size).ToString();
+                        break;
+                    case "Font3":
+                        app.Resources["FontFamilyBuff"] = new FontFamily(dialog.Font.Name);
+                        Configuration.Font3 = dialog.Font.Name;
+                        var key = Configuration.BigBuffIcons 
+                            ? "FontSize3Big"
+                            : "FontSize3Small";
+                        app.Resources[key] = Convert.ToDouble(dialog.Font.Size);
+                        Configuration.FontSize3Big = Convert.ToInt32(dialog.Font.Size).ToString();
+                        break;
+                }
+                
+            };
+        }        
     }
 }

@@ -4,9 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"  
-             xmlns:local="clr-namespace:WPFFrontend"
-             Grid.Column="2" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="2"
+             xmlns:local="clr-namespace:WPFFrontend"             
              mc:Ignorable="d" Visibility="Collapsed" d:Visibility="Visible"
+             Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="5" Grid.RowSpan="5"
              VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="9000">
     <i:Interaction.Behaviors>
         <i:MouseDragElementBehavior/>
@@ -23,8 +23,9 @@
             <RowDefinition Height="16"/>
             <RowDefinition Height="100"/>
             <RowDefinition Height="16"/>
-            <RowDefinition Height="100"/>
-            <RowDefinition Height="16"/>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="70"/>
+            <RowDefinition Height="15"/>
             <RowDefinition Height="30"/>
             <RowDefinition Height="35"/>
         </Grid.RowDefinitions>
@@ -35,36 +36,43 @@
             <ColumnDefinition Width="180"/>
             <ColumnDefinition Width="10"/>
         </Grid.ColumnDefinitions>
-        <Label x:Name="CloseBtn" Grid.Row="1" Grid.Column="3" Content="X" FontSize="16" HorizontalAlignment="Right" FontFamily="Segoe Print" Margin="0,0,3,0" MouseDown="Label_MouseDown"/>
-        <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="18" Content="Options" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Width="80"/>
+        <Label x:Name="CloseBtn" Grid.Row="1" Grid.Column="3" Content="X" FontSize="16" HorizontalAlignment="Left" FontFamily="Segoe Print" Margin="155,0,0,38" MouseDown="Label_MouseDown" Grid.RowSpan="2"/>
+        <Label Grid.Row="1" Grid.Column="1" FontSize="18" Content="Options" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Grid.ColumnSpan="3" Width="80"/>
         <Label x:Name="Version" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="10" d:Content="Ver. 2.0.3.2" Content="{Binding Configuration.Version}" FontFamily="Segoe Print" HorizontalAlignment="Center" Margin="0,26,0,30" Grid.RowSpan="2" Width="80"/>
-        <Border Grid.RowSpan="11" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
+        <Border Grid.RowSpan="12" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
         <Border Grid.Row="3"  Grid.Column="1" Grid.ColumnSpan="1" BorderThickness="1" BorderBrush="#FF151313"/>
         <StackPanel Grid.Row="3" Grid.Column="1" Margin="5,5,5,5">
-            <Label Content="Character List Filtering" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <Label Style="{StaticResource BoldSmall}" Content="Character List Filtering" HorizontalAlignment="Center"/>
             <CheckBox x:Name="HidePartyMembers" Content="Hide Party Members" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" />
             <CheckBox x:Name="HideNeutrals" Content="Hide Neutrals" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold"/>
             <CheckBox x:Name="HideAllies" VerticalContentAlignment="Center" Content="Hide Allies" FontFamily="Segoe Print" FontWeight="Bold"/>
         </StackPanel>
-        <Border Grid.Row="3" Grid.Column="3" BorderThickness="1" BorderBrush="#FF151313" Margin="0,0,0,0"/>
+        <Border Grid.Row="3" Grid.Column="3" BorderThickness="1" BorderBrush="#FF151313"/>
         <StackPanel Grid.Row="3" Grid.Column="3" Margin="5,5,5,5">
-            <Label Content="Buff Panel" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <Label Content="Buff Panel" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
             <CheckBox x:Name="BigBuffIcons" VerticalContentAlignment="Center" Content="Big Buff icons" FontFamily="Segoe Print" FontWeight="Bold"/>
         </StackPanel>
-        <Border Grid.ColumnSpan="3" Grid.Row="5" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,0,0,0"/>
+        <Border Grid.ColumnSpan="3" Grid.Row="4" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="2"/>
         <StackPanel Grid.ColumnSpan="3" Grid.Row="5" Grid.Column="1" Margin="5,5,5,5">
-            <Label Content="Borderless Mode" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <Label Content="Borderless Mode" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
             <CheckBox x:Name="EnableBorderlessMode" VerticalContentAlignment="Center" Content="Borderless on startup" FontFamily="Segoe Print" FontWeight="Bold"/>
             <Button x:Name="ForceBorderless" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Force Borderless now!" FontFamily="Segoe Print" FontWeight="Bold" Click="ForceBorderless_Click"/>
         </StackPanel>
-        <Border Grid.Row="7" Grid.ColumnSpan="3" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,0,0,0"/>
-        <StackPanel Grid.ColumnSpan="3" Grid.Row="7" Grid.Column="1" Margin="5,5,5,5">
-            <Label Content="Performance" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center"/>
+        <Border Grid.Row="6" Grid.ColumnSpan="1" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="3"/>
+        <StackPanel Grid.ColumnSpan="1" Grid.Row="7" Grid.Column="1" Margin="5,5,5,5" Grid.RowSpan="2">
+            <Label Content="Performance" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
             <StackPanel Orientation="Horizontal">
-                <Label Content="Refresh Rate (ms):" FontFamily="Segoe Print" FontWeight="Bold" />
-                <TextBox x:Name="RefreshRate" PreviewTextInput="TextBox_PreviewTextInput" MinWidth="50" Text="300" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
+                <Label Content="Refresh Rate (ms):" Style="{StaticResource BoldSmall}"/>
+                <TextBox x:Name="RefreshRate" PreviewTextInput="TextBox_PreviewTextInput" MinWidth="50" Text="300" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25" Width="46" Margin="-5" />
             </StackPanel>
         </StackPanel>
-        <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click"/>
+        <Border Grid.Row="6" Grid.ColumnSpan="1" Grid.Column="3" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="3"/>
+        <StackPanel Grid.ColumnSpan="1" Grid.Row="7" Grid.Column="3" Margin="5,5,5,5" Grid.RowSpan="2">
+            <Label Style="{StaticResource BoldSmall}" HorizontalAlignment="Center">Fonts</Label>
+            <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font1" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
+            <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font2" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
+            <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font3" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
+        </StackPanel>
+        <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
     </Grid>
 </UserControl>

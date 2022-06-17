@@ -15,7 +15,9 @@ namespace BGOverlay
             BIFFV1FileEntries = new Dictionary<int, BIFFV1FileEntry>();
             this.BiffFilename = biffFilename;
             biffFilename = $"{Configuration.GameFolder}/data/{biffFilename}".Replace('\\', '/');
-
+            if (!File.Exists(biffFilename)) {
+                var a = 10;
+            }
             using (BinaryReader reader = new BinaryReader(File.OpenRead(biffFilename)))
             {
                 this.Signature           = new string(reader.ReadChars(4));

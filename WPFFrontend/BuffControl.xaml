@@ -5,11 +5,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WPFFrontend"
              mc:Ignorable="d" 
-             Width="40" Height="40" x:Name="buffMain"
-             d:DesignHeight="40" d:DesignWidth="40" Padding="0">
+             MaxWidth="40" MaxHeight="40" x:Name="buffMain"
+             Padding="0">
     <Grid>
-        <Image x:Name="Image" d:Source="/icons/SPWI114C00001.png" Width="40" Height="40"/>
-        <Label FontSize="16" x:Name="Label1" Panel.ZIndex="7" FontFamily="Bahnschrift Condensed" d:Content="99" Padding="0" Foreground="Black" IsHitTestVisible="False" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Margin="1,25,0,0"/>
-        <Label FontSize="16" x:Name="Label2" Panel.ZIndex="10" FontFamily="Bahnschrift Condensed" d:Content="99" Padding="0" Foreground="White" IsHitTestVisible="False" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Margin="0,25,0,0"/>
+        <Image x:Name="Image" d:Source="/icons/SPWI114C00001.png" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Uniform"/>
+        <Label Style="{StaticResource BuffTimerBig}" x:Name="Label1" Panel.ZIndex="7" d:Content="99" Padding="0" Foreground="Black" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Margin="2,25,0,0" FontWeight="ExtraBold"/>
+        <Label Style="{StaticResource BuffTimerBig}" x:Name="Label2" Panel.ZIndex="10" d:Content="99" Padding="0" Foreground="White" IsHitTestVisible="False" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Margin="0,25,0,0"/>
     </Grid>
 </UserControl>

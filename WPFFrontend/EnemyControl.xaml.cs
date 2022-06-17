@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
@@ -20,12 +21,30 @@ namespace WPFFrontend
 
         private Dictionary<String, BuffControl> buffs = new Dictionary<string, BuffControl>();
 
-        public EnemyControl(BGEntity bgEntity, MainWindow mainWindow, int left)
+        public EnemyControl(BGEntity bgEntity, MainWindow mainWindow)
         {
             InitializeComponent();
-            this.UserControl.Margin = new Thickness(left, 0, 0, 0);
+            
+            
+            //this.UserControl.Margin = new Thickness(left, 0, 0, 0);
             this.mainWindow         = mainWindow;
             this.updateView(bgEntity);
+            double left = 0;
+            var height = System.Windows.SystemParameters.PrimaryScreenHeight;
+            var width = System.Windows.SystemParameters.PrimaryScreenWidth;
+            var x = width * (bgEntity.X - bgEntity.MousePosX1) / bgEntity.ViewportWidth;
+            var y = height * (bgEntity.Y - bgEntity.MousePosY1) / bgEntity.ViewportHeight;
+
+            if (x > (width / 2))
+            {
+                left = x - this.Width - 50;
+            }
+            else
+            {
+                left = x + 50;
+            }
+            Canvas.SetTop(this, y / 2);
+            Canvas.SetLeft(this, left);
             this.MouseRightButtonUp += EnemyControl_MouseRightButtonDown;
         }
 
@@ -49,7 +68,7 @@ namespace WPFFrontend
             anim.Completed         += (o, e) =>
             {
                 mainWindow.deleteMe(BGEntity.tag);
-                (this.Parent as Grid)?.Children.Remove(this);
+                (this.Parent as Canvas).Children.Remove(this);
             };
             anim.FillBehavior = FillBehavior.HoldEnd;
             this.BeginAnimation(System.Windows.Controls.UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
@@ -86,7 +105,7 @@ namespace WPFFrontend
 
             foreach (var buff in buffs)
             {
-                if (buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0
+                if ((buff.Value.BuffDurationAbsolute != 0 && buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0)
                         || !this.BGEntity.SpellProtection.Any(x => x.Item1 == buff.Key))
                 {
                     this.BuffStack.Children.Remove(buff.Value);

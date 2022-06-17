@@ -9,7 +9,6 @@
     <Window.Background>
         <SolidColorBrush Opacity="0" Color="White"/>
     </Window.Background>
-
     <Window.Resources>
         <Style x:Key="MyButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -22,7 +21,6 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <!--<Setter Property="Margin" Value="155 0 0 0"/>-->
                                 <Setter Property="Opacity" Value="0.7" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -31,10 +29,10 @@
             </Setter>
         </Style>
     </Window.Resources>
-
     <Canvas x:Name="MainCanvas">
         <Image Visibility="Collapsed" x:Name="DebugPointer" Source="/icons/not_found.png" Height="10"/>
-        <Grid x:Name="MainGrid" AllowDrop="True">
+        <Grid x:Name="MainGrid" AllowDrop="True" Width="{Binding ActualWidth, ElementName=MainCanvas}" 
+          Height="{Binding ActualHeight, ElementName=MainCanvas}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="250"/>
                 <RowDefinition Height="*"/>
@@ -51,7 +49,7 @@
                 <Image Source="/radar.png"/>
             </Button>
             <StackPanel x:Name="StackPanel"  Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Left" Width="380">
-                <ListView x:Name="ListView" Foreground="Black" BorderBrush="Black" BorderThickness="2" FontWeight="Bold" FontFamily="Segoe Print" HorizontalAlignment="Left" VerticalAlignment="Top" SelectionChanged="listView_SelectionChanged">
+                <ListView x:Name="ListView" Foreground="Black" BorderBrush="Black" BorderThickness="2" HorizontalAlignment="Left" VerticalAlignment="Top" SelectionChanged="listView_SelectionChanged">
                     <ListView.Background>
                         <ImageBrush Stretch="UniformToFill" ImageSource="/pexels-photo-235985.jpeg"/>
                     </ListView.Background>
@@ -60,7 +58,7 @@
                     </i:Interaction.Behaviors>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock HorizontalAlignment="Right" Text="{Binding}"/>
+                            <TextBlock Style="{StaticResource EnemyList}" HorizontalAlignment="Right" Text="{Binding}"/>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>

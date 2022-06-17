@@ -8,21 +8,7 @@
     x:Class="WPFFrontend.EnemyControl"
              mc:Ignorable="d" 
              Height="Auto" Width="450"
-    Grid.Column="2" Grid.ColumnSpan="3" Grid.RowSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-    <UserControl.Resources>
-        <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-            <Style TargetType="{x:Type Label}">
-                <Setter Property="FontSize" Value="18" />
-                <Setter Property="FontFamily" Value="Ink Free" />
-                <Setter Property="FontWeight" Value="Bold" />
-            </Style>
-            <Style TargetType="{x:Type Label}" BasedOn="{StaticResource {x:Type Label}}" x:Key="Attributes">
-                <Setter Property="FontSize" Value="16" />
-            </Style>
-        </ResourceDictionary>
-    </UserControl.Resources>
+    Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" VerticalAlignment="Center">
     <UserControl.BorderBrush>
         <ImageBrush/>
     </UserControl.BorderBrush>
@@ -53,7 +39,7 @@
         <Label Grid.Row="1" Grid.Column="2" Content="X" d:Content="X" HorizontalAlignment="Right" MouseDown="Label_MouseDown" Margin="0,0,3,0"/>
         <Border Grid.ColumnSpan="2" Grid.Row="1" Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="1">
             <StackPanel Margin="5,5,5,5">
-                <Label x:Name="EnemyName" d:Content="Дуэргар" HorizontalAlignment="Center"  FontFamily="Segoe Print" FontWeight="Bold" ClipToBounds="True" Content="{Binding Name2}"/>
+                <Label x:Name="EnemyName" Style="{StaticResource Bold}" d:Content="Дуэргар" HorizontalAlignment="Center" ClipToBounds="True" Content="{Binding Name2}"/>
                 <Label x:Name="ClassesAndLevels" Content="{Binding Class}" d:Content="Warrior Thief Mage" HorizontalAlignment="Center" ClipToBounds="True">
                 </Label>
                 <Label x:Name="Race" d:Content="78m" Content="{Binding Race}" ContentStringFormat="Race: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
@@ -102,7 +88,7 @@
         <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock Text="{Binding}" FontFamily="Segoe print" FontSize="18" FontWeight="Bold" Foreground="Black" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>

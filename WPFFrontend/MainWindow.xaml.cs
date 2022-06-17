@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using BGOverlay;
 using Winook;
@@ -27,7 +28,7 @@ namespace WPFFrontend
         private object _stocksLock2 = new object();
         private ProcessHacker ph;
         private static ConcurrentDictionary<int, EnemyControl> currentControls = new ConcurrentDictionary<int, EnemyControl>();
-        private OptionsControl options = new OptionsControl();
+        private OptionsControl options;
 
         internal void deleteMe(int tag)
         {
@@ -38,7 +39,11 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
-            MainGrid.Children.Add(options);
+            ph = new ProcessHacker();
+            ph.Init();
+            UpdateStyles();
+            options = new OptionsControl();
+            MainGrid.Children.Add(options);   
             this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
             this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;            
 
@@ -63,9 +68,6 @@ namespace WPFFrontend
 
             Task.Factory.StartNew(() =>
             {
-                ph = new ProcessHacker();
-                ph.Init();
-                
                 while (true)
                 {
                     ph.MainLoop();
@@ -85,6 +87,18 @@ namespace WPFFrontend
                     }                    
                 }
             });
+        }
+
+        private void UpdateStyles()
+        {
+            var app                         = System.Windows.Application.Current;
+            app.Resources["FontFamily1"]    = new FontFamily(Configuration.Font1);
+            app.Resources["FontFamily2"]    = new FontFamily(Configuration.Font2);
+            app.Resources["FontFamilyBuff"] = new FontFamily(Configuration.Font3);
+            app.Resources["FontSize1"]      = Convert.ToDouble(Configuration.FontSize1);
+            app.Resources["FontSize2"]      = Convert.ToDouble(Configuration.FontSize2);
+            app.Resources["FontSize3Big"]   = Convert.ToDouble(Configuration.FontSize3Big);
+            app.Resources["FontSize3Small"] = Convert.ToDouble(Configuration.FontSize3Small);
         }
 
         private void updateControls(BGEntity item)
@@ -125,14 +139,14 @@ namespace WPFFrontend
             this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
-        private void addOrRemove(BGEntity bgEntity, int left)
+        private void addOrRemove(BGEntity bgEntity)
         {
             EnemyControl enemyControl;
             if (!MainWindow.currentControls.TryGetValue(bgEntity.tag, out enemyControl))
             {
-                enemyControl = new EnemyControl(bgEntity, this, left);
+                enemyControl = new EnemyControl(bgEntity, this);
                 MainWindow.currentControls[bgEntity.tag] = enemyControl;
-                MainGrid.Children.Add(enemyControl);
+                MainCanvas.Children.Add(enemyControl);
             }
             else
             {
@@ -140,19 +154,7 @@ namespace WPFFrontend
 
                 MainWindow.currentControls.Remove(bgEntity.tag, out enemyControl);
             }
-        }
-        
-        private int left(BGEntity entity)
-        {
-            if (entity.MousePosX > 650)
-            {
-                return (int)((entity.MousePosX - 650) * 1.53) - 200;
-            }
-            else
-            {
-                return -(int)((650 - entity.MousePosX) * 1.53) + 500;
-            }
-        }
+        }        
         
         private void MouseHook_MouseEvent(object sender, MouseMessageEventArgs e)
         {
@@ -173,9 +175,7 @@ namespace WPFFrontend
                     return;
                 }
 
-                int left = this.left(entry);
-
-                addOrRemove(entry, left);
+                addOrRemove(entry);
             }));            
         }
 
@@ -192,7 +192,7 @@ namespace WPFFrontend
 
             //DebugPointer.Margin = new Thickness(x, y, 0, 0);
 
-            this.addOrRemove(content, 0);
+            this.addOrRemove(content);
             list.SelectedIndex = -1;
         }
         bool toShowEnemyList = true;
