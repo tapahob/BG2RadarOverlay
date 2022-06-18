@@ -155,10 +155,27 @@ namespace BGOverlay
                 reader.BaseStream.Seek(originOffset + 0x027b, SeekOrigin.Begin);
                 this.SetAlignment((ALIGNMENT)reader.ReadByte());
 
+                // Items
+                reader.BaseStream.Seek(originOffset + 0x02bc, SeekOrigin.Begin);
+                var offsetToItems = reader.ReadInt32();
+                int countOfItems = reader.ReadInt32();
+                this.Items = new List<ITMReader>();
+                for (int i = 0; i < countOfItems; ++i)
+                {
+                    reader.BaseStream.Seek(originOffset + offsetToItems + i * (0x14), SeekOrigin.Begin);
+                    string itmFileName = System.Text.Encoding.ASCII.GetString(reader.ReadBytes(8));
+                    this.resourceManager.log(itmFileName);
+//                    ITMReader itmReader = this.resourceManager.GetITMReader(itmFileName);
+//                    if (itmReader != null)
+//                    {
+//                        //Items.Add(itmReader);
+//                    }
+                }
+
+                // Effects
                 reader.BaseStream.Seek(originOffset + 0x02c4, SeekOrigin.Begin);
                 var offsetToEffects = reader.ReadInt32();
                 var countOfEffects  = reader.ReadInt32();
-
                 reader.BaseStream.Seek(originOffset + offsetToEffects, SeekOrigin.Begin);
                 bool isV2Version = this.EffStructureVersion == 1;
                 this.Effects = new List<EffectEntry>();
@@ -566,5 +583,7 @@ namespace BGOverlay
         }
 
         public List<EffectEntry> Effects { get; }
+
+        public List<ITMReader> Items { get; }
     }
 }

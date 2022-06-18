@@ -68,6 +68,7 @@
     <Compile Include="Readers\BIFFReader.cs" />
     <Compile Include="NativeStructs\CDerivedStats.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="Readers\ITMReader.cs" />
     <Compile Include="Readers\CREReader.cs" />
     <Compile Include="Readers\KeyReader.cs" />
     <Compile Include="NativeStructs\CGameEffect.cs" />
