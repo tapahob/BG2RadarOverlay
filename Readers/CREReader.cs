@@ -163,13 +163,13 @@ namespace BGOverlay
                 for (int i = 0; i < countOfItems; ++i)
                 {
                     reader.BaseStream.Seek(originOffset + offsetToItems + i * (0x14), SeekOrigin.Begin);
-                    string itmFileName = System.Text.Encoding.ASCII.GetString(reader.ReadBytes(8));
-                    this.resourceManager.log(itmFileName);
-//                    ITMReader itmReader = this.resourceManager.GetITMReader(itmFileName);
-//                    if (itmReader != null)
-//                    {
-//                        //Items.Add(itmReader);
-//                    }
+                    string itmFileName = new String(reader.ReadChars(8)).TrimEnd('\0');
+                    ITMReader itmReader = this.resourceManager.GetITMReader(itmFileName + ".ITM");
+
+                    if (itmReader != null)
+                    {
+                        //Items.Add(itmReader);
+                    }
                 }
 
                 // Effects

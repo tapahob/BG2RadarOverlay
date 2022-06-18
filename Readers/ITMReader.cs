@@ -36,7 +36,7 @@ namespace BGOverlay
                         var test2 = resourceManager.ITMResourceEntries.FirstOrDefault(x => x.FullName.EndsWith(itmFilename));
                         if (test2 != null)
                         {
-                            test2.LoadCREFiles();
+                            test2.LoadITMFiles();
                             return;
                         }  
                     }
@@ -55,6 +55,26 @@ namespace BGOverlay
                 this.GeneralName = text?.Text;
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
                 this.IdentifiedName = text?.Text;
+
+                // Abilities
+                reader.BaseStream.Seek(originOffset + 0x64, SeekOrigin.Begin);
+                var offsetToAbilities = reader.ReadInt32();
+                var countOfAbilities = reader.ReadInt16();
+
+                this.Abilities = new List<EffectEntry>();
+                for (int i = 0; i < countOfAbilities; ++i)
+                {
+                    var abilityOffset = originOffset + offsetToAbilities + i * (0x72);
+                    reader.BaseStream.Seek(abilityOffset + 0x1E, SeekOrigin.Begin);
+                    var abilityEffectsCount = reader.ReadInt16();
+
+                    for (int j = 0; j < abilityEffectsCount; j++)
+                    {
+                        var abilityEffectOffset = abilityOffset + 0x38 + j * 0x30;
+                        reader.BaseStream.Seek(abilityEffectOffset, SeekOrigin.Begin);
+                        var type = reader.ReadByte();
+                    }
+                }
             }
         }
         public string Signature { get; private set; }
@@ -62,6 +82,7 @@ namespace BGOverlay
         public string GeneralName { get; private set; }
         public string IdentifiedName { get; private set; }
 
+        public List<EffectEntry> Abilities { get; }
 
     }
 }

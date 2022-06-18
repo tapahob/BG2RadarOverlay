@@ -166,13 +166,5 @@ namespace BGOverlay
             return reader;
         }
 
-        public void log(string line)
-        {
-            using(StreamWriter sw = File.AppendText("log.txt"))
-            {
-                sw.WriteLine(line);
-            }
-        }
-
     }
 }
