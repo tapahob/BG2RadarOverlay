@@ -155,17 +155,7 @@ namespace WPFFrontend
                 MainWindow.currentControls.Remove(bgEntity.tag, out enemyControl);
             }
         }
-        private int left(BGEntity entity)
-        {
-            if (entity.MousePosX > 980)
-            {
-                return -500;
-            }
-            else
-            {
-                return 850;
-            }
-        }
+
         private void MouseHook_MouseEvent(object sender, MouseMessageEventArgs e)
         {
             this.Dispatcher.BeginInvoke(new Action(() =>
