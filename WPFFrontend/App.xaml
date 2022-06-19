@@ -48,6 +48,12 @@
                 <Setter Property="FontWeight" Value="Bold" />
             </Style>
 
+            <Style TargetType="{x:Type TextBlock}" x:Key="ItemEffects">
+                <Setter Property="FontSize" Value="{DynamicResource FontSize1}" />
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily1}" />
+                <Setter Property="FontWeight" Value="Bold" />
+            </Style>
+
             <Style TargetType="{x:Type TextBlock}" x:Key="EnemyList">
                 <Setter Property="FontSize" Value="{DynamicResource FontSize1}" />
                 <Setter Property="FontFamily" Value="{DynamicResource FontFamily1}" />

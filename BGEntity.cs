@@ -78,6 +78,19 @@ namespace BGOverlay
             }
         }
 
+        public List<string> ItemEffects
+        {
+            get
+            {
+                if (this.Reader == null)
+                {
+                    return new List<string>();
+                }
+
+                return this.Reader.ItemEffects.Select(itemEffect => itemEffect.ToString()).ToList();
+            }
+        }
+
         public List<string> Protections
         {
             get
@@ -380,7 +393,7 @@ namespace BGOverlay
                     this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
             }
         }
-
+        
         private void updateTime()
         {
             this.GameTime = WinAPIBindings.ReadUInt32(WinAPIBindings.FindDMAAddy(cInfGamePtr, new int[] { 0x3FA0 }));

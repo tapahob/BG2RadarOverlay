@@ -158,6 +158,11 @@ namespace WPFFrontend
             {
                 this.protectionsListView.Visibility = Visibility.Visible;
             }
+
+            if (this.BGEntity.ItemEffects.Count > 0)
+            {
+                this.itemEffectsListView.Visibility = Visibility.Visible;
+            }
         }
     }
 }
