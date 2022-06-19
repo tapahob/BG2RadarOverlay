@@ -17,10 +17,12 @@ namespace BGOverlay
             BiffReaderCache    = new Dictionary<string, BIFFReader>();
             CREReaderCache     = new Dictionary<string, CREReader>();
             SPLReaderCache     = new Dictionary<string, SPLReader>();
+            EFFReaderCache     = new Dictionary<string, EFFReader>();
             BAMReaderCache     = new Dictionary<string, BAMReader>();
         }
         public List<BIFResourceEntry> CREResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.CRE).ToList();
         public List<BIFResourceEntry> SPLResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.SPL).ToList();
+        public List<BIFResourceEntry> EFFResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.EFF).ToList();
 
         public Dictionary<int, TLKEntry> StringRefs                     = null;
         public List<BIFEntry> BIFEntries                                = null; 
@@ -28,6 +30,7 @@ namespace BGOverlay
         public Dictionary<string, BIFFReader> BiffReaderCache           = null;
         public Dictionary<string, CREReader> CREReaderCache             = null;
         public Dictionary<string, SPLReader> SPLReaderCache             = null;
+        public Dictionary<string, EFFReader> EFFReaderCache             = null;
         public Dictionary<string, BAMReader> BAMReaderCache             = null;
 
         public void Init()
@@ -67,6 +70,17 @@ namespace BGOverlay
             {
                 reader = new SPLReader(this, splFilename);
                 SPLReaderCache[splFilename] = reader;
+            }
+            return reader;
+        }
+
+        public EFFReader GetEFFReader(string effFilename)
+        {
+            effFilename = effFilename.ToUpper();
+            if (!EFFReaderCache.TryGetValue(effFilename, out var reader))
+            {
+                reader = new EFFReader(this, effFilename);
+                EFFReaderCache[effFilename] = reader;
             }
             return reader;
         }

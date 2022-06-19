@@ -76,6 +76,7 @@
     <Compile Include="NativeStructs\CWeaponIdentification.cs" />
     <Compile Include="ProcessHacker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Readers\EFFReader.cs" />
     <Compile Include="Resources\ResourceManager.cs" />
     <Compile Include="Resources\BIFEntry.cs" />
     <Compile Include="Resources\BIFFV1FileEntry.cs" />

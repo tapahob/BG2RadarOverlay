@@ -88,6 +88,8 @@ namespace BGOverlay
                 var result        = new List<String>();
                 var opCodeStrings = new List<String>();
                 var spellStrings  = new List<String>();
+                var onHitMeleeStrings = new List<String>();
+                var onHitRangedStrings = new List<String>();
                 if (DerivedStats.WeaponImmune.Count > 0)
                 {
                     var a = this.TimedEffects.Where(x => x.EffectId == Effect.Protection_from_Weapons);
@@ -161,6 +163,28 @@ namespace BGOverlay
                         proficiencyStr += $"{type.ToString().Replace("_", " ")} +{amount} ";
                         continue;
                     }
+                    if (item.EffectName == Effect.Item_Set_Melee_Effect)
+                    {
+                        var hitEffectName = resourceManager.GetEFFReader($"{item.Resource.Trim('\0')}.EFF".ToUpper()).ToString();
+                        if (hitEffectName == "-1")
+                        {
+                            hitEffectName = resourceManager.GetEFFReader($"{item.Resource.Substring(0, item.Resource.Length - 1).Trim('\0')}.EFF".ToUpper()).ToString();
+                            hitEffectName = hitEffectName == "-1" ? item.Resource : hitEffectName;
+                        }
+                        onHitMeleeStrings.Add(preprocess(hitEffectName));
+                        continue;
+                    }
+                    if (item.EffectName == Effect.Item_Set_Ranged_Effect)
+                    {
+                        var hitEffectName = resourceManager.GetEFFReader($"{item.Resource.Trim('\0')}.EFF".ToUpper()).ToString();
+                        if (hitEffectName == "-1")
+                        {
+                            hitEffectName = resourceManager.GetEFFReader($"{item.Resource.Substring(0, item.Resource.Length - 1).Trim('\0')}.EFF".ToUpper()).ToString();
+                            hitEffectName = hitEffectName == "-1" ? item.Resource : hitEffectName;
+                        }
+                        onHitRangedStrings.Add(preprocess(hitEffectName));
+                        continue;
+                    }
                     if (item.EffectName == Effect.Stat_AC_vs_Damage_Type_Modifier)
                     {
                         var amount = item.Param1;
@@ -224,10 +248,35 @@ namespace BGOverlay
                 }
 
 
+                if (onHitMeleeStrings.Any())
+                {
+                    var onHitMeleeStringsFiltered = onHitMeleeStrings.Where(x =>
+                    !x.StartsWith("Text")
+                    && !x.StartsWith("Graphics")
+                    && !x.Contains("RGB")
+                    && !x.StartsWith("Colour")
+                    && !x.Contains("Portrait"));
+                    
+                    result.Add(preprocess("On melee hit: " + string.Join(", ", onHitMeleeStringsFiltered)));
+                }
+
+                if (onHitRangedStrings.Any())
+                {
+                    var onHitRangedStringsFiltered = onHitMeleeStrings.Where(x =>
+                    !x.StartsWith("Text")
+                    && !x.StartsWith("Graphics")
+                    && !x.Contains("RGB")
+                    && !x.StartsWith("Colour")
+                    && !x.Contains("Portrait"));
+
+                    result.Add(preprocess("On ranged hit: " + string.Join(", ", onHitRangedStringsFiltered)));
+                }
+
                 if (spellStrings.Any())
                 {
                     result.Add(preprocess("Immune to spells: " + string.Join(", ", spellStrings)));
                 }
+
                 if (!proficiencyStr.EndsWith(": "))
                     result.Add(proficiencyStr);
                 
