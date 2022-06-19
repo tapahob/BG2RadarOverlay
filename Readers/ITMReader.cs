@@ -61,7 +61,7 @@ namespace BGOverlay
                 var offsetToAbilities = reader.ReadInt32();
                 var countOfAbilities = reader.ReadInt16();
 
-                this.Abilities = new List<EffectEntry>();
+                this.Effects = new List<ItemEffectEntry>();
                 for (int i = 0; i < countOfAbilities; ++i)
                 {
                     var abilityOffset = originOffset + offsetToAbilities + i * (0x72);
@@ -70,9 +70,7 @@ namespace BGOverlay
 
                     for (int j = 0; j < abilityEffectsCount; j++)
                     {
-                        var abilityEffectOffset = abilityOffset + 0x38 + j * 0x30;
-                        reader.BaseStream.Seek(abilityEffectOffset, SeekOrigin.Begin);
-                        var type = reader.ReadByte();
+                        Effects.Add(new ItemEffectEntry(reader, abilityOffset + 0x38 + j * 0x30));
                     }
                 }
             }
@@ -82,7 +80,7 @@ namespace BGOverlay
         public string GeneralName { get; private set; }
         public string IdentifiedName { get; private set; }
 
-        public List<EffectEntry> Abilities { get; }
+        public List<ItemEffectEntry> Effects { get; }
 
     }
 }
