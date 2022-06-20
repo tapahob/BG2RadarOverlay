@@ -8,7 +8,7 @@
     x:Class="WPFFrontend.EnemyControl"
              mc:Ignorable="d" 
              Height="Auto" Width="450"
-    Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" VerticalAlignment="Center">
+    Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="3" VerticalAlignment="Center">
     <UserControl.BorderBrush>
         <ImageBrush/>
     </UserControl.BorderBrush>
@@ -26,6 +26,7 @@
             <RowDefinition/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="10"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -34,7 +35,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="10"/>
         </Grid.ColumnDefinitions>
-        <Border Grid.RowSpan="7" Grid.ColumnSpan="4" BorderThickness="5" BorderBrush="#FF151313"/>
+        <Border Grid.RowSpan="8" Grid.ColumnSpan="4" BorderThickness="5" BorderBrush="#FF151313"/>
         <Label Grid.Row="1" Grid.Column="1" Content="{Binding DerivedStatsTemp.Level}" d:Content="41" ContentStringFormat="Lv{0}" />
         <Label Grid.Row="1" Grid.Column="2" Content="X" d:Content="X" HorizontalAlignment="Right" MouseDown="Label_MouseDown" Margin="0,0,3,0"/>
         <Border Grid.ColumnSpan="2" Grid.Row="1" Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="1">
@@ -52,8 +53,8 @@
                 <Label Style="{StaticResource Attributes}" x:Name="STR" d:Content="18/00" Content="{Binding DerivedStatsTemp.STRString}" ContentStringFormat="STR: {0}" HorizontalAlignment="Center"/>
                 <Label Style="{StaticResource Attributes}" x:Name="DEX" d:Content="25" Content="{Binding DerivedStatsTemp.DEX}" ContentStringFormat="DEX: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
                 <Label Style="{StaticResource Attributes}" x:Name="CON" d:Content="25" Content="{Binding DerivedStatsTemp.CON}" ContentStringFormat="CON: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="WIS" d:Content="25" Content="{Binding DerivedStatsTemp.WIS}" ContentStringFormat="INT: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="INT" d:Content="25" Content="{Binding DerivedStatsTemp.INT}" ContentStringFormat="WIS: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label Style="{StaticResource Attributes}" x:Name="INT" d:Content="25" Content="{Binding DerivedStatsTemp.INT}" ContentStringFormat="INT: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label Style="{StaticResource Attributes}" x:Name="WIS" d:Content="25" Content="{Binding DerivedStatsTemp.WIS}" ContentStringFormat="WIS: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
                 <Label Style="{StaticResource Attributes}" x:Name="CHA" d:Content="25" Content="{Binding DerivedStatsTemp.CHA}" ContentStringFormat="CHR: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
             </StackPanel>
         </Border>
@@ -91,6 +92,8 @@
                     <TextBlock Text="{Binding}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
                 </DataTemplate>
             </ListView.ItemTemplate>
+        </ListView>
+        <ListView x:Name="itemEffectsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
         </ListView>
     </Grid>
 </UserControl>

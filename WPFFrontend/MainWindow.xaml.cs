@@ -39,6 +39,7 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
+
             ph = new ProcessHacker();
             ph.Init();
             UpdateStyles();
@@ -154,8 +155,8 @@ namespace WPFFrontend
 
                 MainWindow.currentControls.Remove(bgEntity.tag, out enemyControl);
             }
-        }        
-        
+        }
+
         private void MouseHook_MouseEvent(object sender, MouseMessageEventArgs e)
         {
             this.Dispatcher.BeginInvoke(new Action(() =>

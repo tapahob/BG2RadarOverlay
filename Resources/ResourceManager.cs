@@ -16,22 +16,32 @@ namespace BGOverlay
             BIFResourceEntries = new Dictionary<string, BIFResourceEntry>();
             BiffReaderCache    = new Dictionary<string, BIFFReader>();
             CREReaderCache     = new Dictionary<string, CREReader>();
+            ITMReaderCache     = new Dictionary<string, ITMReader>();
             SPLReaderCache     = new Dictionary<string, SPLReader>();
+            EFFReaderCache     = new Dictionary<string, EFFReader>();
             BAMReaderCache     = new Dictionary<string, BAMReader>();
         }
+
+        public static ResourceManager Instance { get; private set; }
+
         public List<BIFResourceEntry> CREResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.CRE).ToList();
         public List<BIFResourceEntry> SPLResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.SPL).ToList();
+        public List<BIFResourceEntry> EFFResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.EFF).ToList();
+        public List<BIFResourceEntry> ITMResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.ITM).ToList();
 
         public Dictionary<int, TLKEntry> StringRefs                     = null;
         public List<BIFEntry> BIFEntries                                = null; 
         public Dictionary<string, BIFResourceEntry> BIFResourceEntries  = null;
         public Dictionary<string, BIFFReader> BiffReaderCache           = null;
         public Dictionary<string, CREReader> CREReaderCache             = null;
+        public Dictionary<string, ITMReader> ITMReaderCache             = null;
         public Dictionary<string, SPLReader> SPLReaderCache             = null;
+        public Dictionary<string, EFFReader> EFFReaderCache             = null;
         public Dictionary<string, BAMReader> BAMReaderCache             = null;
 
         public void Init()
         {
+            ResourceManager.Instance = this;
             new TLKReader(this);
             new KeyReader(this);
             loadBifs();
@@ -67,6 +77,17 @@ namespace BGOverlay
             {
                 reader = new SPLReader(this, splFilename);
                 SPLReaderCache[splFilename] = reader;
+            }
+            return reader;
+        }
+
+        public EFFReader GetEFFReader(string effFilename)
+        {
+            effFilename = effFilename.ToUpper();
+            if (!EFFReaderCache.TryGetValue(effFilename, out var reader))
+            {
+                reader = new EFFReader(this, effFilename);
+                EFFReaderCache[effFilename] = reader;
             }
             return reader;
         }
@@ -116,18 +137,59 @@ namespace BGOverlay
             return reader;
         }
 
+        public ITMReader GetITMReader(string itmFilename)
+        {
+            itmFilename = itmFilename.ToUpper();
+            ITMReader reader;
+            if (!ITMReaderCache.TryGetValue(itmFilename, out reader))
+            {
+                if (itmFilename == "<ERROR>.ITM")
+                {
+                    return null;
+                }
+                try
+                {
+                    reader = new ITMReader(this, itmFilename);
+                    if (reader.Version == null)
+                    {
+                        var key = ITMReaderCache.Keys.FirstOrDefault(x => x.EndsWith(itmFilename));
+                        reader = ITMReaderCache[key];
+                    }
+                    else
+                    {
+                        ITMReaderCache[itmFilename] = reader;
+                    }
+                }
+                catch (Exception)
+                {
+                    reader = null;
+                }
+
+            }
+
+            return reader;
+        }
+
         public BAMReader GetBAMReader(string bamFilename)
         {
             if (bamFilename.Trim('\0') == "")
                 return null;
             bamFilename = bamFilename.ToUpper();
-            BAMReader reader;
-            if (!BAMReaderCache.TryGetValue(bamFilename, out reader))
+            BAMReader reader = null;
+            try
             {
-                reader = new BAMReader(this, bamFilename);
-                BAMReaderCache[bamFilename] = reader;
+                if (!BAMReaderCache.TryGetValue(bamFilename, out reader))
+                {
+                    reader = new BAMReader(this, bamFilename);
+                    BAMReaderCache[bamFilename] = reader;
+                }
+            } catch (Exception)
+            {
+                // ...
             }
+            
             return reader;
         }
+
     }
 }

@@ -1,6 +1,7 @@
 ﻿using BGOverlay.Resources;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 
@@ -15,18 +16,18 @@ namespace BGOverlay
         public CREReader(ResourceManager resourceManager, String creFilename = "DUERGAR.CRE", int originOffset = 0, string biffArchivePath = "")
         {
             this.resourceManager = resourceManager;
-            var filename         = creFilename;
+            var filename = creFilename;
             var overrideCreFilename = $"{gameDirectory}\\override\\{creFilename}";
             if (File.Exists(overrideCreFilename))
             {
-                originOffset    = 0;
+                originOffset = 0;
                 biffArchivePath = "";
-                filename        = overrideCreFilename;
-            } 
+                filename = overrideCreFilename;
+            }
             else
-            {   
-                var lastTry = Directory.Exists($"{gameDirectory}\\override") 
-                    ? Directory.GetFiles($"{gameDirectory}\\override").Select(x=>x.ToUpper()).FirstOrDefault(x => x.EndsWith(creFilename))
+            {
+                var lastTry = Directory.Exists($"{gameDirectory}\\override")
+                    ? Directory.GetFiles($"{gameDirectory}\\override").Select(x => x.ToUpper()).FirstOrDefault(x => x.EndsWith(creFilename))
                     : null;
                 if (lastTry == null)
                 {
@@ -38,7 +39,7 @@ namespace BGOverlay
                         {
                             test2.LoadCREFiles();
                             return;
-                        }  
+                        }
                     }
                 } else
                 {
@@ -50,7 +51,7 @@ namespace BGOverlay
             {
                 reader.BaseStream.Seek(originOffset, SeekOrigin.Begin);
                 this.Signature = new string(reader.ReadChars(4));
-                this.Version   = new string(reader.ReadChars(4));
+                this.Version = new string(reader.ReadChars(4));
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
                 this.LongName = text?.Text;
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
@@ -101,68 +102,104 @@ namespace BGOverlay
 
                 reader.BaseStream.Seek(originOffset + 0x0033, SeekOrigin.Begin);
                 this.EffStructureVersion = reader.ReadByte();
-                this.SmallPortrait       = reader.ReadChars(8);
-                this.LargePortrait       = reader.ReadChars(8);
+                this.SmallPortrait = reader.ReadChars(8);
+                this.LargePortrait = reader.ReadChars(8);
 
                 reader.BaseStream.Seek(originOffset + 0x0046, SeekOrigin.Begin);
-                this.ArmorClassNatural   = reader.ReadInt16();
+                this.ArmorClassNatural = reader.ReadInt16();
                 this.ArmorClassEffective = reader.ReadInt16();
-                this.ArmorClassCrushing  = reader.ReadInt16();
-                this.ArmorClassMissile   = reader.ReadInt16();
-                this.ArmorClassPiercing  = reader.ReadInt16();
-                this.ArmorClassSlashing  = reader.ReadInt16();
-                this.THAC0               = reader.ReadByte();
-                this.NumberOfAttacks     = reader.ReadByte();
-                this.SaveVersusDeath     = reader.ReadByte();
-                this.SaveVersusWands     = reader.ReadByte();
+                this.ArmorClassCrushing = reader.ReadInt16();
+                this.ArmorClassMissile = reader.ReadInt16();
+                this.ArmorClassPiercing = reader.ReadInt16();
+                this.ArmorClassSlashing = reader.ReadInt16();
+                this.THAC0 = reader.ReadByte();
+                this.NumberOfAttacks = reader.ReadByte();
+                this.SaveVersusDeath = reader.ReadByte();
+                this.SaveVersusWands = reader.ReadByte();
                 this.SaveVersusPolymorph = reader.ReadByte();
-                this.SaveVersusBreath    = reader.ReadByte();
-                this.SaveVersusSpells    = reader.ReadByte();
-                this.ResistFire          = reader.ReadByte();
-                this.ResistCold          = reader.ReadByte();
-                this.ResistElectricity   = reader.ReadByte();
-                this.ResistAcid          = reader.ReadByte();
-                this.ResistMagic         = reader.ReadByte();
-                this.ResistMagicFire     = reader.ReadByte();
-                this.ResistMagicCold     = reader.ReadByte();
-                this.ResistSlashing      = reader.ReadByte();
-                this.ResistCrushing      = reader.ReadByte();
-                this.ResistPiercing      = reader.ReadByte();
-                this.ResistMissile       = reader.ReadByte();
+                this.SaveVersusBreath = reader.ReadByte();
+                this.SaveVersusSpells = reader.ReadByte();
+                this.ResistFire = reader.ReadByte();
+                this.ResistCold = reader.ReadByte();
+                this.ResistElectricity = reader.ReadByte();
+                this.ResistAcid = reader.ReadByte();
+                this.ResistMagic = reader.ReadByte();
+                this.ResistMagicFire = reader.ReadByte();
+                this.ResistMagicCold = reader.ReadByte();
+                this.ResistSlashing = reader.ReadByte();
+                this.ResistCrushing = reader.ReadByte();
+                this.ResistPiercing = reader.ReadByte();
+                this.ResistMissile = reader.ReadByte();
 
                 reader.BaseStream.Seek(originOffset + 0x0234, SeekOrigin.Begin);
-                this.Class1Level          = reader.ReadByte();
-                this.Class2Level          = reader.ReadByte();
-                this.Class3Level          = reader.ReadByte();
-                this.Gender               = reader.ReadByte();
-                this.Strength             = reader.ReadByte();
+                this.Class1Level = reader.ReadByte();
+                this.Class2Level = reader.ReadByte();
+                this.Class3Level = reader.ReadByte();
+                this.Gender = reader.ReadByte();
+                this.Strength = reader.ReadByte();
                 this.StrengthPercentBonus = reader.ReadByte();
-                this.Intelligence         = reader.ReadByte();
-                this.Wisdom               = reader.ReadByte();
-                this.Dexterity            = reader.ReadByte();
-                this.Constitution         = reader.ReadByte();
-                this.Charisma             = reader.ReadByte();
+                this.Intelligence = reader.ReadByte();
+                this.Wisdom = reader.ReadByte();
+                this.Dexterity = reader.ReadByte();
+                this.Constitution = reader.ReadByte();
+                this.Charisma = reader.ReadByte();
 
                 reader.BaseStream.Seek(originOffset + 0x0244, SeekOrigin.Begin);
                 this.KitInformation = (KIT)reader.ReadInt32();
-                                
+
                 reader.BaseStream.Seek(originOffset + 0x0270, SeekOrigin.Begin);
                 this.EnemyAlly = reader.ReadByte();
-                this.General   = reader.ReadByte();
-                this.Race      = (RACE)reader.ReadByte();
-                this.Class     = (CLASS)reader.ReadByte();
+                this.General = reader.ReadByte();
+                this.Race = (RACE)reader.ReadByte();
+                this.Class = (CLASS)reader.ReadByte();
 
                 reader.BaseStream.Seek(originOffset + 0x027b, SeekOrigin.Begin);
                 this.SetAlignment((ALIGNMENT)reader.ReadByte());
 
+                // Items
+                //reader.BaseStream.Seek(originOffset + 0x02bc - 4, SeekOrigin.Begin);
+                //var offsetToItemSlots = reader.ReadInt32();
+                //var offsetToItems = reader.ReadInt32();
+                //int countOfItems = reader.ReadInt32();
+
+                //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 39, SeekOrigin.Begin);
+                //var activeWeaponSlot = reader.ReadInt16();
+
+                //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 9, SeekOrigin.Begin);
+                //var weaponIndexes = new List<short>
+                //{
+                //    reader.ReadInt16(),
+                //    reader.ReadInt16(),
+                //    reader.ReadInt16(),
+                //    reader.ReadInt16()
+                //};
+
+                //this.ItemEffects = new List<ItemEffectEntry>();
+                //var activeWeaponTableIndex = weaponIndexes[activeWeaponSlot];
+                //if (activeWeaponTableIndex != 1000 && activeWeaponTableIndex != -1)
+                //{
+                //    reader.BaseStream.Seek(originOffset + offsetToItems + activeWeaponTableIndex * (0x14), SeekOrigin.Begin);
+                //    string itmFileName = new String(reader.ReadChars(8)).TrimEnd('\0');
+                //    ITMReader itmReader = this.resourceManager.GetITMReader(itmFileName + ".ITM");
+
+                //    if (itmReader != null)
+                //    {
+                //        this.Enchantment = itmReader.Enchantment;
+                //        this.EquippedWeaponName = itmReader.IdentifiedName;
+                //        this.EquippedWeaponIcon = itmReader.Icon;
+                //        itmReader.Effects.FindAll(itemEffect => !this.excludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode)).ForEach(itemEffect => ItemEffects.Add(itemEffect));
+                //    }
+                //} else { this.EquippedWeaponName = "Fists"; }
+
+                // Effects
                 reader.BaseStream.Seek(originOffset + 0x02c4, SeekOrigin.Begin);
                 var offsetToEffects = reader.ReadInt32();
-                var countOfEffects  = reader.ReadInt32();
+                var countOfEffects = reader.ReadInt32();
 
                 reader.BaseStream.Seek(originOffset + offsetToEffects, SeekOrigin.Begin);
                 bool isV2Version = this.EffStructureVersion == 1;
                 this.Effects = new List<EffectEntry>();
-                for (int i=0; i<countOfEffects; ++i)
+                for (int i = 0; i < countOfEffects; ++i)
                 {
                     var begining = originOffset + offsetToEffects + i * (0x108);
                     if (isV2Version)
@@ -173,6 +210,21 @@ namespace BGOverlay
             }
 
         }
+
+        public List<string> OnHitEffectsStrings 
+        { 
+            get
+            {
+                return new List<string>
+                {
+                    
+                    String.Format("Weapon: \"{0}\" {1}", EquippedWeaponName,
+                    EquippedWeaponName.Contains($"{+Enchantment}") ? "" : $"(Strikes as +{Enchantment})")
+                }.Concat(ItemEffects.Select(x => x.ToString())).ToList();
+            }  
+        }
+
+       
 
         public enum ALIGNMENT
         {
@@ -566,5 +618,10 @@ namespace BGOverlay
         }
 
         public List<EffectEntry> Effects { get; }
+
+        public List<ItemEffectEntry> ItemEffects = new List<ItemEffectEntry>();
+        public int Enchantment { get; set; }
+        public string EquippedWeaponName { get; set; }
+        public Bitmap EquippedWeaponIcon { get; set; }
     }
 }

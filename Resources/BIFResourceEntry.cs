@@ -85,6 +85,21 @@ namespace BGOverlay.Resources
             }
         }
 
+        public void LoadITMFiles()
+        {
+            if (Ext == Extension.ITM)
+            {
+                var bifArchive = BiffEntry.FileName.Substring(BiffEntry.FileName.LastIndexOf('/') + 1);
+                var allEntries = resourceManager.GetBIFFReader(bifArchive).BIFFV1FileEntries;
+                var biffFileEntry = allEntries[ResourceLocator & 0xfffff];
+                if (biffFileEntry.Ext != Extension.ITM)
+                {
+                    throw new Exception();
+                }
+                this.resourceManager.ITMReaderCache[$"{ResourceName}.ITM"] = new ITMReader(this.resourceManager, $"{ResourceName}.ITM", biffFileEntry.Offset, BiffEntry.BIFFilePath);
+            }
+        }
+
         public override string ToString()
         {
             return $"{FullName} : {BiffEntry}";

@@ -48,6 +48,7 @@ namespace BGOverlay
         private IntPtr timedEffectsPointer;
         private IntPtr equipedEffectsPointer;
         private IntPtr curSpellPtr;
+        private IntPtr equipmentPtr;
 
         public int isInvisible { get; private set; }
         public CDerivedStats DerivedStatsBonus { get; private set; }
@@ -88,6 +89,8 @@ namespace BGOverlay
                 var result        = new List<String>();
                 var opCodeStrings = new List<String>();
                 var spellStrings  = new List<String>();
+                var onHitMeleeStrings = new List<String>();
+                var onHitRangedStrings = new List<String>();
                 if (DerivedStats.WeaponImmune.Count > 0)
                 {
                     var a = this.TimedEffects.Where(x => x.EffectId == Effect.Protection_from_Weapons);
@@ -161,6 +164,28 @@ namespace BGOverlay
                         proficiencyStr += $"{type.ToString().Replace("_", " ")} +{amount} ";
                         continue;
                     }
+                    if (item.EffectName == Effect.Item_Set_Melee_Effect)
+                    {
+                        var hitEffectName = resourceManager.GetEFFReader($"{item.Resource.Trim('\0')}.EFF".ToUpper()).ToString();
+                        if (hitEffectName == "-1")
+                        {
+                            hitEffectName = resourceManager.GetEFFReader($"{item.Resource.Substring(0, item.Resource.Length - 1).Trim('\0')}.EFF".ToUpper()).ToString();
+                            hitEffectName = hitEffectName == "-1" ? item.Resource : hitEffectName;
+                        }
+                        onHitMeleeStrings.Add(preprocess(hitEffectName));
+                        continue;
+                    }
+                    if (item.EffectName == Effect.Item_Set_Ranged_Effect)
+                    {
+                        var hitEffectName = resourceManager.GetEFFReader($"{item.Resource.Trim('\0')}.EFF".ToUpper()).ToString();
+                        if (hitEffectName == "-1")
+                        {
+                            hitEffectName = resourceManager.GetEFFReader($"{item.Resource.Substring(0, item.Resource.Length - 1).Trim('\0')}.EFF".ToUpper()).ToString();
+                            hitEffectName = hitEffectName == "-1" ? item.Resource : hitEffectName;
+                        }
+                        onHitRangedStrings.Add(preprocess(hitEffectName));
+                        continue;
+                    }
                     if (item.EffectName == Effect.Stat_AC_vs_Damage_Type_Modifier)
                     {
                         var amount = item.Param1;
@@ -224,10 +249,35 @@ namespace BGOverlay
                 }
 
 
+                if (onHitMeleeStrings.Any())
+                {
+                    var onHitMeleeStringsFiltered = onHitMeleeStrings.Where(x =>
+                    !x.StartsWith("Text")
+                    && !x.StartsWith("Graphics")
+                    && !x.Contains("RGB")
+                    && !x.StartsWith("Colour")
+                    && !x.Contains("Portrait"));
+                    
+                    result.Add(preprocess("On melee hit: " + string.Join(", ", onHitMeleeStringsFiltered)));
+                }
+
+                if (onHitRangedStrings.Any())
+                {
+                    var onHitRangedStringsFiltered = onHitMeleeStrings.Where(x =>
+                    !x.StartsWith("Text")
+                    && !x.StartsWith("Graphics")
+                    && !x.Contains("RGB")
+                    && !x.StartsWith("Colour")
+                    && !x.Contains("Portrait"));
+
+                    result.Add(preprocess("On ranged hit: " + string.Join(", ", onHitRangedStringsFiltered)));
+                }
+
                 if (spellStrings.Any())
                 {
                     result.Add(preprocess("Immune to spells: " + string.Join(", ", spellStrings)));
                 }
+
                 if (!proficiencyStr.EndsWith(": "))
                     result.Add(proficiencyStr);
                 
@@ -313,13 +363,10 @@ namespace BGOverlay
             this.CurrentHP             = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
             this.timedEffectsPointer   = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
             this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x49B0 });
-
-            //TODO: ~!!
-            this.curSpellPtr = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
-            this.isInvisible = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
-
-            //LoadCREResource(resourceManager);
-            this.Loaded = true;
+            this.curSpellPtr           = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
+            this.equipmentPtr          = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xFC0 });
+            this.isInvisible           = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
+            this.Loaded                = true;
         }
 
         public void LoadCREResource()
@@ -331,7 +378,7 @@ namespace BGOverlay
                     this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
             }
         }
-
+        
         private void updateTime()
         {
             this.GameTime = WinAPIBindings.ReadUInt32(WinAPIBindings.FindDMAAddy(cInfGamePtr, new int[] { 0x3FA0 }));
@@ -343,13 +390,35 @@ namespace BGOverlay
             this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x2A70 }));
             this.DerivedStatsTemp  = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1DC8 }));
             this.THAC0             = DerivedStats.THAC0 - DerivedStatsTemp.HitBonus - DerivedStats.THAC0BonusRight;
+            
             this.calcAPR();
+            this.loadWeaponStats();
         }
-
+        private void loadWeaponStats()
+        {
+            var selectedWeapon = WinAPIBindings.ReadByte(equipmentPtr + 0x138);
+            var tempItem = new CItem(equipmentPtr + 0x140);
+            var lst = new List<CItem>();
+            for (int i=0; i<40; ++i)
+            {
+                lst.Add(new CItem(equipmentPtr + 8 * i));
+            }
+            var dbg = lst.Select(x => x.resRef);
+            var ITMRes = lst[selectedWeapon];
+            var reader = resourceManager.GetITMReader($"{ITMRes.resRef}.ITM");
+            if (reader != null)
+            {
+                this.Reader.Enchantment = reader.Enchantment;
+                this.Reader.EquippedWeaponIcon = reader.Icon;
+                this.Reader.EquippedWeaponName = reader.IdentifiedName;
+                this.Reader.ItemEffects.Clear();
+                reader.Effects.FindAll(itemEffect => !ITMReader.ExcludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode))
+                    .ForEach(itemEffect => Reader.ItemEffects.Add(itemEffect));
+            }
+        }
         private void calcAPR()
         {
-            this.loadEquipedEffects();
-
+            this.loadEquipedEffects();            
             string formatStr;
             var apr = this.DerivedStats.NumberOfAttacks;
             int aprDisplayNum = apr;

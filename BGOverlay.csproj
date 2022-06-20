@@ -64,10 +64,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BGEntity.cs" />
+    <Compile Include="NativeStructs\CItem.cs" />
     <Compile Include="Readers\BAMReader.cs" />
     <Compile Include="Readers\BIFFReader.cs" />
     <Compile Include="NativeStructs\CDerivedStats.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="Readers\ITMReader.cs" />
     <Compile Include="Readers\CREReader.cs" />
     <Compile Include="Readers\KeyReader.cs" />
     <Compile Include="NativeStructs\CGameEffect.cs" />
@@ -76,6 +78,8 @@
     <Compile Include="NativeStructs\CWeaponIdentification.cs" />
     <Compile Include="ProcessHacker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\ItemEffectEntry.cs" />
+    <Compile Include="Readers\EFFReader.cs" />
     <Compile Include="Resources\ResourceManager.cs" />
     <Compile Include="Resources\BIFEntry.cs" />
     <Compile Include="Resources\BIFFV1FileEntry.cs" />

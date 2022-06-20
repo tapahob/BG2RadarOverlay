@@ -13,6 +13,6 @@ namespace WPFFrontend
     /// </summary>
     public partial class App : Application
     {
-
+        
     }
 }
