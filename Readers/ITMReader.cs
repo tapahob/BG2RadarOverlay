@@ -98,7 +98,8 @@ namespace BGOverlay
             Effect.Colour_Glow_Pulse,
             Effect.Colour_Very_Bright_by_RGB,
             Effect.Colour_Set_Character_colours_by_Palette,
-            Effect.Colour_Strong_or_Dark_by_RGB,
+            Effect.Colour_Strong_or_Dark_by_RGB,  
+            Effect.Summon_Remove_Creature
         }, 
             // all the graphics
             Enum.GetValues(typeof(Effect)).Cast<Effect>()
@@ -109,6 +110,12 @@ namespace BGOverlay
             // texts
             Enum.GetValues(typeof(Effect)).Cast<Effect>()
             .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Text_")),
+            // Cures
+            Enum.GetValues(typeof(Effect)).Cast<Effect>()
+            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Cure_")),
+            // States
+            Enum.GetValues(typeof(Effect)).Cast<Effect>()
+            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("State_")),
         }.SelectMany(o => o).Cast<Effect>().ToList();
     }
 }

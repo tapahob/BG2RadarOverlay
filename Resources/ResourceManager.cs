@@ -21,6 +21,9 @@ namespace BGOverlay
             EFFReaderCache     = new Dictionary<string, EFFReader>();
             BAMReaderCache     = new Dictionary<string, BAMReader>();
         }
+
+        public static ResourceManager Instance { get; private set; }
+
         public List<BIFResourceEntry> CREResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.CRE).ToList();
         public List<BIFResourceEntry> SPLResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.SPL).ToList();
         public List<BIFResourceEntry> EFFResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.EFF).ToList();
@@ -38,6 +41,7 @@ namespace BGOverlay
 
         public void Init()
         {
+            ResourceManager.Instance = this;
             new TLKReader(this);
             new KeyReader(this);
             loadBifs();

@@ -66,9 +66,9 @@ namespace WPFFrontend
                     BitmapSizeOptions.FromWidthAndHeight(icon.Width, icon.Height));
                     var item = new StackPanel() { Orientation = Orientation.Horizontal };
                     item.Children.Add(new Image() { MaxHeight = 24, Source = newIcon });
-                    item.Children.Add(new Label() { Content = this.BGEntity.Reader.OnHitEffectsStrings[0] });
+                    item.Children.Add(new Label() {  Content = this.BGEntity.Reader.OnHitEffectsStrings[0] });
                     this.itemEffectsListView.Items.Add(item);
-                    this.itemEffectsListView.Items.Add(string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings));
+                    this.itemEffectsListView.Items.Add(new Label() { Padding = new Thickness(0, 0, 0, -10), Content = string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings.Skip(1))});
                 }
                 else
                 {

@@ -4,11 +4,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using static BGOverlay.Resources.BIFResourceEntry;
+using static BGOverlay.Resources.ItemEffectEntry;
 
 namespace BGOverlay
 {
     public class EFFReader
     {
+        private int saveTypeNum;
+
+        public Save SaveType { get; private set; }
+
         public EFFReader(ResourceManager resourceManager, string effFilename)
         {
             effFilename = effFilename.ToUpper();
@@ -38,7 +43,7 @@ namespace BGOverlay
             using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
             {
                 reader.BaseStream.Seek(originalOffset + 0x0010, SeekOrigin.Begin);
-                this.Type = reader.ReadInt32();
+                this.Type = (Effect) reader.ReadInt32();
                 
                 reader.BaseStream.Seek(originalOffset + 0x001C, SeekOrigin.Begin);
                 this.Parameter1 = reader.ReadInt32();
@@ -48,12 +53,28 @@ namespace BGOverlay
 
                 reader.BaseStream.Seek(originalOffset + 0x0028, SeekOrigin.Begin);
                 this.Duration = reader.ReadInt32();
+
+                reader.BaseStream.Seek(originalOffset + 0x0040, SeekOrigin.Begin);
+                this.saveTypeNum = reader.ReadInt32();
+                this.SaveType = Save.None;
+                if ((saveTypeNum & (1 << 0)) > 0)
+                    SaveType = Save.Spell;
+                if ((saveTypeNum & (1 << 1)) > 0)
+                    SaveType = Save.Breath;
+                if ((saveTypeNum & (1 << 2)) > 0)
+                    SaveType = Save.Death;
+                if ((saveTypeNum & (1 << 3)) > 0)
+                    SaveType = Save.Wand;
+                if ((saveTypeNum & (1 << 4)) > 0)
+                    SaveType = Save.Polymorph;
+                this.SaveBonus = reader.ReadInt32();
             }
         }
-        public int Type { get; }
+        public Effect Type { get; }
         public int Parameter1 { get; }
         public int Parameter2 { get; }
         public int Duration { get; }
+        public int SaveBonus { get; private set; }
 
         public override string ToString()
         {
@@ -61,7 +82,7 @@ namespace BGOverlay
 
             var parameter1Str = Parameter1 != 0 ? $": {Parameter1}" : "";
 
-            return $"{(Effect)Type}{durationStr}{parameter1Str}";
+            return $"{Type}{durationStr}{parameter1Str}";
         }
     }
 }

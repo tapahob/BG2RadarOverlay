@@ -9,8 +9,11 @@ namespace BGOverlay.Resources
         public ItemEffectEntry(BinaryReader reader, int offset)
         {
             reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-            this.OpCode = reader.ReadInt16();
-            this.EffectName = (Effect) OpCode;           
+            this.OpCode = (Effect) reader.ReadInt16();
+            this.EffectName = (Effect) OpCode;
+
+            reader.BaseStream.Seek(offset + 0x14, SeekOrigin.Begin);
+            this.Resource = new string(reader.ReadChars(8));
 
             reader.BaseStream.Seek(offset + 0xE, SeekOrigin.Begin);
             this.Duration = reader.ReadInt32();
@@ -31,6 +34,16 @@ namespace BGOverlay.Resources
             
             reader.BaseStream.Seek(offset + 0x28, SeekOrigin.Begin);
             this.SaveBonus = reader.ReadInt32();
+
+            if (EffectName == Effect.Use_EFF_File)
+            {
+                var resource        = $"{((Resource.IndexOf("\0") < 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.EFF";
+                this.SubEffect      = ResourceManager.Instance.GetEFFReader(resource);
+                this.EffectName     = SubEffect.Type;
+                this.SaveType       = SubEffect.SaveType;
+                this.SaveBonus      = SubEffect.SaveBonus;
+                this.OpCode         = SubEffect.Type;
+            }
         }
 
         public enum Save
@@ -59,11 +72,13 @@ namespace BGOverlay.Resources
             return effectName.ToString().Replace("Death_", "").Replace("_", " ");
         }        
 
-        public int OpCode { get; }
+        public Effect OpCode { get; }
+        public EFFReader SubEffect { get; private set; }
         public Effect EffectName { get; }
         public int Duration { get; }
         public Save SaveType { get; }
         public int SaveBonus { get; }
+        public string Resource { get; private set; }
     }
 
 }
