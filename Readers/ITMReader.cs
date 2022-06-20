@@ -56,7 +56,7 @@ namespace BGOverlay
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
                 this.GeneralName = text?.Text;
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
-                this.IdentifiedName = text?.Text ?? GeneralName;
+                this.IdentifiedName = text?.Text ?? GeneralName ?? "None";
 
                 // Abilities
                 reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);

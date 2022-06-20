@@ -51,7 +51,7 @@ namespace WPFFrontend
 
         private void fetchWeaponEffects(BGEntity bgEntity)
         {
-            if (this.BGEntity.Reader.OnHitEffectsStrings.Count > 0)
+            if (!(bgEntity.Reader.EquippedWeaponName == "None" && bgEntity.Reader.Enchantment == 0) && this.BGEntity.Reader.OnHitEffectsStrings.Count > 0)
             {
                 BitmapSource newIcon;
                 var icon = bgEntity.Reader.EquippedWeaponIcon;
