@@ -53,8 +53,8 @@
                 <Label Style="{StaticResource Attributes}" x:Name="STR" d:Content="18/00" Content="{Binding DerivedStatsTemp.STRString}" ContentStringFormat="STR: {0}" HorizontalAlignment="Center"/>
                 <Label Style="{StaticResource Attributes}" x:Name="DEX" d:Content="25" Content="{Binding DerivedStatsTemp.DEX}" ContentStringFormat="DEX: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
                 <Label Style="{StaticResource Attributes}" x:Name="CON" d:Content="25" Content="{Binding DerivedStatsTemp.CON}" ContentStringFormat="CON: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="WIS" d:Content="25" Content="{Binding DerivedStatsTemp.WIS}" ContentStringFormat="INT: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="INT" d:Content="25" Content="{Binding DerivedStatsTemp.INT}" ContentStringFormat="WIS: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label Style="{StaticResource Attributes}" x:Name="INT" d:Content="25" Content="{Binding DerivedStatsTemp.INT}" ContentStringFormat="INT: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <Label Style="{StaticResource Attributes}" x:Name="WIS" d:Content="25" Content="{Binding DerivedStatsTemp.WIS}" ContentStringFormat="WIS: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
                 <Label Style="{StaticResource Attributes}" x:Name="CHA" d:Content="25" Content="{Binding DerivedStatsTemp.CHA}" ContentStringFormat="CHR: {0}" HorizontalAlignment="Center" ClipToBounds="True"/>
             </StackPanel>
         </Border>

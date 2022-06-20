@@ -43,7 +43,7 @@ namespace BGOverlay.Resources
                 this.SaveType       = SubEffect.SaveType;
                 this.SaveBonus      = SubEffect.SaveBonus;
                 this.OpCode         = SubEffect.Type;
-            }
+            }          
         }
 
         public enum Save
@@ -58,7 +58,9 @@ namespace BGOverlay.Resources
 
         public override string ToString()
         {
-            var result = $"{preprocess(EffectName)}, Save vs {SaveType}";
+            var result = $"{preprocess(EffectName)}";
+            if (SaveType != Save.None)
+                result += $", Save vs {SaveType}";
             if (SaveBonus == 0)
                 return result;
             result += SaveBonus > 0 

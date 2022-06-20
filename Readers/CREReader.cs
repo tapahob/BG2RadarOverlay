@@ -217,7 +217,9 @@ namespace BGOverlay
             {
                 return new List<string>
                 {
-                    $"Weapon: \"{EquippedWeaponName}\" (Strikes as +{Enchantment})"
+                    
+                    String.Format("Weapon: \"{0}\" {1}", EquippedWeaponName,
+                    EquippedWeaponName.Contains($"{+Enchantment}") ? "" : $"(Strikes as +{Enchantment})")
                 }.Concat(ItemEffects.Select(x => x.ToString())).ToList();
             }  
         }

@@ -170,7 +170,7 @@ namespace BGOverlay.Resources
         Death_Kill_Creature_Type                                     = 55,
         Alignment_Invert                                             = 56,
         Alignment_Change                                             = 57,
-        Cure_Dispellable_Effects_Dispel_Magic                        = 58,
+        Dispell_Effects                                              = 58,
         Stat_Stealth_Modifier                                        = 59,
         Stat_Miscast_Magic                                           = 60,
         Creature_RGB_color_fade                                      = 61,
