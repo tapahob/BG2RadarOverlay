@@ -56,16 +56,16 @@ namespace BGOverlay
 
                 reader.BaseStream.Seek(originalOffset + 0x0040, SeekOrigin.Begin);
                 this.saveTypeNum = reader.ReadInt32();
-                this.SaveType = Save.None;
-                if ((saveTypeNum & (1 << 0)) > 0)
+                this.SaveType = (Save)saveTypeNum;
+                if ((saveTypeNum & (1 << 1)) == 1)
                     SaveType = Save.Spell;
-                if ((saveTypeNum & (1 << 1)) > 0)
+                if ((saveTypeNum & (1 << 2)) == 1)
                     SaveType = Save.Breath;
-                if ((saveTypeNum & (1 << 2)) > 0)
+                if ((saveTypeNum & (1 << 3)) == 1)
                     SaveType = Save.Death;
-                if ((saveTypeNum & (1 << 3)) > 0)
+                if ((saveTypeNum & (1 << 4)) == 1)
                     SaveType = Save.Wand;
-                if ((saveTypeNum & (1 << 4)) > 0)
+                if ((saveTypeNum & (1 << 5)) == 1)
                     SaveType = Save.Polymorph;
                 this.SaveBonus = reader.ReadInt32();
             }

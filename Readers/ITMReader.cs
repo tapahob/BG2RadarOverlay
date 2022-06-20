@@ -73,8 +73,8 @@ namespace BGOverlay
                     var abilityOffset = originOffset + offsetToAbilities + i * 56;
                     reader.BaseStream.Seek(abilityOffset, SeekOrigin.Begin);
                     var abilityType = reader.ReadByte();
-                    if (abilityType != 1)
-                        continue;
+                    //if (abilityType != 1)
+                    //    continue;
                     reader.BaseStream.Seek(abilityOffset + 0x4, SeekOrigin.Begin);
                     var iconBAM = new String(reader.ReadChars(8)).Trim('\0');                    
                     this.Icon = this.Icon ?? resourceManager.GetBAMReader(iconBAM)?.Image;
