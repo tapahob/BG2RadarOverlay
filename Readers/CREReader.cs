@@ -157,39 +157,39 @@ namespace BGOverlay
                 this.SetAlignment((ALIGNMENT)reader.ReadByte());
 
                 // Items
-                reader.BaseStream.Seek(originOffset + 0x02bc - 4, SeekOrigin.Begin);
-                var offsetToItemSlots = reader.ReadInt32();
-                var offsetToItems = reader.ReadInt32();
-                int countOfItems = reader.ReadInt32();
+                //reader.BaseStream.Seek(originOffset + 0x02bc - 4, SeekOrigin.Begin);
+                //var offsetToItemSlots = reader.ReadInt32();
+                //var offsetToItems = reader.ReadInt32();
+                //int countOfItems = reader.ReadInt32();
 
-                reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 39, SeekOrigin.Begin);
-                var activeWeaponSlot = reader.ReadInt16();
+                //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 39, SeekOrigin.Begin);
+                //var activeWeaponSlot = reader.ReadInt16();
 
-                reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 9, SeekOrigin.Begin);
-                var weaponIndexes = new List<short>
-                {
-                    reader.ReadInt16(),
-                    reader.ReadInt16(),
-                    reader.ReadInt16(),
-                    reader.ReadInt16()
-                };
+                //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 9, SeekOrigin.Begin);
+                //var weaponIndexes = new List<short>
+                //{
+                //    reader.ReadInt16(),
+                //    reader.ReadInt16(),
+                //    reader.ReadInt16(),
+                //    reader.ReadInt16()
+                //};
 
-                this.ItemEffects = new List<ItemEffectEntry>();
-                var activeWeaponTableIndex = weaponIndexes[activeWeaponSlot];
-                if (activeWeaponTableIndex != 1000 && activeWeaponTableIndex != -1)
-                {
-                    reader.BaseStream.Seek(originOffset + offsetToItems + activeWeaponTableIndex * (0x14), SeekOrigin.Begin);
-                    string itmFileName = new String(reader.ReadChars(8)).TrimEnd('\0');
-                    ITMReader itmReader = this.resourceManager.GetITMReader(itmFileName + ".ITM");
+                //this.ItemEffects = new List<ItemEffectEntry>();
+                //var activeWeaponTableIndex = weaponIndexes[activeWeaponSlot];
+                //if (activeWeaponTableIndex != 1000 && activeWeaponTableIndex != -1)
+                //{
+                //    reader.BaseStream.Seek(originOffset + offsetToItems + activeWeaponTableIndex * (0x14), SeekOrigin.Begin);
+                //    string itmFileName = new String(reader.ReadChars(8)).TrimEnd('\0');
+                //    ITMReader itmReader = this.resourceManager.GetITMReader(itmFileName + ".ITM");
 
-                    if (itmReader != null)
-                    {
-                        this.Enchantment = itmReader.Enchantment;
-                        this.EquippedWeaponName = itmReader.IdentifiedName;
-                        this.EquippedWeaponIcon = itmReader.Icon;
-                        itmReader.Effects.FindAll(itemEffect => !this.excludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode)).ForEach(itemEffect => ItemEffects.Add(itemEffect));
-                    }
-                } else { this.EquippedWeaponName = "Fists"; }
+                //    if (itmReader != null)
+                //    {
+                //        this.Enchantment = itmReader.Enchantment;
+                //        this.EquippedWeaponName = itmReader.IdentifiedName;
+                //        this.EquippedWeaponIcon = itmReader.Icon;
+                //        itmReader.Effects.FindAll(itemEffect => !this.excludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode)).ForEach(itemEffect => ItemEffects.Add(itemEffect));
+                //    }
+                //} else { this.EquippedWeaponName = "Fists"; }
 
                 // Effects
                 reader.BaseStream.Seek(originOffset + 0x02c4, SeekOrigin.Begin);
@@ -222,26 +222,7 @@ namespace BGOverlay
             }  
         }
 
-        public List<Effect> excludedItemEffectOpcodes => new[] {new List<Effect> {
-            Effect.Creature_RGB_color_fade,
-            Effect.Spell_Effect_Play_Sound_Effect,
-            Effect.Colour_Glow_by_RGB_Brief,
-            Effect.Colour_Change_by_RGB,
-            Effect.Colour_Glow_Pulse,
-            Effect.Colour_Very_Bright_by_RGB,
-            Effect.Colour_Set_Character_colours_by_Palette,
-            Effect.Colour_Strong_or_Dark_by_RGB,            
-        }, 
-            // all the graphics
-            Enum.GetValues(typeof(Effect)).Cast<Effect>()
-            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Graphics")),
-            // set stats
-            Enum.GetValues(typeof(Effect)).Cast<Effect>()
-            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Stat_")),
-            // texts
-            Enum.GetValues(typeof(Effect)).Cast<Effect>()
-            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Text_")),
-        }.SelectMany(o => o).Cast<Effect>().ToList();
+       
 
         public enum ALIGNMENT
         {
@@ -636,9 +617,9 @@ namespace BGOverlay
 
         public List<EffectEntry> Effects { get; }
 
-        public List<ItemEffectEntry> ItemEffects { get; }
-        public int Enchantment { get; }
-        public string EquippedWeaponName { get; }
-        public Bitmap EquippedWeaponIcon { get; }
+        public List<ItemEffectEntry> ItemEffects = new List<ItemEffectEntry>();
+        public int Enchantment { get; set; }
+        public string EquippedWeaponName { get; set; }
+        public Bitmap EquippedWeaponIcon { get; set; }
     }
 }

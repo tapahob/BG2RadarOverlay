@@ -89,5 +89,26 @@ namespace BGOverlay
         public List<ItemEffectEntry> Effects { get; }
         public int Enchantment { get; }
         public Bitmap Icon { get; }
+
+        public static List<Effect> ExcludedItemEffectOpcodes => new[] {new List<Effect> {
+            Effect.Creature_RGB_color_fade,
+            Effect.Spell_Effect_Play_Sound_Effect,
+            Effect.Colour_Glow_by_RGB_Brief,
+            Effect.Colour_Change_by_RGB,
+            Effect.Colour_Glow_Pulse,
+            Effect.Colour_Very_Bright_by_RGB,
+            Effect.Colour_Set_Character_colours_by_Palette,
+            Effect.Colour_Strong_or_Dark_by_RGB,
+        }, 
+            // all the graphics
+            Enum.GetValues(typeof(Effect)).Cast<Effect>()
+            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Graphics")),
+            // set stats
+            Enum.GetValues(typeof(Effect)).Cast<Effect>()
+            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Stat_")),
+            // texts
+            Enum.GetValues(typeof(Effect)).Cast<Effect>()
+            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Text_")),
+        }.SelectMany(o => o).Cast<Effect>().ToList();
     }
 }

@@ -20,15 +20,14 @@ namespace WPFFrontend
         private MainWindow mainWindow;
 
         private Dictionary<String, BuffControl> buffs = new Dictionary<string, BuffControl>();
+        private string cachedWeaponName;
 
         public EnemyControl(BGEntity bgEntity, MainWindow mainWindow)
         {
             InitializeComponent();
             this.mainWindow = mainWindow;
             this.updateView(bgEntity);
-
-            // Making item effects be fetched only once
-            fetchWeaponEffects(bgEntity);
+            
 
             double left = 0;
             var height = System.Windows.SystemParameters.PrimaryScreenHeight;
@@ -51,8 +50,11 @@ namespace WPFFrontend
 
         private void fetchWeaponEffects(BGEntity bgEntity)
         {
-            if (!(bgEntity.Reader.EquippedWeaponName == "None" && bgEntity.Reader.Enchantment == 0) && this.BGEntity.Reader.OnHitEffectsStrings.Count > 0)
+            if (bgEntity.Reader.EquippedWeaponName != this.cachedWeaponName 
+                && !(bgEntity.Reader.EquippedWeaponName == "None" && bgEntity.Reader.Enchantment == 0) 
+                && this.BGEntity.Reader.OnHitEffectsStrings.Count > 0)
             {
+                this.itemEffectsListView.Items.Clear();
                 BitmapSource newIcon;
                 var icon = bgEntity.Reader.EquippedWeaponIcon;
                 if (icon != null)
@@ -72,6 +74,7 @@ namespace WPFFrontend
                 {
                     this.itemEffectsListView.Items.Add(new Label() { Content = string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings) });
                 }
+                this.cachedWeaponName = bgEntity.Reader.EquippedWeaponName;
                 this.itemEffectsListView.Visibility = Visibility.Visible;
             }
         }
@@ -109,7 +112,8 @@ namespace WPFFrontend
                 return;
             this.BGEntity.LoadCREResource();
             this.BGEntity.loadTimedEffects();
-            this.BGEntity.LoadDerivedStats();            
+            this.BGEntity.LoadDerivedStats();
+            this.fetchWeaponEffects(item);
             this.DataContext = this.BGEntity;
 
             if (Configuration.BigBuffIcons && BuffStack.Columns == 16)

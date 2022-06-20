@@ -48,6 +48,7 @@ namespace BGOverlay
         private IntPtr timedEffectsPointer;
         private IntPtr equipedEffectsPointer;
         private IntPtr curSpellPtr;
+        private IntPtr equipmentPtr;
 
         public int isInvisible { get; private set; }
         public CDerivedStats DerivedStatsBonus { get; private set; }
@@ -75,19 +76,6 @@ namespace BGOverlay
                     && this.Reader.KitInformation != CREReader.KIT.TRUECLASS)
                         ? this.Reader.KitInformation.ToString().Replace('_', ' ')
                         : this.Reader.Class.ToString()[0] + this.Reader.Class.ToString().ToLower().Substring(1).Replace('_', ' ');
-            }
-        }
-
-        public List<string> ItemEffects
-        {
-            get
-            {
-                if (this.Reader == null)
-                {
-                    return new List<string>();
-                }
-
-                return this.Reader.ItemEffects.Select(itemEffect => itemEffect.ToString()).ToList();
             }
         }
 
@@ -375,13 +363,10 @@ namespace BGOverlay
             this.CurrentHP             = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
             this.timedEffectsPointer   = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
             this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x49B0 });
-
-            //TODO: ~!!
-            this.curSpellPtr = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
-            this.isInvisible = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
-
-            //LoadCREResource(resourceManager);
-            this.Loaded = true;
+            this.curSpellPtr           = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
+            this.equipmentPtr          = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xFC0 });
+            this.isInvisible           = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
+            this.Loaded                = true;
         }
 
         public void LoadCREResource()
@@ -405,13 +390,34 @@ namespace BGOverlay
             this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x2A70 }));
             this.DerivedStatsTemp  = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1DC8 }));
             this.THAC0             = DerivedStats.THAC0 - DerivedStatsTemp.HitBonus - DerivedStats.THAC0BonusRight;
+            
             this.calcAPR();
+            this.loadWeaponStats();
         }
-
+        private void loadWeaponStats()
+        {
+            var selectedWeapon = WinAPIBindings.ReadByte(equipmentPtr + 0x138);
+            var tempItem = new CItem(equipmentPtr + 0x140);
+            var lst = new List<CItem>();
+            for (int i=0; i<40; ++i)
+            {
+                lst.Add(new CItem(equipmentPtr + 8 * i));
+            }
+            var dbg = lst.Select(x => x.resRef);
+            var ITMRes = lst[selectedWeapon];
+            var reader = resourceManager.GetITMReader($"{ITMRes.resRef}.ITM");
+            if (reader != null)
+            {
+                this.Reader.Enchantment = reader.Enchantment;
+                this.Reader.EquippedWeaponIcon = reader.Icon;
+                this.Reader.EquippedWeaponName = reader.IdentifiedName;
+                reader.Effects.FindAll(itemEffect => !ITMReader.ExcludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode)).ForEach(itemEffect => Reader.ItemEffects.Add(itemEffect));
+            }
+            
+        }
         private void calcAPR()
         {
-            this.loadEquipedEffects();
-
+            this.loadEquipedEffects();            
             string formatStr;
             var apr = this.DerivedStats.NumberOfAttacks;
             int aprDisplayNum = apr;

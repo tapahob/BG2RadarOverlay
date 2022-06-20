@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BGEntity.cs" />
+    <Compile Include="NativeStructs\CItem.cs" />
     <Compile Include="Readers\BAMReader.cs" />
     <Compile Include="Readers\BIFFReader.cs" />
     <Compile Include="NativeStructs\CDerivedStats.cs" />
