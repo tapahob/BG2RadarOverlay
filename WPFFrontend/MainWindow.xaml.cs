@@ -39,6 +39,7 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
+
             ph = new ProcessHacker();
             ph.Init();
             UpdateStyles();

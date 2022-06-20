@@ -156,7 +156,7 @@ namespace BGOverlay
                         ITMReaderCache[itmFilename] = reader;
                     }
                 }
-                catch (ArgumentException)
+                catch (Exception)
                 {
                     reader = null;
                 }
@@ -171,12 +171,19 @@ namespace BGOverlay
             if (bamFilename.Trim('\0') == "")
                 return null;
             bamFilename = bamFilename.ToUpper();
-            BAMReader reader;
-            if (!BAMReaderCache.TryGetValue(bamFilename, out reader))
+            BAMReader reader = null;
+            try
             {
-                reader = new BAMReader(this, bamFilename);
-                BAMReaderCache[bamFilename] = reader;
+                if (!BAMReaderCache.TryGetValue(bamFilename, out reader))
+                {
+                    reader = new BAMReader(this, bamFilename);
+                    BAMReaderCache[bamFilename] = reader;
+                }
+            } catch (Exception)
+            {
+                // ...
             }
+            
             return reader;
         }
 

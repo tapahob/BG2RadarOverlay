@@ -1,8 +1,10 @@
 ﻿using BGOverlay.Resources;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace BGOverlay
 {
@@ -15,18 +17,18 @@ namespace BGOverlay
         public ITMReader(ResourceManager resourceManager, String itmFilename = "GHAST1.ITM", int originOffset = 0, string biffArchivePath = "")
         {
             this.resourceManager = resourceManager;
-            var filename         = itmFilename;
+            var filename = itmFilename;
             var overrideItmFilename = $"{gameDirectory}\\override\\{itmFilename}";
             if (File.Exists(overrideItmFilename))
             {
-                originOffset    = 0;
+                originOffset = 0;
                 biffArchivePath = "";
-                filename        = overrideItmFilename;
-            } 
+                filename = overrideItmFilename;
+            }
             else
-            {   
-                var lastTry = Directory.Exists($"{gameDirectory}\\override") 
-                    ? Directory.GetFiles($"{gameDirectory}\\override").Select(x=>x.ToUpper()).FirstOrDefault(x => x.EndsWith(itmFilename))
+            {
+                var lastTry = Directory.Exists($"{gameDirectory}\\override")
+                    ? Directory.GetFiles($"{gameDirectory}\\override").Select(x => x.ToUpper()).FirstOrDefault(x => x.EndsWith(itmFilename))
                     : null;
                 if (lastTry == null)
                 {
@@ -38,13 +40,13 @@ namespace BGOverlay
                         {
                             test2.LoadITMFiles();
                             return;
-                        }  
+                        }
                     }
-                } else
+                }
+                else
                 {
                     filename = lastTry;
                 }
-
             }
             using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
             {
@@ -54,10 +56,11 @@ namespace BGOverlay
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
                 this.GeneralName = text?.Text;
                 resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
-                this.IdentifiedName = text?.Text;
+                this.IdentifiedName = text?.Text ?? GeneralName;
 
                 // Abilities
-                reader.BaseStream.Seek(originOffset + 0x64, SeekOrigin.Begin);
+                reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
+                this.Enchantment = reader.ReadInt32();
                 var offsetToAbilities = reader.ReadInt32();
                 var countOfAbilities = reader.ReadInt16();
 
@@ -65,6 +68,9 @@ namespace BGOverlay
                 for (int i = 0; i < countOfAbilities; ++i)
                 {
                     var abilityOffset = originOffset + offsetToAbilities + i * (0x72);
+                    reader.BaseStream.Seek(abilityOffset + 0x4, SeekOrigin.Begin);
+                    var iconBAM = new String(reader.ReadChars(8)).Trim('\0');                    
+                    this.Icon = resourceManager.GetBAMReader(iconBAM)?.Image;
                     reader.BaseStream.Seek(abilityOffset + 0x1E, SeekOrigin.Begin);
                     var abilityEffectsCount = reader.ReadInt16();
 
@@ -81,6 +87,7 @@ namespace BGOverlay
         public string IdentifiedName { get; private set; }
 
         public List<ItemEffectEntry> Effects { get; }
-
+        public int Enchantment { get; }
+        public Bitmap Icon { get; }
     }
 }

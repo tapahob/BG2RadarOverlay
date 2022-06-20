@@ -24,11 +24,12 @@ namespace WPFFrontend
         public EnemyControl(BGEntity bgEntity, MainWindow mainWindow)
         {
             InitializeComponent();
-            
-            
-            //this.UserControl.Margin = new Thickness(left, 0, 0, 0);
-            this.mainWindow         = mainWindow;
+            this.mainWindow = mainWindow;
             this.updateView(bgEntity);
+
+            // Making item effects be fetched only once
+            fetchWeaponEffects(bgEntity);
+
             double left = 0;
             var height = System.Windows.SystemParameters.PrimaryScreenHeight;
             var width = System.Windows.SystemParameters.PrimaryScreenWidth;
@@ -43,9 +44,36 @@ namespace WPFFrontend
             {
                 left = x + 50;
             }
-            Canvas.SetTop(this, y / 2);
+            //Canvas.SetTop(this, y / 2);
             Canvas.SetLeft(this, left);
             this.MouseRightButtonUp += EnemyControl_MouseRightButtonDown;
+        }
+
+        private void fetchWeaponEffects(BGEntity bgEntity)
+        {
+            if (this.BGEntity.Reader.OnHitEffectsStrings.Count > 0)
+            {
+                BitmapSource newIcon;
+                var icon = bgEntity.Reader.EquippedWeaponIcon;
+                if (icon != null)
+                {
+                    newIcon = Imaging.CreateBitmapSourceFromHBitmap(
+                    icon.GetHbitmap(),
+                    IntPtr.Zero,
+                    Int32Rect.Empty,
+                    BitmapSizeOptions.FromWidthAndHeight(icon.Width, icon.Height));
+                    var item = new StackPanel() { Orientation = Orientation.Horizontal };
+                    item.Children.Add(new Image() { MaxHeight = 24, Source = newIcon });
+                    item.Children.Add(new Label() { Content = this.BGEntity.Reader.OnHitEffectsStrings[0] });
+                    this.itemEffectsListView.Items.Add(item);
+                    this.itemEffectsListView.Items.Add(string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings));
+                }
+                else
+                {
+                    this.itemEffectsListView.Items.Add(new Label() { Content = string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings) });
+                }
+                this.itemEffectsListView.Visibility = Visibility.Visible;
+            }
         }
 
         private void EnemyControl_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -68,7 +96,7 @@ namespace WPFFrontend
             anim.Completed         += (o, e) =>
             {
                 mainWindow.deleteMe(BGEntity.tag);
-                (this.Parent as Canvas).Children.Remove(this);
+                (this.Parent as Canvas)?.Children.Remove(this);
             };
             anim.FillBehavior = FillBehavior.HoldEnd;
             this.BeginAnimation(System.Windows.Controls.UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
@@ -157,11 +185,6 @@ namespace WPFFrontend
             if (this.BGEntity.Protections.Count > 0)
             {
                 this.protectionsListView.Visibility = Visibility.Visible;
-            }
-
-            if (this.BGEntity.ItemEffects.Count > 0)
-            {
-                this.itemEffectsListView.Visibility = Visibility.Visible;
             }
         }
     }
