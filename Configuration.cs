@@ -29,7 +29,7 @@ namespace BGOverlay
         public static string FontSize3Small { get; set; }
 
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
-        public static readonly string Version = "2.0.3.4";
+        public static readonly string Version = "2.0.3.5";
 
         public static void Init()
         {
