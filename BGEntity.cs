@@ -86,10 +86,10 @@ namespace BGOverlay
                 var allEffects    = this.Reader?.Effects
                     .Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String)
                     ?? new List<EffectEntry>();
-                var result        = new List<String>();
-                var opCodeStrings = new List<String>();
-                var spellStrings  = new List<String>();
-                var onHitMeleeStrings = new List<String>();
+                var result             = new List<String>();
+                var opCodeStrings      = new List<String>();
+                var spellStrings       = new List<String>();
+                var onHitMeleeStrings  = new List<String>();
                 var onHitRangedStrings = new List<String>();
                 if (DerivedStats.WeaponImmune.Count > 0)
                 {
@@ -134,6 +134,7 @@ namespace BGOverlay
                 if (thiefStr != "")
                     result.Add(thiefStr);
                 string proficiencyStr = "Proficiency: ";
+                var allEffectsStrings = new List<string>();
                 foreach (var item in allEffects)
                 {
                     if ($"{item.EffectName}".StartsWith("Graphics")
@@ -240,12 +241,13 @@ namespace BGOverlay
                         && !(item.EffectName == Effect.Spell_Effect_Invisible_Detection_by_Script)
                         && !(item.EffectName == Effect.State_Set_State)
                         )
-                        result.Add(preprocess(effectName));
+                        allEffectsStrings.Add(preprocess(effectName));
                 }
-
+                if (allEffectsStrings.Any())
+                    result.Add(String.Join(", ", allEffectsStrings.OrderBy(o => o)));
                 if (opCodeStrings.Any())
                 {
-                    result.Add(preprocess("Protection from " + string.Join(", ", opCodeStrings)));
+                    result.Add(preprocess("Protection from " + string.Join(", ", opCodeStrings.OrderBy(o => o))));
                 }
 
 
@@ -275,7 +277,7 @@ namespace BGOverlay
 
                 if (spellStrings.Any())
                 {
-                    result.Add(preprocess("Immune to spells: " + string.Join(", ", spellStrings)));
+                    result.Add(preprocess("Immune to spells: " + string.Join(", ", spellStrings.OrderBy(o => o))));
                 }
 
                 if (!proficiencyStr.EndsWith(": "))
@@ -397,8 +399,8 @@ namespace BGOverlay
         private void loadWeaponStats()
         {
             var selectedWeapon = WinAPIBindings.ReadByte(equipmentPtr + 0x138);
-            var tempItem = new CItem(equipmentPtr + 0x140);
-            var lst = new List<CItem>();
+            var tempItem       = new CItem(equipmentPtr + 0x140);
+            var lst            = new List<CItem>();
             for (int i=0; i<40; ++i)
             {
                 lst.Add(new CItem(equipmentPtr + 8 * i));
@@ -408,7 +410,7 @@ namespace BGOverlay
             var reader = resourceManager.GetITMReader($"{ITMRes.resRef}.ITM");
             if (reader != null)
             {
-                this.Reader.Enchantment = reader.Enchantment;
+                this.Reader.Enchantment        = reader.Enchantment;
                 this.Reader.EquippedWeaponIcon = reader.Icon;
                 this.Reader.EquippedWeaponName = reader.IdentifiedName;
                 this.Reader.ItemEffects.Clear();

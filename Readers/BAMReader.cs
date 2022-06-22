@@ -190,7 +190,8 @@ namespace BGOverlay.Readers
                     ulong pixelCount = (ulong)(frameEntries[i].Height * frameEntries[i].Width);
                     var rleCompressed = (frameEntries[i].FrameDataOffset & 0x80000000) == 0;
                     var pixels = new byte[pixelCount];
-
+                    if (pixelCount > 200000)
+                        return new List<Bitmap>() { null };
                     br.BaseStream.Read(pixels, 0, (int)pixelCount);
                     if (rleCompressed)
                     {
@@ -245,7 +246,7 @@ namespace BGOverlay.Readers
                             }
                         }
                     }
-
+                    
                     var data = new List<RGBA>();
                     foreach (var p in pixels)
                     {

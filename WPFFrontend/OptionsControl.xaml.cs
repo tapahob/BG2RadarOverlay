@@ -164,7 +164,10 @@ namespace WPFFrontend
                             ? "FontSize3Big"
                             : "FontSize3Small";
                         app.Resources[key] = Convert.ToDouble(dialog.Font.Size);
-                        Configuration.FontSize3Big = Convert.ToInt32(dialog.Font.Size).ToString();
+                        if (key.EndsWith("Big"))
+                            Configuration.FontSize3Big = Convert.ToInt32(dialog.Font.Size).ToString();
+                        else 
+                            Configuration.FontSize3Small = Convert.ToInt32(dialog.Font.Size).ToString();
                         break;
                 }
                 

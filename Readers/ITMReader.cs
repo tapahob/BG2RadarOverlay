@@ -73,8 +73,8 @@ namespace BGOverlay
                     var abilityOffset = originOffset + offsetToAbilities + i * 56;
                     reader.BaseStream.Seek(abilityOffset, SeekOrigin.Begin);
                     var abilityType = reader.ReadByte();
-                    //if (abilityType != 1)
-                    //    continue;
+                    if (abilityType != 1)
+                        continue;
                     reader.BaseStream.Seek(abilityOffset + 0x4, SeekOrigin.Begin);
                     var iconBAM = new String(reader.ReadChars(8)).Trim('\0');                    
                     this.Icon = this.Icon ?? resourceManager.GetBAMReader(iconBAM)?.Image;
@@ -113,9 +113,9 @@ namespace BGOverlay
             // all the graphics
             Enum.GetValues(typeof(Effect)).Cast<Effect>()
             .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Graphics")),
-            // set stats
-            Enum.GetValues(typeof(Effect)).Cast<Effect>()
-            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Stat_")),
+            //// set stats
+            //Enum.GetValues(typeof(Effect)).Cast<Effect>()
+            //.Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Stat_")),
             // texts
             Enum.GetValues(typeof(Effect)).Cast<Effect>()
             .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("Text_")),
@@ -125,6 +125,12 @@ namespace BGOverlay
             // States
             Enum.GetValues(typeof(Effect)).Cast<Effect>()
             .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().StartsWith("State_")),
+            // Protections
+            Enum.GetValues(typeof(Effect)).Cast<Effect>()
+            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().Contains("Protection")),
+            // Removals
+            Enum.GetValues(typeof(Effect)).Cast<Effect>()
+            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().Contains("Removal")),
         }.SelectMany(o => o).Cast<Effect>().ToList();
     }
 }
