@@ -128,9 +128,9 @@ namespace BGOverlay
             // Protections
             Enum.GetValues(typeof(Effect)).Cast<Effect>()
             .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().Contains("Protection")),
-            // Removals
-            Enum.GetValues(typeof(Effect)).Cast<Effect>()
-            .Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().Contains("Removal")),
+            //// Removals
+            //Enum.GetValues(typeof(Effect)).Cast<Effect>()
+            //.Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().Contains("Removal")),
         }.SelectMany(o => o).Cast<Effect>().ToList();
     }
 }

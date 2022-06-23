@@ -8,6 +8,9 @@ namespace BGOverlay.Resources
 {
     public class ItemEffectEntry
     {
+        private SecondaryType secondaryType;
+        private string displayString = null; 
+
         public ItemEffectEntry(BinaryReader reader, int offset)
         {
             reader.BaseStream.Seek(offset, SeekOrigin.Begin);
@@ -21,7 +24,7 @@ namespace BGOverlay.Resources
             reader.BaseStream.Seek(offset + 0x12, SeekOrigin.Begin);
             this.Probability1 = reader.ReadByte();
             this.Probability2 = reader.ReadByte();
-            this.Resource = new string(reader.ReadChars(8));
+            this.Resource     = new string(reader.ReadChars(8));
 
             reader.BaseStream.Seek(offset + 0xE, SeekOrigin.Begin);
             this.Duration = reader.ReadInt32();
@@ -61,12 +64,37 @@ namespace BGOverlay.Resources
             
             if (EffectName.ToString().Contains("Cast_Spell"))
             {
-                var resource = $"{((Resource.IndexOf("\0") < 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.SPL";
-                var spell = ResourceManager.Instance.GetSPLReader(resource);
-                this.Icon = ResourceManager.Instance.GetBAMReader($"{spell.IconBAM}.BAM")?.Image;
+                var resource   = $"{((Resource.IndexOf("\0") < 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.SPL";
+                var spell      = ResourceManager.Instance.GetSPLReader(resource);
+                this.Icon      = ResourceManager.Instance.GetBAMReader($"{spell.IconBAM}.BAM")?.Image;
                 this.SpellName = spell.Name1 == "-1" ? spell.Name2 : spell.Name1;
                 this.SpellName = SpellName == "-1" ? resource : SpellName;
             }
+
+            if (EffectName == Effect.Removal_Remove_Secondary_Type 
+                || EffectName == Effect.Removal_Remove_One_Secondary_Type)
+            {
+                this.secondaryType = (SecondaryType)Parameter2;
+                this.displayString = $"Removes {secondaryType.ToString().ToLower().Replace("_", " ")}";
+            }
+        }
+
+        public enum SecondaryType
+        {
+            NONE,
+            SPELL_PROTECTIONS,
+            SPECIFIC_PROTECTIONS,
+            ILLUSIONARY_PROTECTIONS,
+            MAGIC_ATTACK,
+            DIVINATION_ATTACK,
+            CONJURATION,
+            COMBAT_PROTECTIONS,
+            CONTINGENCY,
+            BATTLEGROUND,
+            OFFENSIVE_DAMAGE,
+            DISABLING,
+            COMBINATION,
+            NON_COMBAT
         }
 
         [Flags]
@@ -82,7 +110,9 @@ namespace BGOverlay.Resources
 
         public override string ToString()
         {
-            var result = $"{getProbability()}{preprocess(EffectName)}";
+            displayString = displayString ?? preprocess(EffectName);
+            var result = $"{getProbability()}{displayString}";
+            
             if (SpellName != null)
                 result += $": \"{SpellName}\"";
             if (SaveType == Save.None)
@@ -105,7 +135,12 @@ namespace BGOverlay.Resources
 
         private string preprocess(Effect effectName)
         {
-            var result = effectName.ToString().Replace("Stat_", "").Replace("Death_", "").Replace("_", " ");
+            var result = effectName.ToString()
+                .Replace("Stat_", "")
+                .Replace("Death_", "")
+                .Replace("_", " ")
+                .Replace("Removal_", "")
+                .Replace("Secondary_Type", "");
             if (effectName.ToString().StartsWith("Stat_"))
             {
                 return $"{result} {Parameter1}";
