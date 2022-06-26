@@ -140,6 +140,19 @@ namespace WPFFrontend
             this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
+        private void removeAll()
+        {
+            EnemyControl enemyControl;
+
+            foreach(int key in MainWindow.currentControls.Keys)
+            {
+                enemyControl = MainWindow.currentControls[key];
+                enemyControl.Label_MouseDown(null, null);
+
+                MainCanvas.Children.Remove(enemyControl);
+            }
+        }
+
         private void addOrRemove(BGEntity bgEntity)
         {
             EnemyControl enemyControl;
@@ -173,6 +186,7 @@ namespace WPFFrontend
 
                 if (entry == null)
                 {
+                    this.removeAll();
                     return;
                 }
 
