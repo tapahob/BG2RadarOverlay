@@ -6,9 +6,10 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <StartupObject>WPFFrontend.App</StartupObject>
-    <AssemblyName>BGOverlayUI</AssemblyName>
+    <AssemblyName>BG Radar Overlay</AssemblyName>
     <ApplicationIcon>ic.ico</ApplicationIcon>
     <PlatformTarget>X64</PlatformTarget>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
