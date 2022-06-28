@@ -129,7 +129,7 @@ namespace BGOverlay
         {
             var list = new CPtrList(intPtr);
             var count = list.Count;
-            if (count > 100)
+            if (count > 400)
                 return;
             var node = list.Head;
             for (int i = 0; i < count; ++i)

@@ -40,7 +40,7 @@ namespace BGOverlay
         public string Name1 { get; private set; }
         public string CreResourceFilename { get; private set; }
 
-        public byte CurrentHP { get; private set; }
+        public short CurrentHP { get; private set; }
         public CDerivedStats DerivedStats { get; private set; }
         public CDerivedStats DerivedStatsTemp { get; private set; }
         public int THAC0 { get; private set; }
@@ -83,7 +83,7 @@ namespace BGOverlay
         {
             get
             {
-                var allEffects    = this.Reader?.Effects
+                var allEffects = this.Reader?.Effects
                     .Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String)
                     ?? new List<EffectEntry>();
                 var result             = new List<String>();
@@ -91,27 +91,29 @@ namespace BGOverlay
                 var spellStrings       = new List<String>();
                 var onHitMeleeStrings  = new List<String>();
                 var onHitRangedStrings = new List<String>();
+
                 if (DerivedStats.WeaponImmune.Count > 0)
                 {
-                    var a = this.TimedEffects.Where(x => x.EffectId == Effect.Protection_from_Weapons);
+                    var weaponProtectionFromBuffs = this.TimedEffects.Where(x => x.EffectId == Effect.Protection_from_Weapons);
                     
-                    if (a.Any())
+                    if (weaponProtectionFromBuffs.Any())
                     {
-                        if (a.Any(x => x.dWFlags == 1))
+                        // from PFMW
+                        if (weaponProtectionFromBuffs.Any(x => x.dWFlags == 1))
                         {
                             var str = $"Protected from Magic";
-                            if (a.Any(x => x.dWFlags == 2))
+                            // from normal
+                            if (weaponProtectionFromBuffs.Any(x => x.dWFlags == 2))
                             {
                                 str += " and Normal";
                             }
                             str += " Weapons";
-                            result.Add(str);
+                             result.Add(str);
                         }
                         else
                         {
-                            var c = a.Where(x => x.dWFlags != 1).Count();
-                            var b = Math.Max(c, DerivedStats.WeaponImmune.Count);
-                            result.Add($"Requires +{b} weapons to be hit");
+                             var val = Math.Max(weaponProtectionFromBuffs.Count(), DerivedStats.WeaponImmune.Count()-1);
+                             result.Add($"Requires +{val} weapons to be hit");
                         }
                     } else
                     {
@@ -362,7 +364,7 @@ namespace BGOverlay
             this.ViewportWidth         = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
             this.Name2                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0 }), 64);
             this.Name1                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);
-            this.CurrentHP             = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
+            this.CurrentHP             = WinAPIBindings.ReadInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
             this.timedEffectsPointer   = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
             this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x49B0 });
             this.curSpellPtr           = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
