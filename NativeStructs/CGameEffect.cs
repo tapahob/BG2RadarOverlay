@@ -50,20 +50,17 @@ namespace BGOverlay.NativeStructs
             this.dWFlags       = WinAPIBindings.ReadUInt32(addr + 0x18);
         }
 
-        public Tuple<string, Bitmap, uint> getSpellName(ResourceManager resourceManager)
+        public Tuple<string, Bitmap, uint> getSpellName(ResourceManager resourceManager, bool buffs = false)
         {
-            if (this.SourceRes != "<ERROR>")
+            var res = buffs ? SourceRes : Res;
+            if (res != "<ERROR>")
             {
-                var splReader = resourceManager.GetSPLReader($"{this.SourceRes.Trim('\0')}.SPL".ToUpper());
+                var splReader = resourceManager.GetSPLReader($"{res.Trim('\0')}.SPL".ToUpper());
                 if (splReader == null)
                     return null;
-                var spellName = splReader?.Name1;
-                //if (spellName == "-1")
-                //{
-                //    splReader = resourceManager.GetSPLReader($"{this.SourceRes.Substring(0, this.SourceRes.Length - 1).Trim('\0')}.SPL".ToUpper());
-                //    spellName = splReader.Name1;
-                //    spellName = spellName == "-1" ? this.SourceRes : spellName;
-                //}                
+                var spellName = splReader?.Name1;               
+                if (splReader.Name1 == null || splReader.Name1 == "-1")
+                    return null;
                 if (splReader.Name1 != "-1" && splReader.IconBAM != null)
                     this.Icon = resourceManager.GetBAMReader(splReader.IconBAM)?.Image;
                 return new Tuple<string, Bitmap, uint>(spellName, this.Icon, DurationType == 1 ? uint.MaxValue : Duration);

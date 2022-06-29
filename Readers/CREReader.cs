@@ -13,6 +13,11 @@ namespace BGOverlay
         public static string gameDirectory = Configuration.GameFolder;
         private ResourceManager resourceManager;
 
+        public CREReader()
+        {
+
+        }
+
         public CREReader(ResourceManager resourceManager, String creFilename = "DUERGAR.CRE", int originOffset = 0, string biffArchivePath = "")
         {
             this.resourceManager = resourceManager;

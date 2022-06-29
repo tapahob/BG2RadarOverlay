@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BGOverlay.NativeStructs;
+using System;
 using System.IO;
 using System.Text;
 
@@ -6,6 +7,15 @@ namespace BGOverlay.Resources
 {
     public class EffectEntry
     {
+        public EffectEntry(CGameEffect cGameEffect)
+        {
+            this.EffectName = cGameEffect.EffectId;
+            this.Resource   = cGameEffect.Res;
+            this.Resource2  = cGameEffect.Res2;
+            this.Resource3  = cGameEffect.Res3;
+            this.Param2     = (int)cGameEffect.dWFlags;            
+        }
+
         public EffectEntry(BinaryReader reader, int offset)
         {
             offset += 8;

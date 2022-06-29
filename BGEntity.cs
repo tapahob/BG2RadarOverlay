@@ -83,7 +83,7 @@ namespace BGOverlay
         {
             get
             {
-                var allEffects = this.Reader?.Effects
+                var allEffects = this.Reader?.Effects?
                     .Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String)
                     ?? new List<EffectEntry>();
                 var result             = new List<String>();
@@ -137,10 +137,12 @@ namespace BGOverlay
                     result.Add(thiefStr);
                 string proficiencyStr = "Proficiency: ";
                 var allEffectsStrings = new List<string>();
+                
                 foreach (var item in allEffects)
                 {
                     if ($"{item.EffectName}".StartsWith("Graphics")
-                        || $"{item.EffectName}".StartsWith("Text"))
+                        || $"{item.EffectName}".StartsWith("Text")
+                        || item.EffectName == Effect.Spell_Effect_NPCBump)
                     {
                         continue;
                     }
@@ -194,6 +196,9 @@ namespace BGOverlay
                         var amount = item.Param1;
                         var type = item.Param2;
 
+                        if (amount == 0)
+                            continue;
+
                         switch (type)
                         {
                             case 0:
@@ -245,12 +250,19 @@ namespace BGOverlay
                         )
                         allEffectsStrings.Add(preprocess(effectName));
                 }
+                foreach (var spell in SpellEquipEffects)
+                {                    
+                    spellStrings.Add(preprocess(spell.Item1));
+                }
+                spellStrings = spellStrings.Distinct().OrderBy(o => o).ToList();
                 if (allEffectsStrings.Any())
                     result.Add(String.Join(", ", allEffectsStrings.OrderBy(o => o)));
-                if (opCodeStrings.Any())
-                {
-                    result.Add(preprocess("Protection from " + string.Join(", ", opCodeStrings.OrderBy(o => o))));
-                }
+                
+                // seems like these are always covered by "Effect Immunities"
+                //if (opCodeStrings.Any())
+                //{
+                //    result.Add(preprocess("Protection from " + string.Join(", ", opCodeStrings.OrderBy(o => o))));
+                //}
 
 
                 if (onHitMeleeStrings.Any())
@@ -407,11 +419,12 @@ namespace BGOverlay
             {
                 lst.Add(new CItem(equipmentPtr + 8 * i));
             }
-            var dbg = lst.Select(x => x.resRef);
             var ITMRes = lst[selectedWeapon];
             var reader = resourceManager.GetITMReader($"{ITMRes.resRef}.ITM");
             if (reader != null)
             {
+                if (this.Reader == null)
+                    this.Reader = new CREReader();
                 this.Reader.Enchantment        = reader.Enchantment;
                 this.Reader.EquippedWeaponIcon = reader.Icon;
                 this.Reader.EquippedWeaponName = reader.IdentifiedName;
@@ -471,11 +484,16 @@ namespace BGOverlay
                 this.EquipedEffects.Add(new CGameEffect(node.Data));
                 node = node.getNext();
             }
-            this.SpellEquipEffects = this.EquipedEffects.Where(x => x != null && !x.ToString().StartsWith("Graphics")
+            this.EquipedEffects = this.EquipedEffects.Where(x =>
+            x != null && !x.ToString().StartsWith("Graphics")
                 && !x.ToString().StartsWith("Script")
                 && !x.ToString().EndsWith("Sound_Effect")
-                && x.SourceRes != "<ERROR>").Select(x => x.getSpellName(resourceManager)).Distinct()
-                .Where(x => x != null && x.Item1 != null).ToList();            
+                && !x.ToString().StartsWith("Text_")
+                && !x.ToString().StartsWith("State_"))
+                .ToList();
+
+            this.SpellEquipEffects = this.EquipedEffects.Select(x => x.getSpellName(resourceManager)).Distinct()
+                .Where(x => x != null && x.Item1 != null).ToList();
         }
 
         public void loadTimedEffects()
@@ -493,11 +511,13 @@ namespace BGOverlay
                 this.TimedEffects.Add(new CGameEffect(node.Data));
                 node = node.getNext();
             }
+
             this.TimedEffects = this.TimedEffects.Where(x => !x.ToString().StartsWith("Graphics")
                 && !x.ToString().StartsWith("Script")
                 && !x.ToString().EndsWith("Sound_Effect")
                 && x.SourceRes != "<ERROR>").ToList();
-            this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager)).Distinct()
+            
+            this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager, true)).Distinct()
                 .Where(x => x != null && x.Item1 != "-1" && x.Item1 != null && !x.Item1.StartsWith("Extra")).ToList();            
         }
 
