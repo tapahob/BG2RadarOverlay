@@ -26,6 +26,8 @@
             <RowDefinition Height="50"/>
             <RowDefinition Height="70"/>
             <RowDefinition Height="15"/>
+            <RowDefinition Height="90"/>
+            <RowDefinition Height="15"/>
             <RowDefinition Height="30"/>
             <RowDefinition Height="35"/>
         </Grid.RowDefinitions>
@@ -39,7 +41,7 @@
         <Label x:Name="CloseBtn" Grid.Row="1" Grid.Column="3" Content="X" FontSize="16" HorizontalAlignment="Left" FontFamily="Segoe Print" Margin="155,0,0,38" MouseDown="Label_MouseDown" Grid.RowSpan="2"/>
         <Label Grid.Row="1" Grid.Column="1" FontSize="18" Content="Options" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Grid.ColumnSpan="3" Width="80"/>
         <Label x:Name="Version" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="10" d:Content="Ver. 2.0.3.2" Content="{Binding Configuration.Version}" FontFamily="Segoe Print" HorizontalAlignment="Center" Margin="0,26,0,30" Grid.RowSpan="2" Width="80"/>
-        <Border Grid.RowSpan="12" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
+        <Border Grid.RowSpan="14" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
         <Border Grid.Row="3"  Grid.Column="1" Grid.ColumnSpan="1" BorderThickness="1" BorderBrush="#FF151313"/>
         <StackPanel Grid.Row="3" Grid.Column="1" Margin="5,5,5,5">
             <Label Style="{StaticResource BoldSmall}" Content="Character List Filtering" HorizontalAlignment="Center"/>
@@ -73,6 +75,12 @@
             <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font2" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
             <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font3" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
         </StackPanel>
-        <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
+        <Border Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="3" BorderThickness="1" BorderBrush="#FF151313"/>
+        <StackPanel Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="3" Margin="5,5,5,5">
+            <Label Content="Other" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+            <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" Content="Use Shift Click" ToolTip="Use Shift Click instead of Right Click" FontFamily="Segoe Print" FontWeight="Bold"/>
+            <CheckBox x:Name="CloseWithRightClick" ToolTip="Close windows by Right Clicking outside the window" VerticalContentAlignment="Center" Content="Close windows with Right Click" FontFamily="Segoe Print" FontWeight="Bold"/>
+        </StackPanel>
+        <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="11" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
     </Grid>
 </UserControl>

@@ -61,6 +61,7 @@ namespace WPFFrontend
             var hook = new MouseHook(proc.Id, MouseMessageTypes.Click);
 
             hook.AddHandler(MouseMessageCode.RightButtonUp, MouseHook_MouseEvent);
+            hook.AddHandler(MouseMessageCode.LeftButtonUp, MouseHook_MouseEvent);
             hook.InstallAsync();
             this.Closed += (o, e) =>
             {
@@ -155,6 +156,9 @@ namespace WPFFrontend
 
         private void addOrRemove(BGEntity bgEntity)
         {
+            if (bgEntity == null)
+                return;
+
             EnemyControl enemyControl;
             if (!MainWindow.currentControls.TryGetValue(bgEntity.tag, out enemyControl))
             {
@@ -173,8 +177,14 @@ namespace WPFFrontend
         private void MouseHook_MouseEvent(object sender, MouseMessageEventArgs e)
         {
             this.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (e.MessageCode != (int)MouseMessageCode.RightButtonUp)
+            {                
+                if (e.Shift != Configuration.UseShiftClick)
+                {
+                    return;
+                }
+
+                if (e.MessageCode != (!Configuration.UseShiftClick
+                    ? (int)MouseMessageCode.RightButtonUp : (int)MouseMessageCode.LeftButtonUp))
                     return;
 
                 BGEntity entry = null;
@@ -184,7 +194,7 @@ namespace WPFFrontend
                     Math.Abs(x.MousePosX + x.MousePosX1 - x.X) < 18
                     && Math.Abs(x.MousePosY + x.MousePosY1 - x.Y) < 18);
 
-                if (entry == null)
+                if (entry == null && Configuration.CloseWithRightClick)
                 {
                     this.removeAll();
                     return;

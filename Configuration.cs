@@ -9,6 +9,8 @@ namespace BGOverlay
 {
     public static class Configuration
     {
+        public static bool UseShiftClick { get; set; }
+        public static bool CloseWithRightClick { get; set; }
         public static string GameFolder { get; set; }
         public static string Locale { get; set; }
         public static bool Borderless { get; set; }
@@ -29,26 +31,28 @@ namespace BGOverlay
         public static string FontSize3Small { get; set; }
 
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
-        public const string Version = "2.0.4.1";
+        public const string Version = "2.0.4.2";
 
         public static void Init()
         {
-            Borderless       = true;
-            HidePartyMembers = false;
-            HideNeutrals     = false;
-            HideAllies       = false;
-            ShowTraps        = false;
-            RefreshTimeMS    = 300;
-            Locale           = "en_US";
-            GameFolder       = "None";
-            BigBuffIcons     = true;
-            Font1            = "Segoe Print";
-            Font2            = "Ink Free";
-            Font3            = "Bahnschrift Condensed";
-            FontSize1        = "12";
-            FontSize2        = "16";
-            FontSize3Big     = "16";
-            FontSize3Small   = "16";
+            Borderless          = true;
+            HidePartyMembers    = false;
+            HideNeutrals        = false;
+            HideAllies          = false;
+            ShowTraps           = false;
+            RefreshTimeMS       = 300;
+            Locale              = "en_US";
+            GameFolder          = "None";
+            BigBuffIcons        = true;
+            Font1               = "Segoe Print";
+            Font2               = "Ink Free";
+            Font3               = "Bahnschrift Condensed";
+            FontSize1           = "12";
+            FontSize2           = "16";
+            FontSize3Big        = "16";
+            FontSize3Small      = "16";
+            CloseWithRightClick = true;
+            UseShiftClick       = false;
             loadConfig();
             detectLocale();
             detectGameFolder();            
@@ -105,6 +109,8 @@ namespace BGOverlay
                 $"FontSize2={FontSize2}",
                 $"FontSize3Big={FontSize3Big}",
                 $"FontSize3Small={FontSize3Small}",
+                $"CloseWithRightClick={CloseWithRightClick}",
+                $"UseShiftClick={UseShiftClick}",
             });
         }
 
@@ -123,24 +129,25 @@ namespace BGOverlay
                     storedConfig[split[0]] = split[1];
                 }
 
-                var version = getProperty("Version", Configuration.Version); ;                
-                GameFolder       = getProperty("GameFolder", "None");
-                Locale           = getProperty("Locale", "en_US");
-                Borderless       = getProperty("Borderless", "true").Equals("true");
-                HidePartyMembers = getProperty("HidePartyMembers", "false").Equals("true");
-                RefreshTimeMS    = int.Parse(getProperty("RefreshTimeMs", "300"));
-                ShowTraps        = getProperty("ShowTraps", "false").Equals("true");
-                HideNeutrals     = getProperty("HideNeutrals", "false").Equals("true");
-                HideAllies       = getProperty("HideAllies", "false").Equals("true");
-                BigBuffIcons     = getProperty("BigBuffIcons", "false").Equals("true");
-                Font1            = getProperty("Font1", "Segoe Print");
-                Font2            = getProperty("Font2", "Ink Free");
-                Font3            = getProperty("Font3", "Bahnschrift Condensed");
-                FontSize1        = getProperty("FontSize1", "12");
-                FontSize2        = getProperty("FontSize2", "16");
-                FontSize3Big     = getProperty("FontSize3Big", "16");
-                FontSize3Small   = getProperty("FontSize3Small", "12");
-
+                var version         = getProperty("Version", Configuration.Version); ;                
+                GameFolder          = getProperty("GameFolder", "None");
+                Locale              = getProperty("Locale", "en_US");
+                Borderless          = getProperty("Borderless", "true").Equals("true");
+                HidePartyMembers    = getProperty("HidePartyMembers", "false").Equals("true");
+                RefreshTimeMS       = int.Parse(getProperty("RefreshTimeMs", "300"));
+                ShowTraps           = getProperty("ShowTraps", "false").Equals("true");
+                HideNeutrals        = getProperty("HideNeutrals", "false").Equals("true");
+                HideAllies          = getProperty("HideAllies", "false").Equals("true");
+                BigBuffIcons        = getProperty("BigBuffIcons", "false").Equals("true");
+                Font1               = getProperty("Font1", "Segoe Print");
+                Font2               = getProperty("Font2", "Ink Free");
+                Font3               = getProperty("Font3", "Bahnschrift Condensed");
+                FontSize1           = getProperty("FontSize1", "12");
+                FontSize2           = getProperty("FontSize2", "16");
+                FontSize3Big        = getProperty("FontSize3Big", "16");
+                FontSize3Small      = getProperty("FontSize3Small", "12");
+                CloseWithRightClick = getProperty("CloseWithRightClick", "true").Equals("true");
+                UseShiftClick       = getProperty("UseShiftClick", "false").Equals("true");
                 if (version != Configuration.Version)
                 {
                     File.Delete("config.cfg");

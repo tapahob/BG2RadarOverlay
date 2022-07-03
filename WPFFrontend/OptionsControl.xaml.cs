@@ -29,12 +29,14 @@ namespace WPFFrontend
             this.EnableBorderlessMode.Click += updateConfig;
             this.RefreshRate.TextChanged    += updateConfig;
             this.BigBuffIcons.Click         += updateConfig;
+            this.UseShiftClick.Click        += updateConfig;
+            this.CloseWithRightClick.Click  += updateConfig;
             this.MouseUp                    += OptionsControl_MouseUp;
             this.CloseBtn.MouseUp           += Label_MouseDown;
-            var app = System.Windows.Application.Current;
-            this.Font1.Content = $"{Configuration.Font1}, {Configuration.FontSize1}";
-            this.Font2.Content = $"{Configuration.Font2}, {Configuration.FontSize2}";
-            this.Font3.Content = Configuration.BigBuffIcons 
+            var app                          = System.Windows.Application.Current;
+            this.Font1.Content               = $"{Configuration.Font1}, {Configuration.FontSize1}";
+            this.Font2.Content               = $"{Configuration.Font2}, {Configuration.FontSize2}";
+            this.Font3.Content               = Configuration.BigBuffIcons 
                 ? $"{Configuration.Font3}, {Configuration.FontSize3Big}"
                 : $"{Configuration.Font3}, {Configuration.FontSize3Small}";
         }
@@ -80,12 +82,14 @@ namespace WPFFrontend
 
         private void updateConfig(object sender, object args)
         {
-            Configuration.HidePartyMembers = (bool)this.HidePartyMembers.IsChecked;
-            Configuration.HideNeutrals     = (bool)this.HideNeutrals.IsChecked;
-            Configuration.HideAllies       = (bool)this.HideAllies.IsChecked;
-            Configuration.Borderless       = (bool)this.EnableBorderlessMode.IsChecked;
-            Configuration.RefreshTimeMS    = int.Parse(this.RefreshRate.Text);
-            Configuration.BigBuffIcons     = (bool)this.BigBuffIcons.IsChecked;
+            Configuration.HidePartyMembers    = (bool)this.HidePartyMembers.IsChecked;
+            Configuration.HideNeutrals        = (bool)this.HideNeutrals.IsChecked;
+            Configuration.HideAllies          = (bool)this.HideAllies.IsChecked;
+            Configuration.Borderless          = (bool)this.EnableBorderlessMode.IsChecked;
+            Configuration.RefreshTimeMS       = int.Parse(this.RefreshRate.Text);
+            Configuration.BigBuffIcons        = (bool)this.BigBuffIcons.IsChecked;
+            Configuration.UseShiftClick       = (bool)this.UseShiftClick.IsChecked;
+            Configuration.CloseWithRightClick = (bool)this.CloseWithRightClick.IsChecked;
 
             this.Font3.Content = Configuration.BigBuffIcons 
                 ? $"{Configuration.Font3}, {Configuration.FontSize3Big}"
@@ -100,6 +104,8 @@ namespace WPFFrontend
             this.EnableBorderlessMode.IsChecked = Configuration.Borderless;
             this.RefreshRate.Text               = Configuration.RefreshTimeMS.ToString();
             this.BigBuffIcons.IsChecked         = Configuration.BigBuffIcons;
+            this.UseShiftClick.IsChecked        = Configuration.UseShiftClick;
+            this.CloseWithRightClick.IsChecked  = Configuration.CloseWithRightClick;
         }
 
         public void Show()
@@ -169,8 +175,7 @@ namespace WPFFrontend
                         else 
                             Configuration.FontSize3Small = Convert.ToInt32(dialog.Font.Size).ToString();
                         break;
-                }
-                
+                }                
             };
         }        
     }
