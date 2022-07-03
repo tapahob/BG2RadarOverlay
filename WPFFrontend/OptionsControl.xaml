@@ -7,7 +7,8 @@
              xmlns:local="clr-namespace:WPFFrontend"             
              mc:Ignorable="d" Visibility="Collapsed" d:Visibility="Visible"
              Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="5" Grid.RowSpan="5"
-             VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="9000">
+             VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="9000"
+    xmlns:theme="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2">
     <i:Interaction.Behaviors>
         <i:MouseDragElementBehavior/>
     </i:Interaction.Behaviors>
@@ -26,7 +27,7 @@
             <RowDefinition Height="50"/>
             <RowDefinition Height="70"/>
             <RowDefinition Height="15"/>
-            <RowDefinition Height="90"/>
+            <RowDefinition Height="120"/>
             <RowDefinition Height="15"/>
             <RowDefinition Height="30"/>
             <RowDefinition Height="35"/>
@@ -78,8 +79,17 @@
         <Border Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="3" BorderThickness="1" BorderBrush="#FF151313"/>
         <StackPanel Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="3" Margin="5,5,5,5">
             <Label Content="Other" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
-            <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" Content="Use Shift Click" ToolTip="Use Shift Click instead of Right Click" FontFamily="Segoe Print" FontWeight="Bold"/>
-            <CheckBox x:Name="CloseWithRightClick" ToolTip="Close windows by Right Clicking outside the window" VerticalContentAlignment="Center" Content="Close windows with Right Click" FontFamily="Segoe Print" FontWeight="Bold"/>
+            <StackPanel Orientation="Vertical">
+                <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" Content="Use Shift Click" ToolTip="Use Shift Right-Click instead of Right Click" FontFamily="Segoe Print" FontWeight="Bold"/>
+                <CheckBox x:Name="CloseWithRightClick" ToolTip="Close windows by Right Clicking outside the window" VerticalContentAlignment="Center" Content="Close windows with Right Click" FontFamily="Segoe Print" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Locale:" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+                    <ComboBox x:Name="Locale" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Margin="5, -5, 0, 0" d:SelectedItem="en_US" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Width="77">
+                        <d:ComboBoxItem Content="en_US" Height="23"/>
+                    </ComboBox>
+                    <TextBlock Text="(Requires Radar Restart)" Margin="5, 0, 0, 0" VerticalAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold"/>
+                </StackPanel>
+            </StackPanel>
         </StackPanel>
         <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="11" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
     </Grid>

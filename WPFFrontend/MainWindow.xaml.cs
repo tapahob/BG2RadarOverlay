@@ -61,7 +61,6 @@ namespace WPFFrontend
             var hook = new MouseHook(proc.Id, MouseMessageTypes.Click);
 
             hook.AddHandler(MouseMessageCode.RightButtonUp, MouseHook_MouseEvent);
-            hook.AddHandler(MouseMessageCode.LeftButtonUp, MouseHook_MouseEvent);
             hook.InstallAsync();
             this.Closed += (o, e) =>
             {
@@ -183,8 +182,7 @@ namespace WPFFrontend
                     return;
                 }
 
-                if (e.MessageCode != (!Configuration.UseShiftClick
-                    ? (int)MouseMessageCode.RightButtonUp : (int)MouseMessageCode.LeftButtonUp))
+                if (e.MessageCode != (int)MouseMessageCode.RightButtonUp)
                     return;
 
                 BGEntity entry = null;

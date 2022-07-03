@@ -5,7 +5,7 @@
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" AllowsTransparency="True" WindowStyle="None"
-        Title="BG Overlay" Topmost="true" Height="1080" Width="1920" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" WindowState="Maximized">
+        Title="BG Overlay" Topmost="True" Height="1080" Width="1920" ResizeMode="NoResize" WindowState="Maximized">
     <Window.Background>
         <SolidColorBrush Opacity="0" Color="White"/>
     </Window.Background>

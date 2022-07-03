@@ -1,5 +1,7 @@
 ﻿using BGOverlay;
 using System;
+using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -39,6 +41,15 @@ namespace WPFFrontend
             this.Font3.Content               = Configuration.BigBuffIcons 
                 ? $"{Configuration.Font3}, {Configuration.FontSize3Big}"
                 : $"{Configuration.Font3}, {Configuration.FontSize3Small}";
+            initLocale();
+        }
+
+        private void initLocale()
+        {
+            var availableLocales          = new DirectoryInfo(Path.Combine(Configuration.GameFolder, "lang")).EnumerateDirectories();
+            this.Locale.ItemsSource       = availableLocales.Select(x => x.ToString().ToLower().Substring(x.ToString().LastIndexOf('\\') + 1));
+            this.Locale.SelectedItem      = Configuration.Locale;
+            this.Locale.SelectionChanged += updateConfig;
         }
 
         private void OptionsControl_MouseUp(object sender, MouseButtonEventArgs e)
@@ -90,6 +101,7 @@ namespace WPFFrontend
             Configuration.BigBuffIcons        = (bool)this.BigBuffIcons.IsChecked;
             Configuration.UseShiftClick       = (bool)this.UseShiftClick.IsChecked;
             Configuration.CloseWithRightClick = (bool)this.CloseWithRightClick.IsChecked;
+            Configuration.Locale              = this.Locale.SelectedValue.ToString();
 
             this.Font3.Content = Configuration.BigBuffIcons 
                 ? $"{Configuration.Font3}, {Configuration.FontSize3Big}"
