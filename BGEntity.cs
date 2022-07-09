@@ -256,7 +256,7 @@ namespace BGOverlay
                 }
                 spellStrings = spellStrings.Distinct().OrderBy(o => o).ToList();
                 if (allEffectsStrings.Any())
-                    result.Add(String.Join(", ", allEffectsStrings.Distinct().OrderBy(o => o)));
+                    result.Add(String.Join(", ", allEffectsStrings.Distinct().Where(x => !x.Contains("Resistance") && !x.Contains("Backstab") && !x.Contains("AC") && !x.Contains("Save")).OrderBy(o => o)));
 
                 // seems like these are always covered by "Effect Immunities"
                 //if (opCodeStrings.Any())
