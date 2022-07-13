@@ -39,7 +39,7 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
-
+            Logger.Debug("Main window init");
             ph = new ProcessHacker();
             ph.Init();
             UpdateStyles();
@@ -59,39 +59,50 @@ namespace WPFFrontend
             }
             var proc = Process.GetProcessesByName("Baldur")[0];
             var hook = new MouseHook(proc.Id, MouseMessageTypes.Click);
-
+            Logger.Debug("Initializing mouse hooks");
             hook.AddHandler(MouseMessageCode.RightButtonUp, MouseHook_MouseEvent);
-            hook.InstallAsync();
+            hook.InstallAsync();            
             this.Closed += (o, e) =>
             {
                 hook.Uninstall();
+                Logger.flush();
             };
-
+            Logger.Debug("Mouse hooks installed");
             Task.Factory.StartNew(() =>
             {
+                Logger.Debug("Main loop started");
+                
                 while (true)
                 {
-                    ph.MainLoop();
-                    if (ph.NearestEnemies.Count() == EnemyTextEntries.Count && ph.NearestEnemies.All(x => EnemyTextEntries.Any(y => y.ToString() == x.ToString())))
+                    try
                     {
+                        ph.MainLoop();
+                        if (ph.NearestEnemies.Count() == EnemyTextEntries.Count && ph.NearestEnemies.All(x => EnemyTextEntries.Any(y => y.ToString() == x.ToString())))
+                        {
+                            foreach (var item in ph.NearestEnemies)
+                            {
+                                updateControls(item);
+                            }
+                            continue;
+                        }
+
+                        EnemyTextEntries.Clear();
                         foreach (var item in ph.NearestEnemies)
                         {
-                            updateControls(item);
+                            EnemyTextEntries.Add(item);
                         }
-                        continue;
                     }
-                        
-                    EnemyTextEntries.Clear();
-                    foreach (var item in ph.NearestEnemies)
+                    catch (Exception ex)
                     {
-                        EnemyTextEntries.Add(item);                        
-                    }                    
-                }
+                        Logger.Error("Main loop error!", ex);
+                    }
+                } 
             });
         }
 
         private void UpdateStyles()
         {
+            Logger.Debug("Updating App Styles ..");
             var app                         = System.Windows.Application.Current;
             app.Resources["FontFamily1"]    = new FontFamily(Configuration.Font1);
             app.Resources["FontFamily2"]    = new FontFamily(Configuration.Font2);
@@ -100,57 +111,69 @@ namespace WPFFrontend
             app.Resources["FontSize2"]      = Convert.ToDouble(Configuration.FontSize2);
             app.Resources["FontSize3Big"]   = Convert.ToDouble(Configuration.FontSize3Big);
             app.Resources["FontSize3Small"] = Convert.ToDouble(Configuration.FontSize3Small);
+            Logger.Debug("Done!");
         }
 
         private void updateControls(BGEntity item)
         {
             this.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (currentControls.ContainsKey(item.tag))
-                    currentControls[item.tag].updateView(item);
-            }));
-            
+                try
+                {
+                    if (currentControls.ContainsKey(item.tag))
+                        currentControls[item.tag].updateView(item);
+                } catch (Exception ex)
+                {
+                    Logger.Error("Update Controls error!", ex);
+                }                
+            }));            
         }
 
         private void MinMaxBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
         {
             ThicknessAnimation anim = new ThicknessAnimation();
-            anim.From = this.MinMaxBtn.Margin;
-            var newMargin = this.MinMaxBtn.Margin;
-            newMargin.Top = -15;
-            anim.To = newMargin;
-            anim.Duration = TimeSpan.FromSeconds(.5);
-            anim.EasingFunction = new BackEase() { Amplitude = .7, EasingMode = EasingMode.EaseOut };
-            anim.FillBehavior = FillBehavior.HoldEnd;
-            this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
+            anim.From               = this.MinMaxBtn.Margin;
+            var newMargin           = this.MinMaxBtn.Margin;
+            newMargin.Top           = -15;
+            anim.To                 = newMargin;
+            anim.Duration           = TimeSpan.FromSeconds(.5);
+            anim.EasingFunction     = new BackEase() { Amplitude = .7, EasingMode = EasingMode.EaseOut };
+            anim.FillBehavior       = FillBehavior.HoldEnd;
             this.MinMaxBtn.Opacity = .25;
+            this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
         private void MinMaxBtn_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
         {
             ThicknessAnimation anim = new ThicknessAnimation();
-            anim.From = this.MinMaxBtn.Margin;
-            var newMargin = this.MinMaxBtn.Margin;
-            newMargin.Top = -5;
-            anim.To = newMargin;
-            this.MinMaxBtn.Opacity = 1;
-            //anim.EasingFunction = new BackEase() { Amplitude = .7, EasingMode = EasingMode.EaseIn };
-            anim.Duration = TimeSpan.FromSeconds(.15);
-            anim.FillBehavior = FillBehavior.HoldEnd;
+            anim.From               = this.MinMaxBtn.Margin;
+            var newMargin           = this.MinMaxBtn.Margin;
+            newMargin.Top           = -5;
+            anim.To                 = newMargin;
+            this.MinMaxBtn.Opacity  = 1;
+            //anim.EasingFunction   = new BackEase() { Amplitude = .7, EasingMode = EasingMode.EaseIn };
+            anim.Duration           = TimeSpan.FromSeconds(.15);
+            anim.FillBehavior       = FillBehavior.HoldEnd;
             this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
         private void removeAll()
         {
             EnemyControl enemyControl;
-
-            foreach(int key in MainWindow.currentControls.Keys)
+            try
             {
-                enemyControl = MainWindow.currentControls[key];
-                enemyControl.Label_MouseDown(null, null);
+                foreach (int key in MainWindow.currentControls.Keys)
+                {
+                    enemyControl = MainWindow.currentControls[key];
+                    enemyControl.Label_MouseDown(null, null);
 
-                MainCanvas.Children.Remove(enemyControl);
+                    MainCanvas.Children.Remove(enemyControl);
+                }
+            } catch (Exception ex)
+            {
+                Logger.Error("RemoveAll Error!", ex);
             }
+            
         }
 
         private void addOrRemove(BGEntity bgEntity)
@@ -158,18 +181,23 @@ namespace WPFFrontend
             if (bgEntity == null)
                 return;
 
-            EnemyControl enemyControl;
-            if (!MainWindow.currentControls.TryGetValue(bgEntity.tag, out enemyControl))
+            try
             {
-                enemyControl = new EnemyControl(bgEntity, this);
-                MainWindow.currentControls[bgEntity.tag] = enemyControl;
-                MainCanvas.Children.Add(enemyControl);
-            }
-            else
+                EnemyControl enemyControl;
+                if (!MainWindow.currentControls.TryGetValue(bgEntity.tag, out enemyControl))
+                {
+                    enemyControl = new EnemyControl(bgEntity, this);
+                    MainWindow.currentControls[bgEntity.tag] = enemyControl;
+                    MainCanvas.Children.Add(enemyControl);
+                }
+                else
+                {
+                    MainWindow.currentControls[bgEntity.tag].Label_MouseDown(null, null);
+                    MainWindow.currentControls.Remove(bgEntity.tag, out enemyControl);
+                }
+            } catch (Exception ex)
             {
-                MainWindow.currentControls[bgEntity.tag].Label_MouseDown(null, null);
-
-                MainWindow.currentControls.Remove(bgEntity.tag, out enemyControl);
+                Logger.Error("AddOrRemove error!", ex);
             }
         }
 
@@ -177,28 +205,34 @@ namespace WPFFrontend
         {
             this.Dispatcher.BeginInvoke(new Action(() =>
             {                
-                if (e.Shift != Configuration.UseShiftClick)
+                try
                 {
-                    return;
-                }
+                    if (e.Shift != Configuration.UseShiftClick)
+                    {
+                        return;
+                    }
 
-                if (e.MessageCode != (int)MouseMessageCode.RightButtonUp)
-                    return;
+                    if (e.MessageCode != (int)MouseMessageCode.RightButtonUp)
+                        return;
 
-                BGEntity entry = null;
+                    BGEntity entry = null;
 
-                entry = ph.entityList.FirstOrDefault(
-                    x => x.X > 0 &&
-                    Math.Abs(x.MousePosX + x.MousePosX1 - x.X) < 18
-                    && Math.Abs(x.MousePosY + x.MousePosY1 - x.Y) < 18);
+                    entry = ph.entityList.FirstOrDefault(
+                        x => x.X > 0 &&
+                        Math.Abs(x.MousePosX + x.MousePosX1 - x.X) < 18
+                        && Math.Abs(x.MousePosY + x.MousePosY1 - x.Y) < 18);
 
-                if (entry == null && Configuration.CloseWithRightClick)
+                    if (entry == null && Configuration.CloseWithRightClick)
+                    {
+                        this.removeAll();
+                        return;
+                    }
+
+                    addOrRemove(entry);
+                } catch (Exception ex)
                 {
-                    this.removeAll();
-                    return;
-                }
-
-                addOrRemove(entry);
+                    Logger.Error("Mouse Event Error!", ex);
+                }                
             }));            
         }
 
@@ -222,45 +256,58 @@ namespace WPFFrontend
         private MouseHook mouseHook;
 
         private void MinMaxBtn_Click(object sender, RoutedEventArgs e)
-        {                        
-            toShowEnemyList = !toShowEnemyList;
-            //this.listView.Visibility = this.listView.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;            
-            
-            if (!toShowEnemyList)
-            {                
-                ThicknessAnimation anim = new ThicknessAnimation();
-                anim.From               = this.StackPanel.Margin;
-                var newMargin           = this.StackPanel.Margin;
-                newMargin.Top           = -this.StackPanel.ActualHeight;
-                anim.To                 = newMargin;
-                anim.EasingFunction     = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
-                anim.Duration           = TimeSpan.FromSeconds(.45);
-                anim.FillBehavior       = FillBehavior.HoldEnd;
-                anim.Completed += (o, e) => this.StackPanel.Visibility = Visibility.Collapsed;
-                this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
-            }
-            else
+        {
+            try
             {
-                ThicknessAnimation anim = new ThicknessAnimation();
-                var newMargin1          = this.StackPanel.Margin;
-                newMargin1.Top         /= 2;
-                anim.From               = newMargin1;                
-                var newMargin           = this.StackPanel.Margin;
-                newMargin.Top           = 0;
-                anim.To                 = newMargin;
-                anim.EasingFunction     = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };                
-                anim.Duration           = TimeSpan.FromSeconds(.85);
-                anim.FillBehavior       = FillBehavior.HoldEnd;
-                this.StackPanel.Visibility = Visibility.Visible;
-                this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
+                toShowEnemyList = !toShowEnemyList;
+                //this.listView.Visibility = this.listView.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;            
+
+                if (!toShowEnemyList)
+                {
+                    ThicknessAnimation anim = new ThicknessAnimation();
+                    anim.From = this.StackPanel.Margin;
+                    var newMargin = this.StackPanel.Margin;
+                    newMargin.Top = -this.StackPanel.ActualHeight;
+                    anim.To = newMargin;
+                    anim.EasingFunction = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
+                    anim.Duration = TimeSpan.FromSeconds(.45);
+                    anim.FillBehavior = FillBehavior.HoldEnd;
+                    anim.Completed += (o, e) => this.StackPanel.Visibility = Visibility.Collapsed;
+                    this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
+                }
+                else
+                {
+                    ThicknessAnimation anim = new ThicknessAnimation();
+                    var newMargin1 = this.StackPanel.Margin;
+                    newMargin1.Top /= 2;
+                    anim.From = newMargin1;
+                    var newMargin = this.StackPanel.Margin;
+                    newMargin.Top = 0;
+                    anim.To = newMargin;
+                    anim.EasingFunction = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };
+                    anim.Duration = TimeSpan.FromSeconds(.85);
+                    anim.FillBehavior = FillBehavior.HoldEnd;
+                    this.StackPanel.Visibility = Visibility.Visible;
+                    this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
+                }
+            } catch (Exception ex)
+            {
+                Logger.Error("Min/Max error!", ex);
             }
+            
             
         }
 
         private void MinMaxBtn_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            options.Init();
-            options.Show();
+            try
+            {
+                options.Init();
+                options.Show();
+            } catch (Exception ex)
+            {
+                Logger.Error("Options error!", ex);
+            }            
         }
     }
 }

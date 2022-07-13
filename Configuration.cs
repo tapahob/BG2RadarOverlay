@@ -31,10 +31,11 @@ namespace BGOverlay
         public static string FontSize3Small { get; set; }
 
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
-        public const string Version = "2.0.4.4";
+        public const string Version = "2.0.4.5";
 
         public static void Init()
         {
+            Logger.Init();
             Borderless          = true;
             HidePartyMembers    = false;
             HideNeutrals        = false;
@@ -118,10 +119,12 @@ namespace BGOverlay
         {
             if (!File.Exists("config.cfg"))
             {
+                Logger.Debug("No config file exits, making a new one");
                 SaveConfig();
             }
             try
             {
+                Logger.Debug("Reading existing config ...");
                 var config = File.ReadAllLines("config.cfg");
                 foreach (var line in config)
                 {
@@ -150,13 +153,16 @@ namespace BGOverlay
                 UseShiftClick       = getProperty("UseShiftClick", "false").Equals("true");
                 if (version != Configuration.Version)
                 {
+                    Logger.Debug("Outdated config version found - overriding it");
                     File.Delete("config.cfg");
                     loadConfig();
+                    Logger.Debug("Done");
                 }
+                Logger.Info("Current config:\n" + string.Join("\n", File.ReadAllLines("config.cfg")));
                 
             } catch (Exception ex)
             {
-                // nothing
+                Logger.Fatal("Load config error!", ex);
             }            
         }
 
@@ -169,12 +175,22 @@ namespace BGOverlay
 
         public static void ForceBorderless()
         {
-            var bounds = Screen.PrimaryScreen.Bounds;
-            if (HWndPtr == null)
-                return;
-            WinAPIBindings.SetWindowLong32(HWndPtr, -16, (uint)WinAPIBindings.WindowStyles.WS_MAXIMIZE);
-            WinAPIBindings.ShowWindow(HWndPtr.ToInt32(), 5);
-            WinAPIBindings.SetWindowPos(HWndPtr, IntPtr.Zero, 0, 0, bounds.Width, bounds.Height, 0x4000);
+            Logger.Debug("Making the window borderless ...");
+            try
+            {
+                var bounds = Screen.PrimaryScreen.Bounds;
+                if (HWndPtr == null)
+                {
+                    Logger.Error("No HWndPtr found!");
+                    return;
+                }
+                WinAPIBindings.SetWindowLong32(HWndPtr, -16, (uint)WinAPIBindings.WindowStyles.WS_MAXIMIZE);
+                WinAPIBindings.ShowWindow(HWndPtr.ToInt32(), 5);
+                WinAPIBindings.SetWindowPos(HWndPtr, IntPtr.Zero, 0, 0, bounds.Width, bounds.Height, 0x4000);
+            } catch (Exception ex)
+            {
+                Logger.Error("Could not make a window borderless!", ex);
+            }            
         }
     }
 }

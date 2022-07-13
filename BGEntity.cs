@@ -19,27 +19,26 @@ namespace BGOverlay
         public int tag { get; set; }
         public List<CGameEffect> TimedEffects { get; private set; }
         public List<Tuple<string, Bitmap, uint>> SpellProtection { get; private set; }
-        public bool Loaded { get; }
+        public bool Loaded { get; private set; }
         public int Id { get; private set; }
         public int X { get; private set; }
         public int Y { get; private set; }
         public byte Type { get; private set; }
-        public long RealId { get; }
-        public string AreaName { get; }
-        public string AreaRef { get; }
-        public int MousePosX { get; }
-        public int AreaNCharacters { get; }
-        public int MousePosY { get; }
+        public long RealId { get; private set; }
+        public string AreaName { get; private set; }
+        public string AreaRef { get; private set; }
+        public int MousePosX { get; private set; }
+        public int AreaNCharacters { get; private set; }
+        public int MousePosY { get; private set; }
         public IntPtr CInfinityPtr { get; private set; }
-        public int MousePosX1 { get; }
-        public int MousePosY1 { get; }
+        public int MousePosX1 { get; private set; }
+        public int MousePosY1 { get; private set; }
         public int ViewportHeight { get; private set; }
         public int ViewportWidth { get; private set; }
-        public byte Name2Len { get; }
-        public string Name2 { get; }
+        public byte Name2Len { get; private set; }
+        public string Name2 { get; private set; }
         public string Name1 { get; private set; }
         public string CreResourceFilename { get; private set; }
-
         public short CurrentHP { get; private set; }
         public CDerivedStats DerivedStats { get; private set; }
         public CDerivedStats DerivedStatsTemp { get; private set; }
@@ -343,46 +342,63 @@ namespace BGOverlay
 
         public BGEntity(ResourceManager resourceManager, IntPtr entityIdPtr)
         {
+            init(resourceManager, entityIdPtr);
+        }
+
+        private void init(ResourceManager resourceManager, IntPtr entityIdPtr)
+        {
             this.entityIdPtr     = entityIdPtr;
             this.resourceManager = resourceManager;
             this.Loaded          = false;
-            // 1020 bytes CGameAIBase
-            this.Id   = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x48 }));
-            this.Type = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x8 }));
-            if (Type != 49)
-                return;
-            this.X = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC }));
-            this.Y = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC + 4 }));
-            if (X < 0 || Y < 0)
-                return;
-            this.CreResourceFilename = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x540 }), 8).Trim('*') + ".CRE";
+            try
+            {
+                // 1020 bytes CGameAIBase
+                this.Id   = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x48 }));
+                this.Type = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x8 }));
 
-            IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
-            this.EnemyAlly      = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
-            this.RACE           = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
-            this.CLASS          = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
+                if (Type != 49)
+                    return;
 
-            if (this.CreResourceFilename == ".CRE")
-                return;
-            this.cInfGamePtr = WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x228 });
-            this.updateTime();
-            this.AreaName              = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
-            this.MousePosX             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 }));
-            this.MousePosY             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 + 4 }));
-            this.CInfinityPtr          = cGameAreaPtr + 0x5C8;
-            this.MousePosX1            = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 }));
-            this.MousePosY1            = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
-            this.ViewportHeight        = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
-            this.ViewportWidth         = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
-            this.Name2                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0 }), 64);
-            this.Name1                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);
-            this.CurrentHP             = WinAPIBindings.ReadInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
-            this.timedEffectsPointer   = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
-            this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x49B0 });
-            this.curSpellPtr           = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
-            this.equipmentPtr          = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xFC0 });
-            this.isInvisible           = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
-            this.Loaded                = true;
+                this.X = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC }));
+                this.Y = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC + 4 }));
+                
+                if (X < 0 || Y < 0)
+                    return;
+
+                this.CreResourceFilename = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x540 }), 8).Trim('*') + ".CRE";
+
+                IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
+                this.EnemyAlly      = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
+                this.RACE           = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
+                this.CLASS          = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
+
+                if (this.CreResourceFilename == ".CRE")
+                    return;
+                this.cInfGamePtr = WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x228 });
+                this.updateTime();
+                this.AreaName              = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
+                this.MousePosX             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 }));
+                this.MousePosY             = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 + 4 }));
+                this.CInfinityPtr          = cGameAreaPtr + 0x5C8;
+                this.MousePosX1            = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 }));
+                this.MousePosY1            = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
+                this.ViewportHeight        = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
+                this.ViewportWidth         = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
+                this.Name2                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0 }), 64);
+                this.Name1                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);
+                this.CurrentHP             = WinAPIBindings.ReadInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
+                this.timedEffectsPointer   = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
+                this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x49B0 });
+                this.curSpellPtr           = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
+                this.equipmentPtr          = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xFC0 });
+                this.isInvisible           = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
+                this.Loaded                = true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Error during BGEntity creation!", ex);
+            }
+            
         }
 
         public void LoadCREResource()

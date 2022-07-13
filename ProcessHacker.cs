@@ -33,44 +33,52 @@ namespace BGOverlay
             var test             = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { });
             var length           = WinAPIBindings.ReadInt32(moduleBase + 0x68D434);
             var marginOfError    = 500;
-
+                        
             // First i = 32016
-            for (int i = 2000 * 16; i < length*16 + marginOfError; i+=16)
+            for (int i = 2000 * 16; i < length * 16 + marginOfError; i += 16)
             {
-                var index = WinAPIBindings.ReadInt32(test + i);
-                if (index == 65535)
-                    continue;
-
-                var entityPtr = WinAPIBindings.FindDMAAddy(test + i + 0x8);
-
-                var newEntity = new BGEntity(ResourceManager, entityPtr);
-                if (!newEntity.Loaded)
-                    continue;
-
-                if (newEntity.Name2 == "<ERROR>" || newEntity.CurrentHP == 0)
-                    continue;
-
-                All.Add(newEntity);
-                if (Configuration.HidePartyMembers)
+                try
                 {
-                    if (newEntity.EnemyAlly == 2)
+                    var index = WinAPIBindings.ReadInt32(test + i);
+                    if (index == 65535)
                         continue;
-                }
 
-                if (Configuration.HideNeutrals)
-                {
-                    if (newEntity.EnemyAlly == 128)
-                        continue;
-                }
+                    var entityPtr = WinAPIBindings.FindDMAAddy(test + i + 0x8);
 
-                if (Configuration.HideAllies)
-                {
-                    if (newEntity.EnemyAlly == 4)
+                    var newEntity = new BGEntity(ResourceManager, entityPtr);
+                    if (!newEntity.Loaded)
                         continue;
+
+                    if (newEntity.Name2 == "<ERROR>" || newEntity.CurrentHP == 0)
+                        continue;
+
+                    All.Add(newEntity);
+                    if (Configuration.HidePartyMembers)
+                    {
+                        if (newEntity.EnemyAlly == 2)
+                            continue;
+                    }
+
+                    if (Configuration.HideNeutrals)
+                    {
+                        if (newEntity.EnemyAlly == 128)
+                            continue;
+                    }
+
+                    if (Configuration.HideAllies)
+                    {
+                        if (newEntity.EnemyAlly == 4)
+                            continue;
+                    }
+                    newEntity.tag = index;
+                    entityListTemp.Add(newEntity);
                 }
-                newEntity.tag = index;
-                entityListTemp.Add(newEntity);                    
-            }
+                catch (Exception ex)
+                {
+                    Logger.Error("Error during actor list scan!", ex);
+                }
+            } 
+                        
             entityList          = new ConcurrentBag<BGEntity>(entityListTemp);
             var nearestThings   = All.Where(y => clip(y));
             this.NearestEnemies = entityListTemp.Where(y => clip(y));
@@ -84,13 +92,14 @@ namespace BGOverlay
             this.TextEntries     = new ObservableCollection<string>();
             this.ResourceManager = new ResourceManager();
             ResourceManager.Init();
+            Logger.Info("Waiting for game process ...");
             while (Process.GetProcessesByName("Baldur").Length == 0)
             {
                 Thread.Sleep(3000);
             }
+            Logger.Info("Game process found!");
             this.proc       = Process.GetProcessesByName("Baldur")[0];
             makeBorderless(proc.MainWindowHandle);
-
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, proc.Id);
             this.moduleBase = WinAPIBindings.GetModuleBaseAddress(proc, "Baldur.exe");
             this.entityList = new ConcurrentBag<BGEntity>();
