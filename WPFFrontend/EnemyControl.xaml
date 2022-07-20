@@ -8,7 +8,7 @@
     x:Class="WPFFrontend.EnemyControl"
              mc:Ignorable="d" 
              Height="Auto" Width="450"
-    Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="3" VerticalAlignment="Center">
+    Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="3" VerticalAlignment="Center" MouseLeave="UserControl_MouseLeave">
     <UserControl.BorderBrush>
         <ImageBrush/>
     </UserControl.BorderBrush>

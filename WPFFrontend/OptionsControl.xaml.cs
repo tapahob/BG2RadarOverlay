@@ -72,6 +72,8 @@ namespace WPFFrontend
             };
             anim.FillBehavior = FillBehavior.HoldEnd;
             this.BeginAnimation(UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
+            WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);
+            WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
         }
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
