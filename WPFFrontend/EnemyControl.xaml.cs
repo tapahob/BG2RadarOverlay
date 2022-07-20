@@ -53,6 +53,8 @@ namespace WPFFrontend
                 //Canvas.SetTop(this, y / 2);
                 Canvas.SetLeft(this, left);
                 this.MouseRightButtonUp += EnemyControl_MouseRightButtonDown;
+                WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);
+                WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
                 Logger.Debug($"Create Enemy Control for {bgEntity?.Name1}: Done");
             } catch (Exception ex)
             {
@@ -114,7 +116,9 @@ namespace WPFFrontend
                 (this.Parent as Canvas)?.Children.Remove(this);
             };
             anim.FillBehavior = FillBehavior.HoldEnd;
-            this.BeginAnimation(System.Windows.Controls.UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
+            this.BeginAnimation(System.Windows.Controls.UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
+            WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);
+            WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
         }
 
         internal void updateView(BGEntity item)
@@ -209,6 +213,20 @@ namespace WPFFrontend
                 Logger.Error("Enemy Control: Update View error!", ex);
             }
             
+        }
+
+        private void UserControl_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (WinApiBindings.WinAPIBindings.GetForegroundWindow() != Configuration.HWndPtr)
+            {
+                WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);
+                WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
+            }            
+        }
+
+        private void UserControl_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            UserControl_MouseLeave(null, null);
         }
     }
 }
