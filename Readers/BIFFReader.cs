@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace BGOverlay
 {
@@ -22,10 +23,28 @@ namespace BGOverlay
             {
                 BIFFV1FileEntries = new Dictionary<int, BIFFV1FileEntry>();
                 this.BiffFilename = biffFilename;
+                var filenameOnly = biffFilename;
                 biffFilename = $"{Configuration.GameFolder}/data/{biffFilename}".Replace('\\', '/');
                 if (!File.Exists(biffFilename))
                 {
-                    biffFilename = $"{Configuration.GameFolder}/sod-dlc/{biffFilename}".Replace('\\', '/');
+                    Logger.Debug($"BIF file wasn't found: {biffFilename}");
+                    var dataFolder = new DirectoryInfo($"{Configuration.GameFolder}/data");
+                    if (!dataFolder.Exists)
+                    {
+                        Logger.Error($"Data folder wasn't found at path: {Configuration.GameFolder}/data");
+                    }
+                    var allBiffsInFolder = dataFolder.EnumerateFiles();
+                    var foundBif = allBiffsInFolder.FirstOrDefault(x => x.FullName.ToUpper().EndsWith(filenameOnly));
+                    if (foundBif != null)
+                    {
+                        Logger.Debug($"There is a biff with such name: {foundBif.FullName}");
+                        biffFilename = foundBif.FullName;
+                    }
+                    else
+                    {
+                        Logger.Error($"There are the following BIFs in {Configuration.GameFolder}/data:\n {string.Join("\n", allBiffsInFolder.Select(x => x.FullName))}");
+                        biffFilename = $"{Configuration.GameFolder}/sod-dlc/{filenameOnly}".Replace('\\', '/');
+                    }                    
                 }
                 using (BinaryReader reader = new BinaryReader(File.OpenRead(biffFilename)))
                 {
