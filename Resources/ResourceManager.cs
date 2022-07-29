@@ -72,43 +72,68 @@ namespace BGOverlay
 
         public SPLReader GetSPLReader(string splFilename)
         {
-            splFilename = splFilename.ToUpper();
-            if (!SPLReaderCache.TryGetValue(splFilename, out var reader))
+            splFilename = splFilename.ToUpperInvariant();
+            SPLReader reader = null;
+            try
             {
-                reader = new SPLReader(this, splFilename);
-                SPLReaderCache[splFilename] = reader;
+                if (!SPLReaderCache.TryGetValue(splFilename, out reader))
+                {
+                    reader = new SPLReader(this, splFilename);
+                    SPLReaderCache[splFilename] = reader;
+                    Logger.Info($"SPLReader created: {splFilename}");
+                }
+            } catch (Exception ex)
+            {
+                Logger.Error($"Could not create an SPLReader: {splFilename}", ex);
             }
+            
             return reader;
         }
 
         public EFFReader GetEFFReader(string effFilename)
         {
-            effFilename = effFilename.ToUpper();
-            if (!EFFReaderCache.TryGetValue(effFilename, out var reader))
+            effFilename = effFilename.ToUpperInvariant();
+            EFFReader reader = null;
+            try
             {
-                reader = new EFFReader(this, effFilename);
-                EFFReaderCache[effFilename] = reader;
+                if (!EFFReaderCache.TryGetValue(effFilename, out reader))
+                {
+                    reader = new EFFReader(this, effFilename);
+                    EFFReaderCache[effFilename] = reader;
+                    Logger.Info($"EFFReader created: {effFilename}");
+                }
+            } catch (Exception ex)
+            {
+                Logger.Error($"Could not create an EFFReader: {effFilename}", ex);
             }
             return reader;
         }
 
         public BIFFReader GetBIFFReader(string bifFilename)
         {
-            bifFilename = bifFilename.ToUpper();
-            BIFFReader reader;
-            if (!BiffReaderCache.TryGetValue(bifFilename, out reader))
+            bifFilename = bifFilename.ToUpperInvariant();
+            BIFFReader reader = null;
+            try
             {
-                reader = new BIFFReader(bifFilename);
-                BiffReaderCache[bifFilename] = reader;
+                if (!BiffReaderCache.TryGetValue(bifFilename, out reader))
+                {
+                    reader = new BIFFReader(bifFilename);
+                    BiffReaderCache[bifFilename] = reader;
+                    Logger.Info($"BIFFReader created: {bifFilename}");
+                }
+            } catch (Exception ex)
+            {
+                Logger.Error($"Could not create an BIFReader: {bifFilename}", ex);
             }
             return reader;
         }
 
         public CREReader GetCREReader(string creFilename)
         {
-            creFilename = creFilename.ToUpper();
+            creFilename = creFilename.ToUpperInvariant();
             CREReader reader;
-            if (!CREReaderCache.TryGetValue(creFilename, out reader))
+            var key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename));
+            if (!CREReaderCache.TryGetValue(key ?? creFilename, out reader))
             {
                 if (creFilename == "<ERROR>.CRE")
                 {
@@ -119,16 +144,18 @@ namespace BGOverlay
                     reader = new CREReader(this, creFilename);
                     if (reader.Version == null)
                     {
-                        var key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename));
+                        key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename)) ?? creFilename;
                         reader = CREReaderCache[key];
+                        Logger.Info($"CREReader created: {creFilename}");
                     }
                     else
                     {
                         CREReaderCache[creFilename] = reader;
                     }
                 }
-                catch (ArgumentException)
+                catch (Exception ex)
                 {
+                    Logger.Error($"Could not create a CREReader: {creFilename}", ex);
                     reader = null;
                 }
 
@@ -139,7 +166,8 @@ namespace BGOverlay
 
         public ITMReader GetITMReader(string itmFilename)
         {
-            itmFilename = itmFilename.ToUpper();
+            itmFilename = itmFilename.ToUpperInvariant();
+            var key = ITMReaderCache.Keys.FirstOrDefault(x => x.EndsWith(itmFilename)) ?? itmFilename;
             ITMReader reader;
             if (!ITMReaderCache.TryGetValue(itmFilename, out reader))
             {
@@ -152,16 +180,18 @@ namespace BGOverlay
                     reader = new ITMReader(this, itmFilename);
                     if (reader.Version == null)
                     {
-                        var key = ITMReaderCache.Keys.FirstOrDefault(x => x.EndsWith(itmFilename));
+                        key = ITMReaderCache.Keys.FirstOrDefault(x => x.EndsWith(itmFilename));
                         reader = ITMReaderCache[key];
+                        Logger.Info($"ITMReader created: {itmFilename}");
                     }
                     else
-                    {
+                    {                        
                         ITMReaderCache[itmFilename] = reader;
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Logger.Error($"Could not create an ITMReader: {itmFilename}", ex);
                     reader = null;
                 }
 
@@ -174,7 +204,7 @@ namespace BGOverlay
         {
             if (bamFilename.Trim('\0') == "")
                 return null;
-            bamFilename = bamFilename.ToUpper();
+            bamFilename = bamFilename.ToUpperInvariant();
             BAMReader reader = null;
             try
             {
@@ -182,10 +212,11 @@ namespace BGOverlay
                 {
                     reader = new BAMReader(this, bamFilename);
                     BAMReaderCache[bamFilename] = reader;
+                    Logger.Info($"BAMReader created: {bamFilename}");
                 }
-            } catch (Exception)
+            } catch (Exception ex)
             {
-                // ...
+                Logger.Error($"Could not create a BAMReader: {bamFilename}", ex);
             }
             
             return reader;

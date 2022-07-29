@@ -39,7 +39,6 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
-            Logger.Debug("Main window init");
             ph = new ProcessHacker();
             ph.Init();
             UpdateStyles();
@@ -259,6 +258,8 @@ namespace WPFFrontend
         {
             try
             {
+                WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);
+                WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
                 toShowEnemyList = !toShowEnemyList;
                 //this.listView.Visibility = this.listView.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;            
 

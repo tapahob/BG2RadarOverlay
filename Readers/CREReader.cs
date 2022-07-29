@@ -20,200 +20,211 @@ namespace BGOverlay
 
         public CREReader(ResourceManager resourceManager, String creFilename = "DUERGAR.CRE", int originOffset = 0, string biffArchivePath = "")
         {
-            this.resourceManager = resourceManager;
-            var filename = creFilename;
-            var overrideCreFilename = $"{gameDirectory}\\override\\{creFilename}";
-            if (File.Exists(overrideCreFilename))
+            init(resourceManager, creFilename, ref originOffset, ref biffArchivePath);
+        }
+
+        private void init(ResourceManager resourceManager, string creFilename, ref int originOffset, ref string biffArchivePath)
+        {
+            try
             {
-                originOffset = 0;
-                biffArchivePath = "";
-                filename = overrideCreFilename;
-            }
-            else
-            {
-                var lastTry = Directory.Exists($"{gameDirectory}\\override")
-                    ? Directory.GetFiles($"{gameDirectory}\\override").Select(x => x.ToUpper()).FirstOrDefault(x => x.EndsWith(creFilename))
-                    : null;
-                if (lastTry == null)
+                this.resourceManager    = resourceManager;
+                var filename            = creFilename;
+                var overrideCreFilename = $"{gameDirectory}\\override\\{creFilename}";
+                if (File.Exists(overrideCreFilename))
                 {
-                    filename = biffArchivePath;
-                    if (biffArchivePath.Equals(""))
+                    originOffset    = 0;
+                    biffArchivePath = "";
+                    filename        = overrideCreFilename;
+                }
+                else
+                {
+                    var lastTry = Directory.Exists($"{gameDirectory}\\override")
+                        ? Directory.GetFiles($"{gameDirectory}\\override").Select(x => x.ToUpperInvariant()).FirstOrDefault(x => x.EndsWith(creFilename))
+                        : null;
+                    if (lastTry == null)
                     {
-                        var test2 = resourceManager.CREResourceEntries.FirstOrDefault(x => x.FullName.EndsWith(creFilename));
-                        if (test2 != null)
+                        filename = biffArchivePath;
+                        if (biffArchivePath.Equals(""))
                         {
-                            test2.LoadCREFiles();
-                            return;
+                            var test2 = resourceManager.CREResourceEntries.FirstOrDefault(x => x.FullName.EndsWith(creFilename));
+                            if (test2 != null)
+                            {
+                                test2.LoadCREFiles();
+                                return;
+                            }
                         }
                     }
-                } else
-                {
-                    filename = lastTry;
-                }
-
-            }
-            using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
-            {
-                reader.BaseStream.Seek(originOffset, SeekOrigin.Begin);
-                this.Signature = new string(reader.ReadChars(4));
-                this.Version = new string(reader.ReadChars(4));
-                resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
-                this.LongName = text?.Text;
-                resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
-                this.ShortName = text?.Text;
-
-                this.CreatureFlags = reader.ReadInt32();
-                /*
-                 * Creature flags
-                    bit 0 Show longname in tooltip
-                    bit 1: No corpse
-                    bit 2: Keep corpse
-                    bit 3: Original class was Fighter
-                    bit 4: Original class was Mage
-                    bit 5: Original class was Cleric
-                    bit 6: Original class was Thief
-                    bit 7: Original class was Druid
-                    bit 8: Original class was Ranger
-                    bit 9: Fallen Paladin
-                    bit 10: Fallen Ranger
-                    bit 11: Exportable
-                    bit 12: Hide injury status in tooltip
-                    bit 13: Quest critical / affected by alternative damage
-                    bit 14 ⟶ Moving between areas
-                    See opcode #186
-                    bit 15: Been in Party
-                    bit 16: Restore item in hand
-                    bit 17: Un-sets bit 16
-                    bit 18 - 19 Unused
-                    bit 20: Prevent exploding death (BGEE)
-                    bit 21: Unused
-                    bit 22: Don't apply nightmare mode modifiers (BGEE)
-                    bit 23: No tooltip (BGEE)
-                    bit 24: Related to random walk (ea)
-                    bit 25: Related to random walk (general)
-                    bit 26: Related to random walk (race)
-                    bit 27: Related to random walk (class)
-                    bit 28: Related to random walk (specific)
-                    bit 29: Related to random walk (gender)
-                    bit 30: Related to random walk (alignment)
-                    bit 31: Un-interruptable (memory only)
-                    A multiclass char is indicated by the absence of any of the "original class" flags being set.
-                 */
-
-                this.XPGained = reader.ReadInt32();
-
-                reader.BaseStream.Seek(originOffset + 0x0026, SeekOrigin.Begin);
-                this.MaximumHP = reader.ReadInt16();
-
-                reader.BaseStream.Seek(originOffset + 0x0033, SeekOrigin.Begin);
-                this.EffStructureVersion = reader.ReadByte();
-                this.SmallPortrait = reader.ReadChars(8);
-                this.LargePortrait = reader.ReadChars(8);
-
-                reader.BaseStream.Seek(originOffset + 0x0046, SeekOrigin.Begin);
-                this.ArmorClassNatural = reader.ReadInt16();
-                this.ArmorClassEffective = reader.ReadInt16();
-                this.ArmorClassCrushing = reader.ReadInt16();
-                this.ArmorClassMissile = reader.ReadInt16();
-                this.ArmorClassPiercing = reader.ReadInt16();
-                this.ArmorClassSlashing = reader.ReadInt16();
-                this.THAC0 = reader.ReadByte();
-                this.NumberOfAttacks = reader.ReadByte();
-                this.SaveVersusDeath = reader.ReadByte();
-                this.SaveVersusWands = reader.ReadByte();
-                this.SaveVersusPolymorph = reader.ReadByte();
-                this.SaveVersusBreath = reader.ReadByte();
-                this.SaveVersusSpells = reader.ReadByte();
-                this.ResistFire = reader.ReadByte();
-                this.ResistCold = reader.ReadByte();
-                this.ResistElectricity = reader.ReadByte();
-                this.ResistAcid = reader.ReadByte();
-                this.ResistMagic = reader.ReadByte();
-                this.ResistMagicFire = reader.ReadByte();
-                this.ResistMagicCold = reader.ReadByte();
-                this.ResistSlashing = reader.ReadByte();
-                this.ResistCrushing = reader.ReadByte();
-                this.ResistPiercing = reader.ReadByte();
-                this.ResistMissile = reader.ReadByte();
-
-                reader.BaseStream.Seek(originOffset + 0x0234, SeekOrigin.Begin);
-                this.Class1Level = reader.ReadByte();
-                this.Class2Level = reader.ReadByte();
-                this.Class3Level = reader.ReadByte();
-                this.Gender = reader.ReadByte();
-                this.Strength = reader.ReadByte();
-                this.StrengthPercentBonus = reader.ReadByte();
-                this.Intelligence = reader.ReadByte();
-                this.Wisdom = reader.ReadByte();
-                this.Dexterity = reader.ReadByte();
-                this.Constitution = reader.ReadByte();
-                this.Charisma = reader.ReadByte();
-
-                reader.BaseStream.Seek(originOffset + 0x0244, SeekOrigin.Begin);
-                this.KitInformation = (KIT)reader.ReadInt32();
-
-                reader.BaseStream.Seek(originOffset + 0x0270, SeekOrigin.Begin);
-                this.EnemyAlly = reader.ReadByte();
-                this.General = reader.ReadByte();
-                this.Race = (RACE)reader.ReadByte();
-                this.Class = (CLASS)reader.ReadByte();
-
-                reader.BaseStream.Seek(originOffset + 0x027b, SeekOrigin.Begin);
-                this.SetAlignment((ALIGNMENT)reader.ReadByte());
-
-                // Items
-                //reader.BaseStream.Seek(originOffset + 0x02bc - 4, SeekOrigin.Begin);
-                //var offsetToItemSlots = reader.ReadInt32();
-                //var offsetToItems = reader.ReadInt32();
-                //int countOfItems = reader.ReadInt32();
-
-                //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 39, SeekOrigin.Begin);
-                //var activeWeaponSlot = reader.ReadInt16();
-
-                //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 9, SeekOrigin.Begin);
-                //var weaponIndexes = new List<short>
-                //{
-                //    reader.ReadInt16(),
-                //    reader.ReadInt16(),
-                //    reader.ReadInt16(),
-                //    reader.ReadInt16()
-                //};
-
-                //this.ItemEffects = new List<ItemEffectEntry>();
-                //var activeWeaponTableIndex = weaponIndexes[activeWeaponSlot];
-                //if (activeWeaponTableIndex != 1000 && activeWeaponTableIndex != -1)
-                //{
-                //    reader.BaseStream.Seek(originOffset + offsetToItems + activeWeaponTableIndex * (0x14), SeekOrigin.Begin);
-                //    string itmFileName = new String(reader.ReadChars(8)).TrimEnd('\0');
-                //    ITMReader itmReader = this.resourceManager.GetITMReader(itmFileName + ".ITM");
-
-                //    if (itmReader != null)
-                //    {
-                //        this.Enchantment = itmReader.Enchantment;
-                //        this.EquippedWeaponName = itmReader.IdentifiedName;
-                //        this.EquippedWeaponIcon = itmReader.Icon;
-                //        itmReader.Effects.FindAll(itemEffect => !this.excludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode)).ForEach(itemEffect => ItemEffects.Add(itemEffect));
-                //    }
-                //} else { this.EquippedWeaponName = "Fists"; }
-
-                // Effects
-                reader.BaseStream.Seek(originOffset + 0x02c4, SeekOrigin.Begin);
-                var offsetToEffects = reader.ReadInt32();
-                var countOfEffects = reader.ReadInt32();
-
-                reader.BaseStream.Seek(originOffset + offsetToEffects, SeekOrigin.Begin);
-                bool isV2Version = this.EffStructureVersion == 1;
-                this.Effects = new List<EffectEntry>();
-                for (int i = 0; i < countOfEffects; ++i)
-                {
-                    var begining = originOffset + offsetToEffects + i * (0x108);
-                    if (isV2Version)
+                    else
                     {
-                        Effects.Add(new EffectEntry(reader, begining));
+                        filename = lastTry;
+                    }
+
+                }
+                using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
+                {
+                    reader.BaseStream.Seek(originOffset, SeekOrigin.Begin);
+                    this.Signature = new string(reader.ReadChars(4));
+                    this.Version   = new string(reader.ReadChars(4));
+                    resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
+                    this.LongName = text?.Text;
+                    resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
+                    this.ShortName = text?.Text;
+
+                    this.CreatureFlags = reader.ReadInt32();
+                    /*
+                     * Creature flags
+                        bit 0 Show longname in tooltip
+                        bit 1: No corpse
+                        bit 2: Keep corpse
+                        bit 3: Original class was Fighter
+                        bit 4: Original class was Mage
+                        bit 5: Original class was Cleric
+                        bit 6: Original class was Thief
+                        bit 7: Original class was Druid
+                        bit 8: Original class was Ranger
+                        bit 9: Fallen Paladin
+                        bit 10: Fallen Ranger
+                        bit 11: Exportable
+                        bit 12: Hide injury status in tooltip
+                        bit 13: Quest critical / affected by alternative damage
+                        bit 14 ⟶ Moving between areas
+                        See opcode #186
+                        bit 15: Been in Party
+                        bit 16: Restore item in hand
+                        bit 17: Un-sets bit 16
+                        bit 18 - 19 Unused
+                        bit 20: Prevent exploding death (BGEE)
+                        bit 21: Unused
+                        bit 22: Don't apply nightmare mode modifiers (BGEE)
+                        bit 23: No tooltip (BGEE)
+                        bit 24: Related to random walk (ea)
+                        bit 25: Related to random walk (general)
+                        bit 26: Related to random walk (race)
+                        bit 27: Related to random walk (class)
+                        bit 28: Related to random walk (specific)
+                        bit 29: Related to random walk (gender)
+                        bit 30: Related to random walk (alignment)
+                        bit 31: Un-interruptable (memory only)
+                        A multiclass char is indicated by the absence of any of the "original class" flags being set.
+                     */
+
+                    this.XPGained = reader.ReadInt32();
+
+                    reader.BaseStream.Seek(originOffset + 0x0026, SeekOrigin.Begin);
+                    this.MaximumHP = reader.ReadInt16();
+
+                    reader.BaseStream.Seek(originOffset + 0x0033, SeekOrigin.Begin);
+                    this.EffStructureVersion = reader.ReadByte();
+                    this.SmallPortrait       = reader.ReadChars(8);
+                    this.LargePortrait       = reader.ReadChars(8);
+
+                    reader.BaseStream.Seek(originOffset + 0x0046, SeekOrigin.Begin);
+                    this.ArmorClassNatural   = reader.ReadInt16();
+                    this.ArmorClassEffective = reader.ReadInt16();
+                    this.ArmorClassCrushing  = reader.ReadInt16();
+                    this.ArmorClassMissile   = reader.ReadInt16();
+                    this.ArmorClassPiercing  = reader.ReadInt16();
+                    this.ArmorClassSlashing  = reader.ReadInt16();
+                    this.THAC0               = reader.ReadByte();
+                    this.NumberOfAttacks     = reader.ReadByte();
+                    this.SaveVersusDeath     = reader.ReadByte();
+                    this.SaveVersusWands     = reader.ReadByte();
+                    this.SaveVersusPolymorph = reader.ReadByte();
+                    this.SaveVersusBreath    = reader.ReadByte();
+                    this.SaveVersusSpells    = reader.ReadByte();
+                    this.ResistFire          = reader.ReadByte();
+                    this.ResistCold          = reader.ReadByte();
+                    this.ResistElectricity   = reader.ReadByte();
+                    this.ResistAcid          = reader.ReadByte();
+                    this.ResistMagic         = reader.ReadByte();
+                    this.ResistMagicFire     = reader.ReadByte();
+                    this.ResistMagicCold     = reader.ReadByte();
+                    this.ResistSlashing      = reader.ReadByte();
+                    this.ResistCrushing      = reader.ReadByte();
+                    this.ResistPiercing      = reader.ReadByte();
+                    this.ResistMissile       = reader.ReadByte();
+
+                    reader.BaseStream.Seek(originOffset + 0x0234, SeekOrigin.Begin);
+                    this.Class1Level          = reader.ReadByte();
+                    this.Class2Level          = reader.ReadByte();
+                    this.Class3Level          = reader.ReadByte();
+                    this.Gender               = reader.ReadByte();
+                    this.Strength             = reader.ReadByte();
+                    this.StrengthPercentBonus = reader.ReadByte();
+                    this.Intelligence         = reader.ReadByte();
+                    this.Wisdom               = reader.ReadByte();
+                    this.Dexterity            = reader.ReadByte();
+                    this.Constitution         = reader.ReadByte();
+                    this.Charisma             = reader.ReadByte();
+
+                    reader.BaseStream.Seek(originOffset + 0x0244, SeekOrigin.Begin);
+                    this.KitInformation = (KIT)reader.ReadInt32();
+
+                    reader.BaseStream.Seek(originOffset + 0x0270, SeekOrigin.Begin);
+                    this.EnemyAlly = reader.ReadByte();
+                    this.General   = reader.ReadByte();
+                    this.Race      = (RACE)reader.ReadByte();
+                    this.Class     = (CLASS)reader.ReadByte();
+
+                    reader.BaseStream.Seek(originOffset + 0x027b, SeekOrigin.Begin);
+                    this.SetAlignment((ALIGNMENT)reader.ReadByte());
+
+                    // Items
+                    //reader.BaseStream.Seek(originOffset + 0x02bc - 4, SeekOrigin.Begin);
+                    //var offsetToItemSlots = reader.ReadInt32();
+                    //var offsetToItems = reader.ReadInt32();
+                    //int countOfItems = reader.ReadInt32();
+
+                    //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 39, SeekOrigin.Begin);
+                    //var activeWeaponSlot = reader.ReadInt16();
+
+                    //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 9, SeekOrigin.Begin);
+                    //var weaponIndexes = new List<short>
+                    //{
+                    //    reader.ReadInt16(),
+                    //    reader.ReadInt16(),
+                    //    reader.ReadInt16(),
+                    //    reader.ReadInt16()
+                    //};
+
+                    //this.ItemEffects = new List<ItemEffectEntry>();
+                    //var activeWeaponTableIndex = weaponIndexes[activeWeaponSlot];
+                    //if (activeWeaponTableIndex != 1000 && activeWeaponTableIndex != -1)
+                    //{
+                    //    reader.BaseStream.Seek(originOffset + offsetToItems + activeWeaponTableIndex * (0x14), SeekOrigin.Begin);
+                    //    string itmFileName = new String(reader.ReadChars(8)).TrimEnd('\0');
+                    //    ITMReader itmReader = this.resourceManager.GetITMReader(itmFileName + ".ITM");
+
+                    //    if (itmReader != null)
+                    //    {
+                    //        this.Enchantment = itmReader.Enchantment;
+                    //        this.EquippedWeaponName = itmReader.IdentifiedName;
+                    //        this.EquippedWeaponIcon = itmReader.Icon;
+                    //        itmReader.Effects.FindAll(itemEffect => !this.excludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode)).ForEach(itemEffect => ItemEffects.Add(itemEffect));
+                    //    }
+                    //} else { this.EquippedWeaponName = "Fists"; }
+
+                    // Effects
+                    reader.BaseStream.Seek(originOffset + 0x02c4, SeekOrigin.Begin);
+                    var offsetToEffects = reader.ReadInt32();
+                    var countOfEffects  = reader.ReadInt32();
+
+                    reader.BaseStream.Seek(originOffset + offsetToEffects, SeekOrigin.Begin);
+                    bool isV2Version = this.EffStructureVersion == 1;
+                    this.Effects     = new List<EffectEntry>();
+                    for (int i = 0; i < countOfEffects; ++i)
+                    {
+                        var begining = originOffset + offsetToEffects + i * (0x108);
+                        if (isV2Version)
+                        {
+                            Effects.Add(new EffectEntry(reader, begining));
+                        }
                     }
                 }
+            } catch (Exception ex)
+            {
+                Logger.Error($"CREReader init error: {creFilename}", ex);
             }
-
         }
 
         public List<string> OnHitEffectsStrings 
@@ -552,49 +563,49 @@ namespace BGOverlay
         public string Signature { get; private set; }
         public string Version { get; private set; }
         public string LongName { get; private set; }
-        public byte EffStructureVersion { get; }
-        public char[] SmallPortrait { get; }
-        public char[] LargePortrait { get; }
-        public short ArmorClassNatural { get; }
-        public short ArmorClassEffective { get; }
-        public short ArmorClassCrushing { get; }
-        public short ArmorClassMissile { get; }
-        public short ArmorClassPiercing { get; }
-        public short ArmorClassSlashing { get; }
-        public byte THAC0 { get; }
-        public byte NumberOfAttacks { get; }
-        public byte SaveVersusDeath { get; }
-        public byte SaveVersusWands { get; }
-        public byte SaveVersusPolymorph { get; }
-        public byte SaveVersusBreath { get; }
-        public byte SaveVersusSpells { get; }
-        public byte ResistFire { get; }
-        public byte ResistCold { get; }
-        public byte ResistElectricity { get; }
-        public byte ResistAcid { get; }
-        public byte ResistMagic { get; }
-        public byte ResistMagicFire { get; }
-        public byte ResistMagicCold { get; }
-        public byte ResistSlashing { get; }
-        public byte ResistCrushing { get; }
-        public byte ResistPiercing { get; }
-        public byte ResistMissile { get; }
-        public byte Class1Level { get; }
-        public byte Class2Level { get; }
-        public byte Class3Level { get; }
-        public byte Gender { get; }
-        public byte Strength { get; }
-        public byte StrengthPercentBonus { get; }
-        public byte Intelligence { get; }
-        public byte Wisdom { get; }
-        public byte Dexterity { get; }
-        public byte Constitution { get; }
-        public byte Charisma { get; }
-        public KIT KitInformation { get; }
-        public byte EnemyAlly { get; }
-        public byte General { get; }
-        public RACE Race { get; }
-        public CLASS Class { get; }
+        public byte EffStructureVersion { get; private set; }
+        public char[] SmallPortrait { get; private set; }
+        public char[] LargePortrait { get; private set; }
+        public short ArmorClassNatural { get; private set; }
+        public short ArmorClassEffective { get; private set; }
+        public short ArmorClassCrushing { get; private set; }
+        public short ArmorClassMissile { get; private set; }
+        public short ArmorClassPiercing { get; private set; }
+        public short ArmorClassSlashing { get; private set; }
+        public byte THAC0 { get; private set; }
+        public byte NumberOfAttacks { get; private set; }
+        public byte SaveVersusDeath { get; private set; }
+        public byte SaveVersusWands { get; private set; }
+        public byte SaveVersusPolymorph { get; private set; }
+        public byte SaveVersusBreath { get; private set; }
+        public byte SaveVersusSpells { get; private set; }
+        public byte ResistFire { get; private set; }
+        public byte ResistCold { get; private set; }
+        public byte ResistElectricity { get; private set; }
+        public byte ResistAcid { get; private set; }
+        public byte ResistMagic { get; private set; }
+        public byte ResistMagicFire { get; private set; }
+        public byte ResistMagicCold { get; private set; }
+        public byte ResistSlashing { get; private set; }
+        public byte ResistCrushing { get; private set; }
+        public byte ResistPiercing { get; private set; }
+        public byte ResistMissile { get; private set; }
+        public byte Class1Level { get; private set;}
+        public byte Class2Level { get; private set;}
+        public byte Class3Level { get; private set;}
+        public byte Gender { get; private set;}
+        public byte Strength { get; private set;}
+        public byte StrengthPercentBonus { get; private set;}
+        public byte Intelligence { get; private set;}
+        public byte Wisdom { get; private set;}
+        public byte Dexterity { get; private set;}
+        public byte Constitution { get; private set;}
+        public byte Charisma { get; private set;}
+        public KIT KitInformation { get; private set;}
+        public byte EnemyAlly { get; private set;}
+        public byte General { get; private set;}
+        public RACE Race { get; private set;}
+        public CLASS Class { get; private set;}
 
         private ALIGNMENT alignment;
 
@@ -622,7 +633,7 @@ namespace BGOverlay
             alignment = value;
         }
 
-        public List<EffectEntry> Effects { get; }
+        public List<EffectEntry> Effects { get; private set; }
 
         public List<ItemEffectEntry> ItemEffects = new List<ItemEffectEntry>();
         public int Enchantment { get; set; }

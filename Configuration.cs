@@ -31,7 +31,7 @@ namespace BGOverlay
         public static string FontSize3Small { get; set; }
 
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
-        public const string Version = "2.0.4.8";
+        public const string Version = "2.0.4.9";
 
         public static void Init()
         {

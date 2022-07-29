@@ -1,5 +1,6 @@
 ﻿using NLog;
 using NLog.Targets;
+using NLog.Targets.Wrappers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,15 +9,22 @@ namespace BGOverlay
 {
     public static class Logger
     {
-        private static readonly NLog.Logger logger                       = NLog.LogManager.GetCurrentClassLogger();
-        private static readonly Dictionary<Exception, string> errorCache = new Dictionary<Exception, string>();
+        private static NLog.Logger logger;
+        private static readonly Dictionary<string, string> errorCache = new Dictionary<string, string>();
 
         public static void Init()
         {
-            var config     = new NLog.Config.LoggingConfiguration();
-            var logfile    = new FileTarget("logfile") { FileName = Path.Combine(Directory.GetCurrentDirectory(), "radar.log").ToString(), DeleteOldFileOnStartup=true, Layout = "${longdate} [${level:uppercase=true}] ${message:withexception=true}" };
+            try
+            {
+                logger = NLog.LogManager.GetCurrentClassLogger();
+            } catch (Exception ex)
+            {
+                // ...
+            }
             
-            config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
+            var config     = new NLog.Config.LoggingConfiguration();
+            var logfile    = new FileTarget("logfile") { FileName = Path.Combine(Directory.GetCurrentDirectory(), "radar.log").ToString(), DeleteOldFileOnStartup=true, Layout = "${longdate} [${level:uppercase=true}] ${message:withexception=true}" };            
+            config.AddRule(LogLevel.Debug, LogLevel.Fatal, new AsyncTargetWrapper(logfile));
 
             LogManager.Configuration = config;
         }
@@ -33,18 +41,18 @@ namespace BGOverlay
 
         public static void Error(string msg, Exception ex = null)
         {
-            if (ex != null && !errorCache.ContainsKey(ex)) 
+            if (ex != null && !errorCache.ContainsKey(ex.Message + ex.StackTrace)) 
             {
-                errorCache[ex] = msg;
+                errorCache[ex.Message + ex.StackTrace] = msg;
                 logger.Error(ex, msg);
             }                
         }
 
         public static void Fatal(string msg, Exception ex = null)
         {
-            if (ex != null && !errorCache.ContainsKey(ex))
+            if (ex != null && !errorCache.ContainsKey(ex.Message + ex.StackTrace))
             {
-                errorCache[ex] = msg;
+                errorCache[ex.Message + ex.StackTrace] = msg;
                 logger.Fatal(ex, msg);
             }
         }

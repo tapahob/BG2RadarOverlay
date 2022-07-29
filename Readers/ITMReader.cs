@@ -48,45 +48,51 @@ namespace BGOverlay
                     filename = lastTry;
                 }
             }
-            using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
+            try
             {
-                reader.BaseStream.Seek(originOffset, SeekOrigin.Begin);
-                this.Signature = new string(reader.ReadChars(4));
-                this.Version = new string(reader.ReadChars(4));
-                resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
-                this.GeneralName = text?.Text;
-                resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
-                this.IdentifiedName = text?.Text ?? GeneralName ?? "None";
-                this.Version = new string(reader.ReadChars(4));
-                reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
-
-                // Abilities
-                reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
-                this.Enchantment = reader.ReadInt32();
-                var offsetToAbilities = reader.ReadInt32();
-                var countOfAbilities = reader.ReadInt16();
-                var offsetToFeatureBlocks = reader.ReadInt32();
-
-                this.Effects = new List<ItemEffectEntry>();
-                for (int i = 0; i < countOfAbilities; ++i)
+                using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
                 {
-                    var abilityOffset = originOffset + offsetToAbilities + i * 56;
-                    reader.BaseStream.Seek(abilityOffset, SeekOrigin.Begin);
-                    var abilityType = reader.ReadByte();
-                    if (abilityType != 1)
-                        continue;
-                    reader.BaseStream.Seek(abilityOffset + 0x4, SeekOrigin.Begin);
-                    var iconBAM = new String(reader.ReadChars(8)).Trim('\0');                    
-                    this.Icon = this.Icon ?? resourceManager.GetBAMReader(iconBAM)?.Image;
-                    reader.BaseStream.Seek(abilityOffset + 0x1E, SeekOrigin.Begin);
-                    var abilityEffectsCount = reader.ReadInt16();
-                    var abilityEffectsIndex = reader.ReadInt16();
-                    reader.BaseStream.Seek(originOffset + offsetToFeatureBlocks, SeekOrigin.Begin);
-                    for (int j = 0; j < abilityEffectsCount; j++)
+                    reader.BaseStream.Seek(originOffset, SeekOrigin.Begin);
+                    this.Signature = new string(reader.ReadChars(4));
+                    this.Version = new string(reader.ReadChars(4));
+                    resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
+                    this.GeneralName = text?.Text;
+                    resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
+                    this.IdentifiedName = text?.Text ?? GeneralName ?? "None";
+                    this.Version = new string(reader.ReadChars(4));
+                    reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
+
+                    // Abilities
+                    reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
+                    this.Enchantment = reader.ReadInt32();
+                    var offsetToAbilities = reader.ReadInt32();
+                    var countOfAbilities = reader.ReadInt16();
+                    var offsetToFeatureBlocks = reader.ReadInt32();
+
+                    this.Effects = new List<ItemEffectEntry>();
+                    for (int i = 0; i < countOfAbilities; ++i)
                     {
-                        Effects.Add(new ItemEffectEntry(reader, originOffset + offsetToFeatureBlocks + ((abilityEffectsIndex + j) * 0x30)));
+                        var abilityOffset = originOffset + offsetToAbilities + i * 56;
+                        reader.BaseStream.Seek(abilityOffset, SeekOrigin.Begin);
+                        var abilityType = reader.ReadByte();
+                        if (abilityType != 1)
+                            continue;
+                        reader.BaseStream.Seek(abilityOffset + 0x4, SeekOrigin.Begin);
+                        var iconBAM = new String(reader.ReadChars(8)).Trim('\0');
+                        this.Icon = this.Icon ?? resourceManager.GetBAMReader(iconBAM)?.Image;
+                        reader.BaseStream.Seek(abilityOffset + 0x1E, SeekOrigin.Begin);
+                        var abilityEffectsCount = reader.ReadInt16();
+                        var abilityEffectsIndex = reader.ReadInt16();
+                        reader.BaseStream.Seek(originOffset + offsetToFeatureBlocks, SeekOrigin.Begin);
+                        for (int j = 0; j < abilityEffectsCount; j++)
+                        {
+                            Effects.Add(new ItemEffectEntry(reader, originOffset + offsetToFeatureBlocks + ((abilityEffectsIndex + j) * 0x30)));
+                        }
                     }
                 }
+            } catch (Exception ex)
+            {
+                Logger.Error($"ITMReader error: {itmFilename}", ex);
             }
         }
         public string Signature { get; private set; }
