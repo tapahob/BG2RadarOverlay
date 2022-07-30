@@ -25,7 +25,6 @@ namespace WPFFrontend
         ObservableCollection<BGEntity> EnemyTextEntries { get; set; }
 
         private object _stocksLock = new object();
-        private object _stocksLock2 = new object();
         private ProcessHacker ph;
         private static ConcurrentDictionary<int, EnemyControl> currentControls = new ConcurrentDictionary<int, EnemyControl>();
         private OptionsControl options;
@@ -39,7 +38,7 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
-            ph = new ProcessHacker();
+            ph = new ProcessHacker();            
             ph.Init();
             UpdateStyles();
             options = new OptionsControl();
@@ -56,6 +55,7 @@ namespace WPFFrontend
             {
                 Thread.Sleep(3000);
             }
+            ph.ProcessCreated += ProcessLostHandler;
             var proc = Process.GetProcessesByName("Baldur")[0];
             var hook = new MouseHook(proc.Id, MouseMessageTypes.Click);
             Logger.Debug("Initializing mouse hooks");
@@ -97,6 +97,16 @@ namespace WPFFrontend
                     }
                 } 
             });
+        }
+
+        private void ProcessLostHandler(object sender, EventArgs e)
+        {
+            EnemyTextEntries.Clear();
+        }
+
+        private void Proc_Exited(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private void UpdateStyles()

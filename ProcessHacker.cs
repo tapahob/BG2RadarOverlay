@@ -1,33 +1,41 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
 using System.Threading;
-using System.Windows.Forms;
 using WinApiBindings;
 
 namespace BGOverlay
 {
     public class ProcessHacker
     {
-        public Process proc;
+        public Process Proc;
         private IntPtr hProc;        
         private IntPtr moduleBase;
-        public ConcurrentBag<BGEntity> entityList;
+        public event EventHandler ProcessCreated;
+        public List<BGEntity> entityList;
 
-        public ObservableCollection<String> TextEntries { get; set; }
+        public ObservableCollection<String> TextEntries = new ObservableCollection<string>();
         public ResourceManager ResourceManager { get; private set; }
-        public IEnumerable<BGEntity> NearestEnemies { get; private set; }
+        public List<BGEntity> NearestEnemies { get; private set; }
 
         private BGEntity main;
 
+        private List<BGEntity> entityListTemp = new List<BGEntity>();
+        private List<BGEntity> allEntities    = new List<BGEntity>();
+
         public void MainLoop()
         {
-            var entityListTemp = new ConcurrentBag<BGEntity>();
-            var All = new List<BGEntity>();
+            entityListTemp.Clear();
+            allEntities.Clear();
+            if (Proc.HasExited)
+            {
+                NearestEnemies.Clear();
+                TextEntries.Clear();
+                ProcessCreated.Invoke(null, null);
+                this.Init();
+            }
 
             var staticEntityList = moduleBase + 0x68D438 + 0x18;
             var test             = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { });
@@ -52,7 +60,7 @@ namespace BGOverlay
                     if (newEntity.Name2 == "<ERROR>" || newEntity.CurrentHP == 0)
                         continue;
 
-                    All.Add(newEntity);
+                    allEntities.Add(newEntity);
                     if (Configuration.HidePartyMembers)
                     {
                         if (newEntity.EnemyAlly == 2)
@@ -79,10 +87,9 @@ namespace BGOverlay
                 }
             } 
                         
-            entityList          = new ConcurrentBag<BGEntity>(entityListTemp);
-            var nearestThings   = All.Where(y => clip(y));
-            this.NearestEnemies = entityListTemp.Where(y => clip(y));
-            TextEntries         = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()).ToList());            
+            entityList          = entityListTemp;
+            this.NearestEnemies = entityListTemp.Where(y => clip(y)).ToList();            
+            TextEntries         = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()));
             Thread.Sleep(Configuration.RefreshTimeMS);
         }
 
@@ -98,11 +105,11 @@ namespace BGOverlay
                 Thread.Sleep(3000);
             }
             Logger.Info("Game process found!");
-            this.proc       = Process.GetProcessesByName("Baldur")[0];
-            makeBorderless(proc.MainWindowHandle);
-            this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, proc.Id);
-            this.moduleBase = WinAPIBindings.GetModuleBaseAddress(proc, "Baldur.exe");
-            this.entityList = new ConcurrentBag<BGEntity>();
+            this.Proc       = Process.GetProcessesByName("Baldur")[0];
+            makeBorderless(Proc.MainWindowHandle);
+            this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, Proc.Id);
+            this.moduleBase = WinAPIBindings.GetModuleBaseAddress(Proc, "Baldur.exe");
+            this.entityList = new List<BGEntity>();
             Configuration.hProc = hProc;
         }
 
