@@ -104,11 +104,6 @@ namespace WPFFrontend
             EnemyTextEntries.Clear();
         }
 
-        private void Proc_Exited(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
         private void UpdateStyles()
         {
             Logger.Debug("Updating App Styles ..");

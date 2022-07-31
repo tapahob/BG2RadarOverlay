@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -178,15 +179,13 @@ namespace BGOverlay
             Logger.Debug("Making the window borderless ...");
             try
             {
+                var proc = Process.GetProcessesByName("Baldur")[0];
                 var bounds = Screen.PrimaryScreen.Bounds;
-                if (HWndPtr == null)
-                {
-                    Logger.Error("No HWndPtr found!");
-                    return;
-                }
-                WinAPIBindings.SetWindowLong32(HWndPtr, -16, (uint)WinAPIBindings.WindowStyles.WS_MAXIMIZE);
-                WinAPIBindings.ShowWindow(HWndPtr.ToInt32(), 5);
-                WinAPIBindings.SetWindowPos(HWndPtr, IntPtr.Zero, 0, 0, bounds.Width, bounds.Height, 0x4000);
+                var hwnd = proc.MainWindowHandle;
+                
+                WinAPIBindings.SetWindowLong32(hwnd, -16, (uint)WinAPIBindings.WindowStyles.WS_MAXIMIZE);
+                WinAPIBindings.ShowWindow(hwnd.ToInt32(), 5);
+                WinAPIBindings.SetWindowPos(hwnd, IntPtr.Zero, 0, 0, bounds.Width, bounds.Height, 0x4000);
             } catch (Exception ex)
             {
                 Logger.Error("Could not make a window borderless!", ex);
