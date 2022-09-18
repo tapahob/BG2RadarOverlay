@@ -2,11 +2,7 @@
   "profiles": {
     "BG2_SCS_ASC": {
       "commandName": "Project",
-      "workingDirectory": "C:\\nirvana\\BGFresh\\BG2\\BG2EE2.6ASCSCS"
-    },
-    "BG1_SCS": {
-      "commandName": "Project",
-      "workingDirectory": "C:\\nirvana\\BGCurrentUI\\BGEE2.6"
+      "workingDirectory": "A:\\SteamLibrary\\steamapps\\common\\Baldur's Gate II Enhanced Edition"
     },
     "Profile 1": {
       "commandName": "Project"

@@ -39,7 +39,7 @@
                 <RowDefinition Height="250"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="130"/>
                 <ColumnDefinition Width="380"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="250"/>
@@ -48,7 +48,7 @@
             <Button Style="{StaticResource ResourceKey=MyButton}" Grid.Row="0" Margin="155 -15 0 0" MaxHeight="30" Background="#01FFFFFF" HorizontalAlignment="Left" Panel.ZIndex="1" BorderThickness="0" Grid.Column="1" x:Name="MinMaxBtn" Foreground="Black" FontWeight="Bold" FontFamily="Segoe Print" VerticalAlignment="Top" MouseRightButtonDown="MinMaxBtn_MouseRightButtonDown" Click="MinMaxBtn_Click">
                 <Image Source="/radar.png"/>
             </Button>
-            <StackPanel x:Name="StackPanel"  Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Left" Width="380">
+            <StackPanel x:Name="StackPanel" Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Left" Width="380">
                 <ListView x:Name="ListView" Foreground="Black" BorderBrush="Black" BorderThickness="2" HorizontalAlignment="Left" VerticalAlignment="Top" SelectionChanged="listView_SelectionChanged">
                     <ListView.Background>
                         <ImageBrush Stretch="UniformToFill" ImageSource="/pexels-photo-235985.jpeg"/>

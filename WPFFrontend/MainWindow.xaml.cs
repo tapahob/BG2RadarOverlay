@@ -38,6 +38,7 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
+            this.MainGrid.ColumnDefinitions[0].Width = new GridLength(130 + Configuration.EnemyListXOffset);
             ph = new ProcessHacker();            
             ph.Init();
             UpdateStyles();

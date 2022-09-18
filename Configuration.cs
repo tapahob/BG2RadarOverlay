@@ -11,6 +11,7 @@ namespace BGOverlay
     public static class Configuration
     {
         public static bool UseShiftClick { get; set; }
+        public static int EnemyListXOffset { get; private set; }
         public static bool CloseWithRightClick { get; set; }
         public static string GameFolder { get; set; }
         public static string Locale { get; set; }
@@ -32,7 +33,7 @@ namespace BGOverlay
         public static string FontSize3Small { get; set; }
 
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
-        public const string Version = "2.0.5.0";
+        public const string Version = "2.0.5.1";
 
         public static void Init()
         {
@@ -55,6 +56,7 @@ namespace BGOverlay
             FontSize3Small      = "16";
             CloseWithRightClick = true;
             UseShiftClick       = false;
+            EnemyListXOffset    = 0;
             loadConfig();
             detectLocale();
             detectGameFolder();            
@@ -86,7 +88,7 @@ namespace BGOverlay
                 SaveConfig();
                 return;
             }
-            MessageBox.Show("Can't find game folder :(, please check the config file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show("Can't find the game folder :(, please check the config file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             Environment.Exit(1);
         }
 
@@ -113,6 +115,7 @@ namespace BGOverlay
                 $"FontSize3Small={FontSize3Small}",
                 $"CloseWithRightClick={CloseWithRightClick}",
                 $"UseShiftClick={UseShiftClick}",
+                $"EnemyListXOffset={EnemyListXOffset}",
             });
         }
 
@@ -152,6 +155,7 @@ namespace BGOverlay
                 FontSize3Small      = getProperty("FontSize3Small", "12");
                 CloseWithRightClick = getProperty("CloseWithRightClick", "true").Equals("true");
                 UseShiftClick       = getProperty("UseShiftClick", "false").Equals("true");
+                EnemyListXOffset    = int.Parse(getProperty("EnemyListXOffset", "0"));
                 if (version != Configuration.Version)
                 {
                     Logger.Debug("Outdated config version found - overriding it");

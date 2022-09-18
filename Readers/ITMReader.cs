@@ -59,7 +59,8 @@ namespace BGOverlay
                     this.GeneralName = text?.Text;
                     resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
                     this.IdentifiedName = text?.Text ?? GeneralName ?? "None";
-                    this.Version = new string(reader.ReadChars(4));
+                    var trash = new string(reader.ReadChars(8));
+                    this.Flags = reader.ReadInt32();
                     reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
 
                     // Abilities
@@ -138,5 +139,7 @@ namespace BGOverlay
             //Enum.GetValues(typeof(Effect)).Cast<Effect>()
             //.Where(x => Enum.Parse(typeof(Effect), x.ToString()).ToString().Contains("Removal")),
         }.SelectMany(o => o).Cast<Effect>().ToList();
+
+        public int Flags { get; private set; }
     }
 }

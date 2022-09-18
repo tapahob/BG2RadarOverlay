@@ -131,7 +131,9 @@ namespace BGOverlay
                 if (this.DerivedStats.BackstabImmunity > 0)
                     thiefStr += "Backstab Immunity\t";
                 if (this.DerivedStats.SeeInvisible > 0)
-                    thiefStr += "See Invisible";
+                    thiefStr += "See Invisible\t";
+                if (this.CritImmune) 
+                    thiefStr += "Crit Immune";
                 if (thiefStr != "")
                     result.Add(thiefStr);
                 string proficiencyStr = "Proficiency: ";
@@ -321,6 +323,8 @@ namespace BGOverlay
 
         public string HPString { get { return $"{this.CurrentHP}/{this.DerivedStatsTemp.MaxHP}"; } }
 
+        public bool CritImmune { get; private set; }
+
         private static List<string> filter = new List<string>()
         {
             "State_",
@@ -431,12 +435,22 @@ namespace BGOverlay
             var selectedWeapon = WinAPIBindings.ReadByte(equipmentPtr + 0x138);
             var tempItem       = new CItem(equipmentPtr + 0x140);
             var lst            = new List<CItem>();
+            this.CritImmune    = false;
             for (int i=0; i<40; ++i)
             {
-                lst.Add(new CItem(equipmentPtr + 8 * i));
+                var currentItem = new CItem(equipmentPtr + 8 * i);
+                lst.Add(currentItem);
+                if (currentItem.resRef == "<ERROR>" || i > 9)
+                    continue;
+                var read = resourceManager.GetITMReader($"{currentItem.resRef}.ITM");
+                this.CritImmune = this.CritImmune 
+                    || (i == 6 && ((read.Flags & 0x2000000) == 0))
+                    || i != 6 && ((read.Flags & 0x2000000) != 0);                
             }
+
             var ITMRes = lst[selectedWeapon];
             var reader = resourceManager.GetITMReader($"{ITMRes.resRef}.ITM");
+            this.CritImmune = this.CritImmune || ((reader.Flags & 0x2000000) != 0);
             if (reader != null)
             {
                 if (this.Reader == null)

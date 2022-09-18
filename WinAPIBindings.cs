@@ -144,7 +144,7 @@ namespace WinApiBindings
             var buffer = new byte[strLength];
             ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
             var result = UTF8Encoding.UTF8.GetString(buffer);
-            if (result.StartsWith("\0"))
+            if (result[0] == '\0')
             {
                 return "<ERROR>";
             }
