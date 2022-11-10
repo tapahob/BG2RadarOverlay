@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 using WinApiBindings;
 
@@ -12,6 +11,7 @@ namespace BGOverlay
     {
         public static bool UseShiftClick { get; set; }
         public static int EnemyListXOffset { get; private set; }
+        public static bool DebugMode { get; private set; }
         public static bool CloseWithRightClick { get; set; }
         public static string GameFolder { get; set; }
         public static string Locale { get; set; }
@@ -33,19 +33,18 @@ namespace BGOverlay
         public static string FontSize3Small { get; set; }
 
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
-        public const string Version = "2.0.5.1";
+        public const string Version = "2.0.6.0";
 
-        public static void Init()
-        {
-            Logger.Init();
+        public static void Init(Process bgProcess)
+        {            
+            GameFolder          = bgProcess.MainModule.FileName.ToLower().Replace("\\baldur.exe", "");
             Borderless          = true;
             HidePartyMembers    = false;
             HideNeutrals        = false;
             HideAllies          = false;
             ShowTraps           = false;
             RefreshTimeMS       = 300;
-            Locale              = "en_US";
-            GameFolder          = "None";
+            Locale              = "en_US";            
             BigBuffIcons        = true;
             Font1               = "Segoe Print";
             Font2               = "Ink Free";
@@ -57,9 +56,9 @@ namespace BGOverlay
             CloseWithRightClick = true;
             UseShiftClick       = false;
             EnemyListXOffset    = 0;
+            DebugMode           = false;
             loadConfig();
             detectLocale();
-            detectGameFolder();            
         }
 
         private static void detectLocale()
@@ -70,34 +69,11 @@ namespace BGOverlay
             Locale = "en_US";
         }
 
-        private static void detectGameFolder()
-        {
-            if (File.Exists(GameFolder + "\\Baldur.exe"))
-            {
-                return;
-            }
-            if (new DirectoryInfo(Directory.GetCurrentDirectory()).EnumerateFiles().Any(x => x.Name == "Baldur.exe")) 
-            {
-                GameFolder = Directory.GetCurrentDirectory().Trim('\\');
-                SaveConfig();
-                return;
-            }
-            if (new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.EnumerateFiles().Any(x => x.Name == "Baldur.exe"))
-            {
-                GameFolder = new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.FullName.Trim('\\');
-                SaveConfig();
-                return;
-            }
-            MessageBox.Show("Can't find the game folder :(, please check the config file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            Environment.Exit(1);
-        }
-
         public static void SaveConfig()
         {
             File.WriteAllLines("config.cfg", new string[] 
             { 
                 $"Version={Version}",
-                $"GameFolder={GameFolder}", 
                 $"Locale={Locale}",
                 $"Borderless={Borderless}",
                 $"HidePartyMembers={HidePartyMembers}",
@@ -116,6 +92,7 @@ namespace BGOverlay
                 $"CloseWithRightClick={CloseWithRightClick}",
                 $"UseShiftClick={UseShiftClick}",
                 $"EnemyListXOffset={EnemyListXOffset}",
+                $"DebugMode={DebugMode}",
             });
         }
 
@@ -137,7 +114,6 @@ namespace BGOverlay
                 }
 
                 var version         = getProperty("Version", Configuration.Version); ;                
-                GameFolder          = getProperty("GameFolder", "None");
                 Locale              = getProperty("Locale", "en_US");
                 Borderless          = getProperty("Borderless", "true").Equals("true");
                 HidePartyMembers    = getProperty("HidePartyMembers", "false").Equals("true");
@@ -156,6 +132,7 @@ namespace BGOverlay
                 CloseWithRightClick = getProperty("CloseWithRightClick", "true").Equals("true");
                 UseShiftClick       = getProperty("UseShiftClick", "false").Equals("true");
                 EnemyListXOffset    = int.Parse(getProperty("EnemyListXOffset", "0"));
+                DebugMode           = getProperty("DebugMode", "false").Equals("true");
                 if (version != Configuration.Version)
                 {
                     Logger.Debug("Outdated config version found - overriding it");
@@ -183,9 +160,9 @@ namespace BGOverlay
             Logger.Debug("Making the window borderless ...");
             try
             {
-                var proc = Process.GetProcessesByName("Baldur")[0];
-                var bounds = Screen.PrimaryScreen.Bounds;
-                var hwnd = proc.MainWindowHandle;
+                var proc    = Process.GetProcessesByName("Baldur")[0];
+                var bounds  = Screen.PrimaryScreen.Bounds;
+                var hwnd    = proc.MainWindowHandle;
                 
                 WinAPIBindings.SetWindowLong32(hwnd, -16, (uint)WinAPIBindings.WindowStyles.WS_MAXIMIZE);
                 WinAPIBindings.ShowWindow(hwnd.ToInt32(), 5);

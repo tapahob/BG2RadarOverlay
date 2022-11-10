@@ -95,16 +95,17 @@ namespace BGOverlay
 
         public void Init()
         {
-            Configuration.Init();
-            this.TextEntries     = new ObservableCollection<string>();
-            this.ResourceManager = new ResourceManager();
-            ResourceManager.Init();
+            Logger.Init();
             Logger.Info("Waiting for game process ...");
             while (Process.GetProcessesByName("Baldur").Length == 0)
             {
                 Thread.Sleep(3000);
             }
             Logger.Info("Game process found!");
+            Configuration.Init(Process.GetProcessesByName("Baldur")[0]);
+            this.TextEntries     = new ObservableCollection<string>();
+            this.ResourceManager = new ResourceManager();
+            ResourceManager.Init();
             this.Proc       = Process.GetProcessesByName("Baldur")[0];
             makeBorderless(Proc.MainWindowHandle);
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, Proc.Id);

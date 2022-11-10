@@ -397,6 +397,11 @@ namespace BGOverlay
                 this.equipmentPtr          = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xFC0 });
                 this.isInvisible           = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
                 this.Loaded                = true;
+
+                if (Configuration.DebugMode)
+                {
+                    this.Name2 += $" [{this.CreResourceFilename}]";
+                }
             }
             catch (Exception ex)
             {
@@ -458,6 +463,10 @@ namespace BGOverlay
                 this.Reader.Enchantment        = reader.Enchantment;
                 this.Reader.EquippedWeaponIcon = reader.Icon;
                 this.Reader.EquippedWeaponName = reader.IdentifiedName;
+                if (Configuration.DebugMode)
+                {
+                    this.Reader.EquippedWeaponName += $" [{ITMRes.resRef}.ITM]";
+                }
                 this.Reader.ItemEffects.Clear();
                 reader.Effects.FindAll(itemEffect => !ITMReader.ExcludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode))
                     .ForEach(itemEffect => Reader.ItemEffects.Add(itemEffect));

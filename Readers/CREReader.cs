@@ -232,8 +232,7 @@ namespace BGOverlay
             get
             {
                 return new List<string>
-                {
-                    
+                {                    
                     String.Format("Weapon: \"{0}\" {1}", EquippedWeaponName,
                     EquippedWeaponName.Contains($"{+Enchantment}") ? "" : $"(Strikes as +{Enchantment})")
                 }.Concat(ItemEffects.Select(x => x.ToString())).ToList();
@@ -613,18 +612,8 @@ namespace BGOverlay
         {
             get
             {
-                switch (alignment)
-                {
-                    case ALIGNMENT.CHAOTIC_EVIL:
-                    case ALIGNMENT.LAWFUL_EVIL:
-                    case ALIGNMENT.NEUTRAL_EVIL:
-                        return "Evil";
-                    case ALIGNMENT.CHAOTIC_GOOD:
-                    case ALIGNMENT.LAWFUL_GOOD:
-                    case ALIGNMENT.NEUTRAL_GOOD:
-                        return "Good";
-                    default: return "Neutral";
-                }
+                var alignmentString = alignment.ToString().ToLowerInvariant().Replace("_", " ");
+                return alignmentString[0].ToString().ToUpperInvariant() + alignmentString.Substring(1);                
             }
         }
 

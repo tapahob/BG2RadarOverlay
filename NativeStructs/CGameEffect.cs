@@ -58,11 +58,15 @@ namespace BGOverlay.NativeStructs
                 var splReader = resourceManager.GetSPLReader($"{res.Trim('\0')}.SPL".ToUpper());
                 if (splReader == null)
                     return null;
-                var spellName = splReader?.Name1;               
+                var spellName = splReader?.Name1;
                 if (splReader.Name1 == null || splReader.Name1 == "-1")
                     return null;
                 if (splReader.Name1 != "-1" && splReader.IconBAM != null)
                     this.Icon = resourceManager.GetBAMReader(splReader.IconBAM)?.Image;
+                if (Configuration.DebugMode)
+                {
+                    spellName += $" {res.Trim('\0')}.SPL";
+                }
                 return new Tuple<string, Bitmap, uint>(spellName, this.Icon, DurationType == 1 ? uint.MaxValue : Duration);
             }
             return null;
