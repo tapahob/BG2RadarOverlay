@@ -1,6 +1,5 @@
 ﻿using BGOverlay.Resources;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using static BGOverlay.Resources.BIFResourceEntry;

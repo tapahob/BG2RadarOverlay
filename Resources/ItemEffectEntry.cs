@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Drawing;
 using System.IO;
-using System.Text;
 
 namespace BGOverlay.Resources
 {
