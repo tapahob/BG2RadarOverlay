@@ -5,9 +5,6 @@ using System.Windows;
 [assembly: AssemblyCompany("BG Radar Overlay")]
 [assembly: AssemblyProduct("BG Radar Overlay")]
 [assembly: AssemblyTitle("BG Radar Overlay")]
-[assembly: AssemblyVersion(Configuration.Version)]
-[assembly: AssemblyFileVersion(Configuration.Version)]
-[assembly: AssemblyInformationalVersion(Configuration.Version)]
 [assembly: ThemeInfo(
     ResourceDictionaryLocation.None, //where theme specific resource dictionaries are located
                                      //(used if a resource is not found in the page,
