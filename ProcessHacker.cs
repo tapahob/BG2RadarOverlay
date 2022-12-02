@@ -8,12 +8,18 @@ using WinApiBindings;
 
 namespace BGOverlay
 {
+    public delegate void ProcessStateChangedHandler(string processName, int pid);
+
     public class ProcessHacker
     {
         public Process Proc;
         private IntPtr hProc;        
         private IntPtr moduleBase;
-        public event EventHandler ProcessCreated;
+
+        public event ProcessStateChangedHandler ProcessDestroyed;
+        public event ProcessStateChangedHandler ProcessFound;
+        public event ProcessStateChangedHandler ProcessHooked;
+
         public List<BGEntity> entityList;
 
         public ObservableCollection<String> TextEntries = new ObservableCollection<string>();
@@ -33,7 +39,7 @@ namespace BGOverlay
             {
                 NearestEnemies.Clear();
                 TextEntries.Clear();
-                ProcessCreated.Invoke(null, null);
+                ProcessDestroyed?.Invoke(Proc.ProcessName, Proc.Id);
                 this.Init();
             }
 
@@ -97,21 +103,28 @@ namespace BGOverlay
         {
             Logger.Init();
             Logger.Info("Waiting for game process ...");
+            
             while (Process.GetProcessesByName("Baldur").Length == 0)
             {
                 Thread.Sleep(3000);
             }
+
+            this.Proc = Process.GetProcessesByName("Baldur")[0];
             Logger.Info("Game process found!");
+
+            ProcessFound?.Invoke(Proc.ProcessName, Proc.Id);
+
             Configuration.Init(Process.GetProcessesByName("Baldur")[0]);
             this.TextEntries     = new ObservableCollection<string>();
             this.ResourceManager = new ResourceManager();
             ResourceManager.Init();
-            this.Proc       = Process.GetProcessesByName("Baldur")[0];
             makeBorderless(Proc.MainWindowHandle);
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, Proc.Id);
             this.moduleBase = WinAPIBindings.GetModuleBaseAddress(Proc, "Baldur.exe");
             this.entityList = new List<BGEntity>();
             Configuration.hProc = hProc;
+
+            ProcessHooked?.Invoke(Proc.ProcessName, Proc.Id);
         }
 
         bool clip(BGEntity entity1)
@@ -127,6 +140,11 @@ namespace BGOverlay
             if (!Configuration.Borderless) 
                 return;
             Configuration.ForceBorderless();            
+        }
+
+        public Process GetHookedProcess()
+        {
+            return Proc;
         }
     }
 }
