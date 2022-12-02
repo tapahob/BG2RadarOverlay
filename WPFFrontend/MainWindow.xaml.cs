@@ -24,6 +24,7 @@ namespace WPFFrontend
     {
         ObservableCollection<BGEntity> EnemyTextEntries { get; set; }
 
+        private MouseHook _mouseHook;
         private object _stocksLock = new object();
         private ProcessHacker ph;
         private static ConcurrentDictionary<int, EnemyControl> currentControls = new ConcurrentDictionary<int, EnemyControl>();
@@ -39,8 +40,14 @@ namespace WPFFrontend
         {
             InitializeComponent();
             this.MainGrid.ColumnDefinitions[0].Width = new GridLength(130 + Configuration.EnemyListXOffset);
-            ph = new ProcessHacker();            
+            
+            ph = new ProcessHacker();
+
+            ph.ProcessDestroyed += Ph_ProcessDestroyed;
+            ph.ProcessHooked += Ph_ProcessHooked;
+
             ph.Init();
+            
             UpdateStyles();
             options = new OptionsControl();
             MainGrid.Children.Add(options);   
@@ -56,18 +63,13 @@ namespace WPFFrontend
             {
                 Thread.Sleep(3000);
             }
-            ph.ProcessCreated += ProcessLostHandler;
-            var proc = Process.GetProcessesByName("Baldur")[0];
-            var hook = new MouseHook(proc.Id, MouseMessageTypes.Click);
-            Logger.Debug("Initializing mouse hooks");
-            hook.AddHandler(MouseMessageCode.RightButtonUp, MouseHook_MouseEvent);
-            hook.InstallAsync();            
+
             this.Closed += (o, e) =>
             {
-                hook.Uninstall();
+                _mouseHook.Uninstall();
                 Logger.flush();
             };
-            Logger.Debug("Mouse hooks installed");
+
             Task.Factory.StartNew(() =>
             {
                 Logger.Debug("Main loop started");
@@ -100,9 +102,24 @@ namespace WPFFrontend
             });
         }
 
-        private void ProcessLostHandler(object sender, EventArgs e)
+        private void Ph_ProcessHooked(string processName, int pid)
+        {
+            // Initialize mouse hook.
+
+            _mouseHook = new MouseHook(pid, MouseMessageTypes.Click);
+
+            Logger.Debug("Initializing mouse hook");
+
+            _mouseHook.AddHandler(MouseMessageCode.RightButtonUp, MouseHook_MouseEvent);
+            _mouseHook.InstallAsync().GetAwaiter().GetResult();
+            
+            Logger.Debug("Mouse hooks installed");
+        }
+
+        private void Ph_ProcessDestroyed(string processName, int pid)
         {
             EnemyTextEntries.Clear();
+            _mouseHook.Uninstall();
         }
 
         private void UpdateStyles()
