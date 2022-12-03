@@ -25,15 +25,15 @@ namespace WPFFrontend
         ObservableCollection<BGEntity> EnemyTextEntries { get; set; }
 
         private MouseHook _mouseHook;
-        private object _stocksLock = new object();
-        private ProcessHacker ph;
-        private static ConcurrentDictionary<int, EnemyControl> currentControls = new ConcurrentDictionary<int, EnemyControl>();
-        private OptionsControl options;
+        private readonly object _stocksLock = new();
+        private readonly ProcessHacker _processHacker = new();
+        private readonly ConcurrentDictionary<int, EnemyControl> _currentEnemyControls = new();
+        private readonly OptionsControl _options = new();
+        private bool _toShowEnemyList = true;
 
-        internal void deleteMe(int tag)
+        internal void deleteEnemyControlByTag(int tag)
         {
-            EnemyControl trash;
-            currentControls.Remove(tag, out trash);
+            _currentEnemyControls.Remove(tag, out _);
         }
 
         public MainWindow()
@@ -41,16 +41,14 @@ namespace WPFFrontend
             InitializeComponent();
             this.MainGrid.ColumnDefinitions[0].Width = new GridLength(130 + Configuration.EnemyListXOffset);
             
-            ph = new ProcessHacker();
+            _processHacker.ProcessDestroyed += ProcessHacker_ProcessDestroyed;
+            _processHacker.ProcessHooked += ProcessHacker_ProcessHooked;
 
-            ph.ProcessDestroyed += Ph_ProcessDestroyed;
-            ph.ProcessHooked += Ph_ProcessHooked;
-
-            ph.Init();
+            _processHacker.Init();
             
-            UpdateStyles();
-            options = new OptionsControl();
-            MainGrid.Children.Add(options);   
+            updateStyles();
+
+            MainGrid.Children.Add(_options);   
             this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
             this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;            
 
@@ -78,10 +76,10 @@ namespace WPFFrontend
                 {
                     try
                     {
-                        ph.MainLoop();
-                        if (ph.NearestEnemies.Count() == EnemyTextEntries.Count && ph.NearestEnemies.All(x => EnemyTextEntries.Any(y => y.ToString() == x.ToString())))
+                        _processHacker.MainLoop();
+                        if (_processHacker.NearestEnemies.Count() == EnemyTextEntries.Count && _processHacker.NearestEnemies.All(x => EnemyTextEntries.Any(y => y.ToString() == x.ToString())))
                         {
-                            foreach (var item in ph.NearestEnemies)
+                            foreach (var item in _processHacker.NearestEnemies)
                             {
                                 updateControls(item);
                             }
@@ -89,7 +87,7 @@ namespace WPFFrontend
                         }
 
                         EnemyTextEntries.Clear();
-                        foreach (var item in ph.NearestEnemies)
+                        foreach (var item in _processHacker.NearestEnemies)
                         {
                             EnemyTextEntries.Add(item);
                         }
@@ -102,7 +100,7 @@ namespace WPFFrontend
             });
         }
 
-        private void Ph_ProcessHooked(string processName, int pid)
+        private void ProcessHacker_ProcessHooked(string processName, int pid)
         {
             // Initialize mouse hook.
 
@@ -116,13 +114,13 @@ namespace WPFFrontend
             Logger.Debug("Mouse hooks installed");
         }
 
-        private void Ph_ProcessDestroyed(string processName, int pid)
+        private void ProcessHacker_ProcessDestroyed(string processName, int pid)
         {
             EnemyTextEntries.Clear();
             _mouseHook.Uninstall();
         }
 
-        private void UpdateStyles()
+        private void updateStyles()
         {
             Logger.Debug("Updating App Styles ..");
             var app                         = System.Windows.Application.Current;
@@ -142,11 +140,12 @@ namespace WPFFrontend
             {
                 try
                 {
-                    if (currentControls.ContainsKey(item.tag))
-                        currentControls[item.tag].updateView(item);
+                    if (_currentEnemyControls.TryGetValue(item.tag, out EnemyControl enemyControl))
+                        enemyControl.updateView(item);
+
                 } catch (Exception ex)
                 {
-                    Logger.Error("Update Controls error!", ex);
+                    Logger.Error($"{nameof(updateControls)} error!", ex);
                 }                
             }));            
         }
@@ -179,26 +178,27 @@ namespace WPFFrontend
             this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
-        private void removeAll()
+        private void removeAllEnemyControls()
         {
             EnemyControl enemyControl;
+
             try
             {
-                foreach (int key in MainWindow.currentControls.Keys)
+                foreach (int key in _currentEnemyControls.Keys)
                 {
-                    enemyControl = MainWindow.currentControls[key];
+                    enemyControl = _currentEnemyControls[key];
                     enemyControl.Label_MouseDown(null, null);
 
                     MainCanvas.Children.Remove(enemyControl);
                 }
-            } catch (Exception ex)
-            {
-                Logger.Error("RemoveAll Error!", ex);
             }
-            
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(removeAllEnemyControls)} Error!", ex);
+            }
         }
 
-        private void addOrRemove(BGEntity bgEntity)
+        private void changeEnemyControlStateByEntity(BGEntity bgEntity)
         {
             if (bgEntity == null)
                 return;
@@ -206,20 +206,20 @@ namespace WPFFrontend
             try
             {
                 EnemyControl enemyControl;
-                if (!MainWindow.currentControls.TryGetValue(bgEntity.tag, out enemyControl))
+                if (!_currentEnemyControls.TryGetValue(bgEntity.tag, out enemyControl))
                 {
                     enemyControl = new EnemyControl(bgEntity, this);
-                    MainWindow.currentControls[bgEntity.tag] = enemyControl;
+                    _currentEnemyControls[bgEntity.tag] = enemyControl;
                     MainCanvas.Children.Add(enemyControl);
                 }
                 else
                 {
-                    MainWindow.currentControls[bgEntity.tag].Label_MouseDown(null, null);
-                    MainWindow.currentControls.Remove(bgEntity.tag, out enemyControl);
+                    _currentEnemyControls[bgEntity.tag].Label_MouseDown(null, null);
+                    _currentEnemyControls.Remove(bgEntity.tag, out enemyControl);
                 }
             } catch (Exception ex)
             {
-                Logger.Error("AddOrRemove error!", ex);
+                Logger.Error($"{nameof(changeEnemyControlStateByEntity)} error!", ex);
             }
         }
 
@@ -239,26 +239,26 @@ namespace WPFFrontend
 
                     BGEntity entry = null;
 
-                    entry = ph.entityList.FirstOrDefault(
+                    entry = _processHacker.entityList.FirstOrDefault(
                         x => x.X > 0 &&
                         Math.Abs(x.MousePosX + x.MousePosX1 - x.X) < 18
                         && Math.Abs(x.MousePosY + x.MousePosY1 - x.Y) < 18);
 
                     if (entry == null && Configuration.CloseWithRightClick)
                     {
-                        this.removeAll();
+                        this.removeAllEnemyControls();
                         return;
                     }
 
-                    addOrRemove(entry);
+                    changeEnemyControlStateByEntity(entry);
                 } catch (Exception ex)
                 {
-                    Logger.Error("Mouse Event Error!", ex);
+                    Logger.Error($"{nameof(MouseHook_MouseEvent)} Mouse Event Error!", ex);
                 }                
             }));            
         }
 
-        private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var list = (sender as ListView);
             if (list.SelectedIndex == -1) return;
@@ -271,11 +271,9 @@ namespace WPFFrontend
 
             //DebugPointer.Margin = new Thickness(x, y, 0, 0);
 
-            this.addOrRemove(content);
+            this.changeEnemyControlStateByEntity(content);
             list.SelectedIndex = -1;
         }
-        bool toShowEnemyList = true;
-        private MouseHook mouseHook;
 
         private void MinMaxBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -283,10 +281,10 @@ namespace WPFFrontend
             {
                 WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);
                 WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
-                toShowEnemyList = !toShowEnemyList;
+                _toShowEnemyList = !_toShowEnemyList;
                 //this.listView.Visibility = this.listView.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;            
 
-                if (!toShowEnemyList)
+                if (!_toShowEnemyList)
                 {
                     ThicknessAnimation anim = new ThicknessAnimation();
                     anim.From = this.StackPanel.Margin;
@@ -316,7 +314,7 @@ namespace WPFFrontend
                 }
             } catch (Exception ex)
             {
-                Logger.Error("Min/Max error!", ex);
+                Logger.Error($"{nameof(MinMaxBtn_Click)} Min/Max error!", ex);
             }
             
             
@@ -326,11 +324,12 @@ namespace WPFFrontend
         {
             try
             {
-                options.Init();
-                options.Show();
-            } catch (Exception ex)
+                _options.Init();
+                _options.Show();
+            }
+            catch (Exception ex)
             {
-                Logger.Error("Options error!", ex);
+                Logger.Error($"{nameof(MinMaxBtn_MouseRightButtonDown)} Options error!", ex);
             }            
         }
     }
