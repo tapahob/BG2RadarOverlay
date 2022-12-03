@@ -31,7 +31,7 @@ namespace WPFFrontend
         private readonly OptionsControl _options = new();
         private bool _toShowEnemyList = true;
 
-        internal void DeleteEnemyControlByTag(int tag)
+        internal void deleteEnemyControlByTag(int tag)
         {
             _currentEnemyControls.Remove(tag, out _);
         }
@@ -46,7 +46,7 @@ namespace WPFFrontend
 
             _processHacker.Init();
             
-            UpdateStyles();
+            updateStyles();
 
             MainGrid.Children.Add(_options);   
             this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
@@ -81,7 +81,7 @@ namespace WPFFrontend
                         {
                             foreach (var item in _processHacker.NearestEnemies)
                             {
-                                UpdateControls(item);
+                                updateControls(item);
                             }
                             continue;
                         }
@@ -120,7 +120,7 @@ namespace WPFFrontend
             _mouseHook.Uninstall();
         }
 
-        private void UpdateStyles()
+        private void updateStyles()
         {
             Logger.Debug("Updating App Styles ..");
             var app                         = System.Windows.Application.Current;
@@ -134,7 +134,7 @@ namespace WPFFrontend
             Logger.Debug("Done!");
         }
 
-        private void UpdateControls(BGEntity item)
+        private void updateControls(BGEntity item)
         {
             this.Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -145,7 +145,7 @@ namespace WPFFrontend
 
                 } catch (Exception ex)
                 {
-                    Logger.Error($"{nameof(UpdateControls)} error!", ex);
+                    Logger.Error($"{nameof(updateControls)} error!", ex);
                 }                
             }));            
         }
@@ -178,7 +178,7 @@ namespace WPFFrontend
             this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
-        private void RemoveAllEnemyControls()
+        private void removeAllEnemyControls()
         {
             EnemyControl enemyControl;
 
@@ -194,11 +194,11 @@ namespace WPFFrontend
             }
             catch (Exception ex)
             {
-                Logger.Error($"{nameof(RemoveAllEnemyControls)} Error!", ex);
+                Logger.Error($"{nameof(removeAllEnemyControls)} Error!", ex);
             }
         }
 
-        private void ChangeEnemyControlStateByEntity(BGEntity bgEntity)
+        private void changeEnemyControlStateByEntity(BGEntity bgEntity)
         {
             if (bgEntity == null)
                 return;
@@ -219,7 +219,7 @@ namespace WPFFrontend
                 }
             } catch (Exception ex)
             {
-                Logger.Error($"{nameof(ChangeEnemyControlStateByEntity)} error!", ex);
+                Logger.Error($"{nameof(changeEnemyControlStateByEntity)} error!", ex);
             }
         }
 
@@ -246,11 +246,11 @@ namespace WPFFrontend
 
                     if (entry == null && Configuration.CloseWithRightClick)
                     {
-                        this.RemoveAllEnemyControls();
+                        this.removeAllEnemyControls();
                         return;
                     }
 
-                    ChangeEnemyControlStateByEntity(entry);
+                    changeEnemyControlStateByEntity(entry);
                 } catch (Exception ex)
                 {
                     Logger.Error($"{nameof(MouseHook_MouseEvent)} Mouse Event Error!", ex);
@@ -271,7 +271,7 @@ namespace WPFFrontend
 
             //DebugPointer.Margin = new Thickness(x, y, 0, 0);
 
-            this.ChangeEnemyControlStateByEntity(content);
+            this.changeEnemyControlStateByEntity(content);
             list.SelectedIndex = -1;
         }
 
