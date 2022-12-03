@@ -111,7 +111,7 @@ namespace WPFFrontend
             anim.Duration           = TimeSpan.FromSeconds(.45);
             anim.Completed         += (o, e) =>
             {
-                mainWindow.deleteMe(BGEntity.tag);
+                mainWindow.DeleteEnemyControlByTag(BGEntity.tag);
                 (this.Parent as Canvas)?.Children.Remove(this);
             };
             anim.FillBehavior = FillBehavior.HoldEnd;
