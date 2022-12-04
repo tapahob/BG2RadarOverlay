@@ -14,17 +14,14 @@ namespace BGOverlay
 
         public static void Init()
         {
-            try
-            {
-                logger = NLog.LogManager.GetCurrentClassLogger();
-            } catch (Exception ex)
-            {
-                // ...
-            }
+            logger = LogManager.GetCurrentClassLogger();
             
-            var config     = new NLog.Config.LoggingConfiguration();
-            var logfile    = new FileTarget("logfile") { FileName = Path.Combine(Directory.GetCurrentDirectory(), "radar.log").ToString(), DeleteOldFileOnStartup=true, Layout = "${longdate} [${level:uppercase=true}] ${message:withexception=true}" };            
-            config.AddRule(LogLevel.Debug, LogLevel.Fatal, new AsyncTargetWrapper(logfile));
+            var config = new NLog.Config.LoggingConfiguration();
+            
+            using (var logfile = new FileTarget("logfile") { FileName = Path.Combine(Directory.GetCurrentDirectory(), "radar.log").ToString(), DeleteOldFileOnStartup = true, Layout = "${longdate} [${level:uppercase=true}] ${message:withexception=true}" })
+            {
+                config.AddRule(LogLevel.Debug, LogLevel.Fatal, new AsyncTargetWrapper(logfile));
+            }
 
             LogManager.Configuration = config;
         }
