@@ -85,18 +85,18 @@ namespace BGOverlay.Readers
                     using (BinaryReader reader2 = new BinaryReader(ms))
                     {
                         ms.Seek(0, SeekOrigin.Begin);
-                        LoadImage(0, reader2);
+                        loadImage(0, reader2);
                     }
                     decompressor.Dispose();
                     reader.Dispose();
                     return;
                 }
                 reader.BaseStream.Seek(originalOffset, SeekOrigin.Begin);
-                LoadImage(originalOffset, reader);                
+                loadImage(originalOffset, reader);                
             }
         }
 
-        private List<Bitmap> HandleBam(BinaryReader br)
+        private List<Bitmap> handleBam(BinaryReader br)
         {
             var signature = string.Join("", br.ReadChars(4));
             var version = string.Join("", br.ReadChars(4));
@@ -316,12 +316,12 @@ namespace BGOverlay.Readers
             public byte Alpha { get; set; }
         }
 
-        private void LoadImage(int originalOffset, BinaryReader reader)
+        private void loadImage(int originalOffset, BinaryReader reader)
         {
-            this.Image = HandleBam(reader)[0];
+            this.Image = handleBam(reader)[0];
         }
 
-        private void LoadResources(int originalOffset, BinaryReader reader)
+        private void loadResources(int originalOffset, BinaryReader reader)
         {
             reader.BaseStream.Seek(originalOffset + OffsetFrameEntries, SeekOrigin.Begin);
             for (int i = 0; i < CountEntries; ++i)
@@ -334,7 +334,7 @@ namespace BGOverlay.Readers
             }
         }
 
-        private void InitHeader(BinaryReader reader)
+        private void initHeader(BinaryReader reader)
         {
             this.CountEntries                = reader.ReadInt16();
             this.CountCycles                 = reader.ReadByte();

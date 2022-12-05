@@ -167,7 +167,7 @@ namespace BGOverlay
                     this.Class     = (CLASS)reader.ReadByte();
 
                     reader.BaseStream.Seek(originOffset + 0x027b, SeekOrigin.Begin);
-                    this.SetAlignment((ALIGNMENT)reader.ReadByte());
+                    this.setAlignment((ALIGNMENT)reader.ReadByte());
 
                     // Items
                     //reader.BaseStream.Seek(originOffset + 0x02bc - 4, SeekOrigin.Begin);
@@ -617,7 +617,7 @@ namespace BGOverlay
             }
         }
 
-        private void SetAlignment(ALIGNMENT value)
+        private void setAlignment(ALIGNMENT value)
         {
             alignment = value;
         }

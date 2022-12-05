@@ -11,8 +11,6 @@ namespace BGOverlay
             string locale = Configuration.Locale;
             string tlkFilePath = $"{Configuration.GameFolder}/lang/{locale}/dialog.tlk";
 
-            
-
             using (BinaryReader reader = new BinaryReader(File.OpenRead(tlkFilePath)))
             {
                 this.Signature          = new string(reader.ReadChars(4));
