@@ -52,19 +52,26 @@ namespace BGOverlay
         public int isInvisible { get; private set; }
         public CDerivedStats DerivedStatsBonus { get; private set; }
 
+        /// <summary>
+        /// Returns a string representation of a RACE enum value.
+        /// </summary>
         public string Race
         {
             get
             {
                 if (this.Reader == null || this.Reader.Race != this.RACE)
                 {
-                    return this.RACE.ToString()[0] + this.RACE.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-"); 
+                    return this.RACE.ToString()[0] + this.RACE.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-");
                 }
                 return this.Reader.Race.ToString()[0] + this.Reader.Race.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-");
             }
         }
 
-        public string Class {
+        /// <summary>
+        /// Returns a string representation of a CLASS enum value.
+        /// </summary>
+        public string Class
+        {
             get
             {
                 if (this.Reader == null || this.CLASS != this.Reader.Class)
@@ -78,6 +85,9 @@ namespace BGOverlay
             }
         }
 
+        /// <summary>
+        /// Returns a list of strings representing various protections and immunities.
+        /// </summary>
         public List<string> Protections
         {
             get
@@ -94,7 +104,7 @@ namespace BGOverlay
                 if (DerivedStats.WeaponImmune.Count > 0)
                 {
                     var weaponProtectionFromBuffs = this.TimedEffects.Where(x => x.EffectId == Effect.Protection_from_Weapons);
-                    
+
                     if (weaponProtectionFromBuffs.Any())
                     {
                         // from PFMW
@@ -107,17 +117,17 @@ namespace BGOverlay
                                 str += " and Normal";
                             }
                             str += " Weapons";
-                             result.Add(str);
+                            result.Add(str);
                         }
                         else
                         {
                              var val = Math.Max(weaponProtectionFromBuffs.Count(), DerivedStats.WeaponImmune.Count()-1);
-                             result.Add($"Requires +{val} weapons to be hit");
+                            result.Add($"Requires +{val} weapons to be hit");
                         }
                     } else
                     {
                         result.Add($"Requires +{DerivedStats.WeaponImmune.Count} weapons to be hit");
-                    }                                             
+                    }
                 }
                 for (int i = 9; i > 0; --i)
                 {
@@ -132,13 +142,13 @@ namespace BGOverlay
                     thiefStr += "Backstab Immunity\t";
                 if (this.DerivedStats.SeeInvisible > 0)
                     thiefStr += "See Invisible\t";
-                if (this.CritImmune) 
+                if (this.CritImmune)
                     thiefStr += "Crit Immune";
                 if (thiefStr != "")
                     result.Add(thiefStr);
                 string proficiencyStr = "Proficiency: ";
                 var allEffectsStrings = new List<string>();
-                
+
                 foreach (var item in allEffects)
                 {
                     if ($"{item.EffectName}".StartsWith("Graphics")
@@ -252,7 +262,7 @@ namespace BGOverlay
                         allEffectsStrings.Add(preprocess(effectName));
                 }
                 foreach (var spell in SpellEquipEffects)
-                {                    
+                {
                     spellStrings.Add(preprocess(spell.Item1));
                 }
                 spellStrings = spellStrings.Distinct().OrderBy(o => o).ToList();
@@ -274,7 +284,7 @@ namespace BGOverlay
                     && !x.Contains("RGB")
                     && !x.StartsWith("Colour")
                     && !x.Contains("Portrait"));
-                    
+
                     result.Add(preprocess("On melee hit: " + string.Join(", ", onHitMeleeStringsFiltered)));
                 }
 
@@ -297,12 +307,12 @@ namespace BGOverlay
 
                 if (!proficiencyStr.EndsWith(": "))
                     result.Add(proficiencyStr);
-                
+
                 var inMemoryProtections = DerivedStats.EffectImmunes.Select(y => y.EffectId.ToString()).Where(x =>
                 !x.StartsWith("Text")
                 && !x.StartsWith("Graphics")
                 && !x.Contains("RGB")
-                && !x.StartsWith("Colour")).Select(z => preprocess(z)).Distinct().ToList();                
+                && !x.StartsWith("Colour")).Select(z => preprocess(z)).Distinct().ToList();
                 if (inMemoryProtections.Any())
                     result.Add("Effect immunities: " + string.Join(", ", inMemoryProtections.OrderBy(o => o)));
                 var moreSpellImmunities = DerivedStats.SpellImmunities;
@@ -334,6 +344,11 @@ namespace BGOverlay
             "Spell_",
         };
 
+        /// <summary>
+        /// A helper function that modifies a string by removing pre-defined filters and underscores.
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
         private string preprocess(string str)
         {
             if (str == null) { return "null"; }
@@ -349,6 +364,11 @@ namespace BGOverlay
             init(resourceManager, entityIdPtr);
         }
 
+        /// <summary>
+        /// A helper function that initializes the properties of a BGEntity object.
+        /// </summary>
+        /// <param name="resourceManager"></param>
+        /// <param name="entityIdPtr"></param>
         private void init(ResourceManager resourceManager, IntPtr entityIdPtr)
         {
             this.entityIdPtr     = entityIdPtr;
@@ -365,7 +385,7 @@ namespace BGOverlay
 
                 this.X = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC }));
                 this.Y = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC + 4 }));
-                
+
                 if (X < 0 || Y < 0)
                     return;
 
@@ -407,19 +427,20 @@ namespace BGOverlay
             {
                 Logger.Error("Error during BGEntity creation!", ex);
             }
-            
+
         }
 
         public void LoadCREResource()
         {
             this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
+            
             if (Reader == null || Reader.Class == CREReader.CLASS.ERROR)
             {
                 if (resourceManager.CREReaderCache.ContainsKey(CreResourceFilename.ToUpper()))
                     this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
             }
         }
-        
+
         private void updateTime()
         {
             this.GameTime = WinAPIBindings.ReadUInt32(WinAPIBindings.FindDMAAddy(cInfGamePtr, new int[] { 0x3FA0 }));
@@ -431,7 +452,7 @@ namespace BGOverlay
             this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x2A70 }));
             this.DerivedStatsTemp  = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1DC8 }));
             this.THAC0             = DerivedStats.THAC0 - DerivedStatsTemp.HitBonus - DerivedStats.THAC0BonusRight;
-            
+
             this.calcAPR();
             this.loadWeaponStats();
         }
@@ -448,9 +469,9 @@ namespace BGOverlay
                 if (currentItem.resRef == "<ERROR>" || i > 9)
                     continue;
                 var read = resourceManager.GetITMReader($"{currentItem.resRef}.ITM");
-                this.CritImmune = this.CritImmune 
+                this.CritImmune = this.CritImmune
                     || (i == 6 && ((read.Flags & 0x2000000) == 0))
-                    || i != 6 && ((read.Flags & 0x2000000) != 0);                
+                    || i != 6 && ((read.Flags & 0x2000000) != 0);
             }
 
             var ITMRes = lst[selectedWeapon];
@@ -474,12 +495,12 @@ namespace BGOverlay
         }
         private void calcAPR()
         {
-            this.loadEquipedEffects();            
+            this.loadEquipedEffects();
             string formatStr;
             var apr = this.DerivedStats.NumberOfAttacks;
             int aprDisplayNum = apr;
-            
-            if ((DerivedStatsTemp.GeneralState * 0x8000) == 0 
+
+            if ((DerivedStatsTemp.GeneralState * 0x8000) == 0
                 || (this.EquipedEffects.Any(x => x.EffectId == Effect.Stat_Attacks_Per_Round_Modifier && x.dWFlags == 3)))
             {
                 // normal apr
@@ -555,9 +576,9 @@ namespace BGOverlay
                 && !x.ToString().StartsWith("Script")
                 && !x.ToString().EndsWith("Sound_Effect")
                 && x.SourceRes != "<ERROR>").ToList();
-            
+
             this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager, true)).Distinct()
-                .Where(x => x != null && x.Item1 != "-1" && x.Item1 != null && !x.Item1.StartsWith("Extra")).ToList();            
+                .Where(x => x != null && x.Item1 != "-1" && x.Item1 != null && !x.Item1.StartsWith("Extra")).ToList();
         }
 
         public override string ToString()
@@ -566,7 +587,7 @@ namespace BGOverlay
         }
 
         private string additionalInfo()
-        {            
+        {
             return $"{this.Name2} HP:{CurrentHP}";
         }
 
@@ -577,7 +598,7 @@ namespace BGOverlay
             { 2, "Regular party members" },
             { 3, "Familiars" },
             { 4, "Ally" },
-            { 128, "Neutral" }, 
+            { 128, "Neutral" },
         };
     }
 }
