@@ -25,11 +25,12 @@ namespace WPFFrontend
         ObservableCollection<BGEntity> EnemyTextEntries { get; set; }
 
         private MouseHook _mouseHook;
+        private bool _toShowEnemyList = true;
+
         private readonly object _stocksLock = new();
         private readonly ProcessHacker _processHacker = new();
         private readonly ConcurrentDictionary<int, EnemyControl> _currentEnemyControls = new();
-        private readonly OptionsControl _options = new();
-        private bool _toShowEnemyList = true;
+        private readonly OptionsControl _options;
 
         internal void deleteEnemyControlByTag(int tag)
         {
@@ -45,7 +46,9 @@ namespace WPFFrontend
             _processHacker.ProcessHooked += ProcessHacker_ProcessHooked;
 
             _processHacker.Init();
-            
+
+            _options = new();
+
             updateStyles();
 
             MainGrid.Children.Add(_options);   
