@@ -53,9 +53,6 @@
                     <ListView.Background>
                         <ImageBrush Stretch="UniformToFill" ImageSource="/pexels-photo-235985.jpeg"/>
                     </ListView.Background>
-                    <i:Interaction.Behaviors>
-                        <i:MouseDragElementBehavior/>
-                    </i:Interaction.Behaviors>
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Style="{StaticResource EnemyList}" HorizontalAlignment="Right" Text="{Binding}"/>
