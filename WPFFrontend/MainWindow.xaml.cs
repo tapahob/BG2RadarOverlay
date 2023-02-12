@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using BGOverlay;
 using Winook;
+using FontFamily = System.Windows.Media.FontFamily;
 
 namespace WPFFrontend
 {
@@ -26,7 +26,7 @@ namespace WPFFrontend
 
         private MouseHook _mouseHook;
         private bool _toShowEnemyList = true;
-
+        private System.Drawing.Rectangle bounds;
         private readonly object _stocksLock = new();
         private readonly ProcessHacker _processHacker = new();
         private readonly ConcurrentDictionary<int, EnemyControl> _currentEnemyControls = new();
@@ -70,7 +70,7 @@ namespace WPFFrontend
                 _mouseHook.Uninstall();
                 Logger.flush();
             };
-
+            this.bounds = System.Windows.Forms.Screen.FromHandle(this._processHacker.Proc.MainWindowHandle).Bounds;
             Task.Factory.StartNew(() =>
             {
                 Logger.Debug("Main loop started");
@@ -111,7 +111,7 @@ namespace WPFFrontend
 
             Logger.Debug("Initializing mouse hook");
 
-            _mouseHook.AddHandler(MouseMessageCode.RightButtonUp, MouseHook_MouseEvent);
+            _mouseHook.AddHandler(MouseMessageCode.RightButtonDown, MouseHook_MouseEvent);
             _mouseHook.InstallAsync().GetAwaiter().GetResult();
             
             Logger.Debug("Mouse hooks installed");
@@ -228,6 +228,7 @@ namespace WPFFrontend
 
         private void MouseHook_MouseEvent(object sender, MouseMessageEventArgs e)
         {
+            
             this.Dispatcher.BeginInvoke(new Action(() =>
             {                
                 try
@@ -237,7 +238,7 @@ namespace WPFFrontend
                         return;
                     }
 
-                    if (e.MessageCode != (int)MouseMessageCode.RightButtonUp)
+                    if (e.MessageCode != (int)MouseMessageCode.RightButtonDown)
                         return;
 
                     BGEntity entry = null;
@@ -252,8 +253,18 @@ namespace WPFFrontend
                         this.removeAllEnemyControls();
                         return;
                     }
+                   
+                    var a = e.X;
+                    var b = e.Y;                    
+                    var xx = bounds.Width * (entry.MousePosX) / entry.ViewportWidth;
+                    var yy = bounds.Height * (entry.MousePosY) / entry.ViewportHeight;
 
-                    changeEnemyControlStateByEntity(entry);
+                    if (Math.Abs(e.X - xx) < 18 
+                    && Math.Abs(e.Y - yy) < 18)
+                    {
+                        changeEnemyControlStateByEntity(entry);
+                    }
+                    
                 } catch (Exception ex)
                 {
                     Logger.Error($"{nameof(MouseHook_MouseEvent)} Mouse Event Error!", ex);
