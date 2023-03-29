@@ -65,7 +65,7 @@ namespace BGOverlay
             }
             TLKEntry result;
             if (!StringRefs.TryGetValue(strRef, out result)) {
-                return "-1";
+                return "<NO IDEA>";
             }
             return result.Text;
         }

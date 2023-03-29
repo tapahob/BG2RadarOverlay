@@ -86,7 +86,15 @@ namespace BGOverlay
                         reader.BaseStream.Seek(originOffset + offsetToFeatureBlocks, SeekOrigin.Begin);
                         for (int j = 0; j < abilityEffectsCount; j++)
                         {
-                            Effects.Add(new ItemEffectEntry(reader, originOffset + offsetToFeatureBlocks + ((abilityEffectsIndex + j) * 0x30)));
+                            try
+                            {
+                                Effects.Add(new ItemEffectEntry(reader, originOffset + offsetToFeatureBlocks + ((abilityEffectsIndex + j) * 0x30)));
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Error($"ITM Reader Error while reading Item Effects", ex);
+                            }
+                            
                         }
                     }
                 }

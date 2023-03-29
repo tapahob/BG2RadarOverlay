@@ -374,6 +374,7 @@ namespace BGOverlay
             this.entityIdPtr     = entityIdPtr;
             this.resourceManager = resourceManager;
             this.Loaded          = false;
+            this.SpellProtection = new List<Tuple<string, Bitmap, uint>>();
             try
             {
                 // 1020 bytes CGameAIBase
@@ -563,7 +564,7 @@ namespace BGOverlay
             this.TimedEffects = new List<CGameEffect>();
             var list          = new CPtrList(intPtr);
             var count         = list.Count;
-            if (count > 300)
+            if (count > 900)
                 return;
             var node = list.Head;
             for (int i = 0; i < count; ++i)
@@ -573,8 +574,9 @@ namespace BGOverlay
             }
 
             this.TimedEffects = this.TimedEffects.Where(x => !x.ToString().StartsWith("Graphics")
-                && !x.ToString().StartsWith("Script")
+                && !x.ToString().StartsWith("Script")                
                 && !x.ToString().EndsWith("Sound_Effect")
+                && x.SourceRes != "CDHLYSY2"
                 && x.SourceRes != "<ERROR>").ToList();
 
             this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager, true)).Distinct()

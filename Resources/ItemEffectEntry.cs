@@ -51,30 +51,36 @@ namespace BGOverlay.Resources
             reader.BaseStream.Seek(offset + 0x28, SeekOrigin.Begin);
             this.SaveBonus = reader.ReadInt32();
 
-            if (EffectName == Effect.Use_EFF_File)
+            try
             {
-                var resource        = $"{((Resource.IndexOf("\0") < 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.EFF";
-                this.SubEffect      = ResourceManager.Instance.GetEFFReader(resource);
-                this.EffectName     = SubEffect.Type;
-                this.SaveType       = SubEffect.SaveType;
-                this.SaveBonus      = SubEffect.SaveBonus;
-                this.OpCode         = SubEffect.Type;
-            }    
-            
-            if (EffectName.ToString().Contains("Cast_Spell"))
-            {
-                var resource   = $"{((Resource.IndexOf("\0") < 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.SPL";
-                var spell      = ResourceManager.Instance.GetSPLReader(resource);
-                this.Icon      = ResourceManager.Instance.GetBAMReader($"{spell.IconBAM}.BAM")?.Image;
-                this.SpellName = spell.Name1 == "-1" ? spell.Name2 : spell.Name1;
-                this.SpellName = SpellName == "-1" ? resource : SpellName;
-            }
+                if (EffectName == Effect.Use_EFF_File)
+                {
+                    var resource = $"{((Resource.IndexOf("\0") <= 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.EFF";
+                    this.SubEffect = ResourceManager.Instance.GetEFFReader(resource);
+                    this.EffectName = SubEffect.Type;
+                    this.SaveType = SubEffect.SaveType;
+                    this.SaveBonus = SubEffect.SaveBonus;
+                    this.OpCode = SubEffect.Type;
+                }
 
-            if (EffectName == Effect.Removal_Remove_Secondary_Type 
-                || EffectName == Effect.Removal_Remove_One_Secondary_Type)
+                if (EffectName.ToString().Contains("Cast_Spell"))
+                {
+                    var resource = $"{((Resource.IndexOf("\0") <= 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.SPL";
+                    var spell = ResourceManager.Instance.GetSPLReader(resource);
+                    this.Icon = ResourceManager.Instance.GetBAMReader($"{spell.IconBAM}.BAM")?.Image;
+                    this.SpellName = spell.Name1 == "-1" ? spell.Name2 : spell.Name1;
+                    this.SpellName = SpellName == "-1" ? resource : SpellName;
+                }
+
+                if (EffectName == Effect.Removal_Remove_Secondary_Type
+                    || EffectName == Effect.Removal_Remove_One_Secondary_Type)
+                {
+                    this.secondaryType = (SecondaryType)Parameter2;
+                    this.displayString = $"Removes {secondaryType.ToString().ToLower().Replace("_", " ")}";
+                }
+            } catch(Exception ex)
             {
-                this.secondaryType = (SecondaryType)Parameter2;
-                this.displayString = $"Removes {secondaryType.ToString().ToLower().Replace("_", " ")}";
+                Logger.Error($"Effect parsing error for entry {EffectName}: ", ex);
             }
         }
 
