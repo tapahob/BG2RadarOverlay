@@ -13,6 +13,7 @@ An overlay program for Baldurs Gate 2 EE showing nearest enemies, their resistan
 ## Requirements
 - BG1EE/BG2EE 2.6 for Radar 2.x
 - BG1EE/BG2EE 2.5 for Radar 1.x (Very Outdated)
+- ModMerge / DLCMerge to work properly with SoD
 
 ## Installation
 
