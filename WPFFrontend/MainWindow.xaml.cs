@@ -40,20 +40,21 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
-            this.MainGrid.ColumnDefinitions[0].Width = new GridLength(130 + Configuration.EnemyListXOffset);
-            
+
             _processHacker.ProcessDestroyed += ProcessHacker_ProcessDestroyed;
             _processHacker.ProcessHooked += ProcessHacker_ProcessHooked;
 
             _processHacker.Init();
 
+            updateEnemyListPosition();
+
             _options = new();
 
             updateStyles();
 
-            MainGrid.Children.Add(_options);   
+            MainGrid.Children.Add(_options);
             this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
-            this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;            
+            this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;
 
             EnemyTextEntries = new ObservableCollection<BGEntity>();
             BindingOperations.EnableCollectionSynchronization(EnemyTextEntries, _stocksLock);
@@ -74,7 +75,7 @@ namespace WPFFrontend
             Task.Factory.StartNew(() =>
             {
                 Logger.Debug("Main loop started");
-                
+
                 while (true)
                 {
                     try
@@ -99,8 +100,15 @@ namespace WPFFrontend
                     {
                         Logger.Error("Main loop error!", ex);
                     }
-                } 
+                }
             });
+        }
+
+        private void updateEnemyListPosition()
+        {
+            var transform = this.StackPanel.RenderTransform as TranslateTransform ?? new TranslateTransform();
+            transform.X = Configuration.EnemyListXOffset;
+            this.StackPanel.RenderTransform = transform;
         }
 
         private void ProcessHacker_ProcessHooked(string processName, int pid)
