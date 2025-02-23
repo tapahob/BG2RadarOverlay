@@ -421,7 +421,8 @@ namespace BGOverlay
 
                 if (Configuration.DebugMode)
                 {
-                    this.Name2 += $" [{this.CreResourceFilename}]";
+                    var processedCreName = ResourceManager.Instance.CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(CreResourceFilename.ToUpper())) ?? CreResourceFilename;
+                    this.Name2 += $" [{processedCreName}]";
                 }
             }
             catch (Exception ex)
