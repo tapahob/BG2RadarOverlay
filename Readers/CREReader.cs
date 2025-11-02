@@ -234,7 +234,7 @@ namespace BGOverlay
                 return new List<string>
                 {                    
                     String.Format("Weapon: \"{0}\" {1}", EquippedWeaponName,
-                    EquippedWeaponName.Contains($"{+Enchantment}") ? "" : $"(Strikes as +{Enchantment})")
+                    EquippedWeaponName.Contains($"{+Enchantment}") ? "" : $"(Strikes as +{Enchantment}) {WeaponDamageType}")
                 }.Concat(ItemEffects.Select(x => x.ToString())).ToList();
             }  
         }
@@ -628,5 +628,6 @@ namespace BGOverlay
         public int Enchantment { get; set; }
         public string EquippedWeaponName { get; set; }
         public Bitmap EquippedWeaponIcon { get; set; }
+        public String WeaponDamageType { get; set; }
     }
 }

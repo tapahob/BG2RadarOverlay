@@ -34,7 +34,9 @@ namespace BGOverlay
                     filename = biffArchivePath;
                     if (biffArchivePath.Equals(""))
                     {
-                        var test2 = resourceManager.ITMResourceEntries.FirstOrDefault(x => x.FullName.EndsWith(itmFilename));
+                        var test2 = resourceManager.ITMResourceEntries.FirstOrDefault(x => x.FullName == itmFilename)
+                            ?? resourceManager.ITMResourceEntries.FirstOrDefault(x => x.FullName.EndsWith(itmFilename));
+                        
                         if (test2 != null)
                         {
                             test2.LoadITMFiles();
@@ -54,9 +56,12 @@ namespace BGOverlay
                     reader.BaseStream.Seek(originOffset, SeekOrigin.Begin);
                     this.Signature = new string(reader.ReadChars(4));
                     this.Version = new string(reader.ReadChars(4));
-                    resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out var text);
+
+                    var generalStrRef = reader.ReadInt32();
+                    resourceManager.StringRefs.TryGetValue(generalStrRef, out var text);
                     this.GeneralName = text?.Text;
-                    resourceManager.StringRefs.TryGetValue(reader.ReadInt32(), out text);
+                    var identifiedStrRef = reader.ReadInt32();
+                    resourceManager.StringRefs.TryGetValue(identifiedStrRef, out text);
                     this.IdentifiedName = text?.Text ?? GeneralName ?? "None";
                     var trash = new string(reader.ReadChars(8));
                     this.Flags = reader.ReadInt32();
@@ -69,6 +74,15 @@ namespace BGOverlay
                     var countOfAbilities = reader.ReadInt16();
                     var offsetToFeatureBlocks = reader.ReadInt32();
 
+                    // Fiddling with damage types
+                    if (countOfAbilities > 0)
+                    {
+                        var abilityOffset = originOffset + offsetToAbilities;
+                        reader.BaseStream.Seek(abilityOffset + 0x1C, SeekOrigin.Begin);
+                        var dmgTypeValue = reader.ReadInt16();
+                        this.DamageType = (DamageType)(dmgTypeValue > 9 ? 0 : dmgTypeValue);
+                    }
+                    
                     this.Effects = new List<ItemEffectEntry>();
                     for (int i = 0; i < countOfAbilities; ++i)
                     {
@@ -103,6 +117,9 @@ namespace BGOverlay
                 Logger.Error($"ITMReader error: {itmFilename}", ex);
             }
         }
+
+        public DamageType DamageType { get; private set; }
+
         public string Signature { get; private set; }
         public string Version { get; private set; }
         public string GeneralName { get; private set; }

@@ -486,12 +486,14 @@ namespace BGOverlay
                 this.Reader.Enchantment        = reader.Enchantment;
                 this.Reader.EquippedWeaponIcon = reader.Icon;
                 this.Reader.EquippedWeaponName = reader.IdentifiedName;
+                this.Reader.WeaponDamageType   = reader.DamageType.ToString().Replace("_"," "); 
+                
                 if (Configuration.DebugMode)
                 {
                     this.Reader.EquippedWeaponName += $" [{ITMRes.resRef}.ITM]";
                 }
                 this.Reader.ItemEffects.Clear();
-                reader.Effects.FindAll(itemEffect => !ITMReader.ExcludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode))
+                reader.Effects.FindAll(itemEffect => !ITMReader.ExcludedItemEffectOpcodes.Contains(itemEffect.OpCode))
                     .ForEach(itemEffect => Reader.ItemEffects.Add(itemEffect));
             }
         }
