@@ -37,7 +37,7 @@ namespace BGOverlay
 
         public static void Init(Process bgProcess)
         {            
-            GameFolder          = bgProcess.MainModule.FileName.ToLower().Replace("\\baldur.exe", "");
+            GameFolder          = Path.GetDirectoryName(bgProcess.MainModule.FileName);
             Borderless          = true;
             HidePartyMembers    = false;
             HideNeutrals        = false;
