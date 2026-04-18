@@ -7,8 +7,8 @@ namespace BGOverlay.NativeStructs
     {
         public CWeaponIdentification(IntPtr addr)
         {
-            addr            = WinAPIBindings.FindDMAAddy(addr);
-            this.Type       = WinAPIBindings.ReadUInt32(addr);
+            addr = WinAPIBindings.FindDMAAddy(addr, new[] { 0x0 });
+            this.Type       = WinAPIBindings.ReadUInt16(addr);
             this.Flags      = WinAPIBindings.ReadUInt32(addr + 0x04);
             this.FlagMask   = WinAPIBindings.ReadUInt32(addr + 0x08);
             this.Attributes = WinAPIBindings.ReadUInt32(addr + 0x0C);

@@ -119,14 +119,16 @@ namespace BGOverlay
                             str += " Weapons";
                             result.Add(str);
                         }
-                        else
-                        {
-                             var val = Math.Max(weaponProtectionFromBuffs.Count(), DerivedStats.WeaponImmune.Count()-1);
-                            result.Add($"Requires +{val} weapons to be hit");
-                        }
                     } else
                     {
-                        result.Add($"Requires +{DerivedStats.WeaponImmune.Count} weapons to be hit");
+                        uint requiredEnhancementToHit = 0;
+                        var protectedFromNormal = DerivedStats.WeaponImmune.Any(x => x.Flags == 0 && x.FlagMask == 0x40);
+                        if (protectedFromNormal)
+                            requiredEnhancementToHit = 1;
+                        var enhancementProtection = DerivedStats.WeaponImmune.Where(x => x.Flags == 0 && x.FlagMask == 0).OrderByDescending(x=>x.Attributes).FirstOrDefault();
+                        if (enhancementProtection != null)
+                            requiredEnhancementToHit = enhancementProtection.Attributes + 1;
+                        result.Add($"Requires +{requiredEnhancementToHit} weapons to be hit");
                     }
                 }
                 for (int i = 9; i > 0; --i)
