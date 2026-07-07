@@ -30,8 +30,8 @@ namespace BGOverlay
 
         private List<BGEntity> entityListTemp = new List<BGEntity>();
         private List<BGEntity> allEntities    = new List<BGEntity>();
-
-        public void MainLoop()
+        private static IntPtr entityListPtr   = IntPtr.Zero;
+        public void MainLoop() 
         {
             entityListTemp.Clear();
             allEntities.Clear();
@@ -43,12 +43,12 @@ namespace BGOverlay
                 this.Init();
             }
 
-            //var staticEntityList = moduleBase + 0x68D438 + 0x18; // 2.6 entity array
+            var staticEntityList26= moduleBase + 0x68D438 + 0x18; // 2.6 entity array
+            var staticEntityList27 = moduleBase + 0x68F910; // 2.7 entity array
             
-            var staticEntityList = moduleBase + 0x68F910; // 2.7 entity array
-            var test             = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { });
-            var length             = WinAPIBindings.ReadInt32(moduleBase + 0x68F910);
-            var marginOfError    = 500;
+            var test = WinAPIBindings.FindDMAAddy(entityListPtr, new int[] { });
+            var length = 65535;
+            var marginOfError = 500;
                         
             // First i = 32016
             for (int i = 2000 * 16; i < length * 16 + marginOfError; i += 16)
@@ -94,8 +94,13 @@ namespace BGOverlay
                     Logger.Error("Error during actor list scan!", ex);
                 }
             } 
-                        
-            entityList          = entityListTemp;
+            
+            entityList = entityListTemp;
+
+            if (!entityList.Any())
+            {
+                entityListPtr = entityListPtr == staticEntityList27 ? staticEntityList26 : staticEntityList27;
+            }
             this.NearestEnemies = entityListTemp.Where(y => clip(y)).ToList();            
             TextEntries         = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()));
             Thread.Sleep(Configuration.RefreshTimeMS);
