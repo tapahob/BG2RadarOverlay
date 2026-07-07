@@ -43,9 +43,11 @@ namespace BGOverlay
                 this.Init();
             }
 
-            var staticEntityList = moduleBase + 0x68D438 + 0x18;
+            //var staticEntityList = moduleBase + 0x68D438 + 0x18; // 2.6 entity array
+            
+            var staticEntityList = moduleBase + 0x68F910; // 2.7 entity array
             var test             = WinAPIBindings.FindDMAAddy(staticEntityList, new int[] { });
-            var length           = WinAPIBindings.ReadInt32(moduleBase + 0x68D434);
+            var length             = WinAPIBindings.ReadInt32(moduleBase + 0x68F910);
             var marginOfError    = 500;
                         
             // First i = 32016
