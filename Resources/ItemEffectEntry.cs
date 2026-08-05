@@ -55,7 +55,8 @@ namespace BGOverlay.Resources
             {
                 if (EffectName == Effect.Use_EFF_File)
                 {
-                    var resource = $"{((Resource.IndexOf("\0") <= 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.EFF";
+                    //var resource = $"{((Resource.IndexOf("\0") <= 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.EFF";
+                    var resource = $"{Resource.Replace("\0", "")}.EFF";
                     this.SubEffect = ResourceManager.Instance.GetEFFReader(resource);
                     this.EffectName = SubEffect.Type;
                     this.SaveType = SubEffect.SaveType;
@@ -65,7 +66,8 @@ namespace BGOverlay.Resources
 
                 if (EffectName.ToString().Contains("Cast_Spell"))
                 {
-                    var resource = $"{((Resource.IndexOf("\0") <= 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.SPL";
+                    //var resource = $"{((Resource.IndexOf("\0") <= 0) ? Resource : (Resource.Substring(0, Resource.IndexOf('\0'))))}.SPL";
+                    var resource = $"{Resource.Replace("\0", "")}.SPL";
                     var spell = ResourceManager.Instance.GetSPLReader(resource);
                     this.Icon = ResourceManager.Instance.GetBAMReader($"{spell.IconBAM}.BAM")?.Image;
                     this.SpellName = spell.Name1 == "-1" ? spell.Name2 : spell.Name1;

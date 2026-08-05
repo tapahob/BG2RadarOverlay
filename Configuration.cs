@@ -160,7 +160,7 @@ namespace BGOverlay
             Logger.Debug("Making the window borderless ...");
             try
             {
-                var proc    = Process.GetProcessesByName("Baldur")[0];
+                var proc    = Process.GetProcessesByName(ProcessHacker.gameName)[0];
                 var bounds  = Screen.PrimaryScreen.Bounds;
                 var hwnd    = proc.MainWindowHandle;
                 

@@ -96,7 +96,7 @@ namespace BGOverlay.Readers
             }
         }
 
-        private List<Bitmap> handleBam(BinaryReader br)
+        private List<Bitmap> handleBam(int originalOffset, BinaryReader br)
         {
             var signature = string.Join("", br.ReadChars(4));
             var version = string.Join("", br.ReadChars(4));
@@ -117,12 +117,12 @@ namespace BGOverlay.Readers
                 var paletteOffset = br.ReadInt32();
                 var frameLookupTableOffset = br.ReadInt32();
                 var frameLookupTableCount = 0;
-
-                br.BaseStream.Seek(frameEntryOffset, SeekOrigin.Begin);
+                
+                br.BaseStream.Seek(originalOffset + frameEntryOffset, SeekOrigin.Begin);
                 for (int i = 0; i < frameEntryCount; i++)
                 {
-                    var width = br.ReadInt16();
-                    var height = br.ReadInt16();
+                    var width = br.ReadUInt16();
+                    var height = br.ReadUInt16();
                     var xCentre = br.ReadInt16();
                     var yCentre = br.ReadInt16();
                     var frameDataOffset = br.ReadInt32();
@@ -161,7 +161,7 @@ namespace BGOverlay.Readers
                     cycles.Add(cycle);
                 }
 
-                br.BaseStream.Seek(paletteOffset, SeekOrigin.Begin);
+                br.BaseStream.Seek(originalOffset + paletteOffset, SeekOrigin.Begin);
                 for (int i = 0; i < 256; i++)
                 {
                     var blue = br.ReadByte();
@@ -176,7 +176,7 @@ namespace BGOverlay.Readers
 
                 palette[rleColourIndex] = new RGBA { Red = 0, Green = 0, Blue = 0, Alpha = 255 };
 
-                br.BaseStream.Seek(frameLookupTableOffset, SeekOrigin.Begin);
+                br.BaseStream.Seek(originalOffset + frameLookupTableOffset, SeekOrigin.Begin);
                 for (int i = 0; i < frameLookupTableCount; i++)
                 {
                     var flt = br.ReadUInt16();
@@ -186,7 +186,7 @@ namespace BGOverlay.Readers
                 var result = new List<Bitmap>();
                 for (int i = 0; i < frameEntries.Count; i++)
                 {
-                    br.BaseStream.Seek(frameEntries[i].FrameDataOffset & 0x7FFFFFFF, SeekOrigin.Begin);
+                    br.BaseStream.Seek(originalOffset + frameEntries[i].FrameDataOffset & 0x7FFFFFFF, SeekOrigin.Begin);
                     ulong pixelCount = (ulong)(frameEntries[i].Height * frameEntries[i].Width);
                     var rleCompressed = (frameEntries[i].FrameDataOffset & 0x80000000) == 0;
                     var pixels = new byte[pixelCount];
@@ -295,8 +295,8 @@ namespace BGOverlay.Readers
 
         private class BamFrameEntryBinary
         {
-            public Int16 Width;
-            public Int16 Height;
+            public UInt16 Width;
+            public UInt16 Height;
             public Int16 XCentre;
             public Int16 YCentre;
             public Int32 FrameDataOffset; // 0-30 - offset, 31 - IsNotRLECompressed
@@ -318,7 +318,7 @@ namespace BGOverlay.Readers
 
         private void loadImage(int originalOffset, BinaryReader reader)
         {
-            this.Image = handleBam(reader)[0];
+            this.Image = handleBam(originalOffset, reader)[0];
         }
 
         private void loadResources(int originalOffset, BinaryReader reader)

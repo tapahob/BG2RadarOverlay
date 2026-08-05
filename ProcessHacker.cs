@@ -31,6 +31,7 @@ namespace BGOverlay
         private List<BGEntity> entityListTemp = new List<BGEntity>();
         private List<BGEntity> allEntities    = new List<BGEntity>();
         private static IntPtr entityListPtr   = IntPtr.Zero;
+        public static string gameName = "Baldur";
         public void MainLoop() 
         {
             entityListTemp.Clear();
@@ -44,8 +45,8 @@ namespace BGOverlay
             }
 
             var staticEntityList26= moduleBase + 0x68D438 + 0x18; // 2.6 entity array
-            var staticEntityList27 = moduleBase + 0x68F910; // 2.7 entity array
-            
+            IntPtr staticEntityList27 = moduleBase + (gameName == "baldur" ? 0x68F910 : 0x695910); // 2.7 entity array
+
             var test = WinAPIBindings.FindDMAAddy(entityListPtr, new int[] { });
             var length = 65535;
             var marginOfError = 500;
@@ -113,21 +114,27 @@ namespace BGOverlay
             
             while (Process.GetProcessesByName("Baldur").Length == 0)
             {
+                if (Process.GetProcessesByName("icewind").Length > 0)
+                {
+                    gameName = "icewind";
+                    break;
+                }
+                    
                 Thread.Sleep(3000);
             }
 
-            this.Proc = Process.GetProcessesByName("Baldur")[0];
+            this.Proc = Process.GetProcessesByName(gameName)[0];
             Logger.Info("Game process found!");
 
             ProcessFound?.Invoke(Proc.ProcessName, Proc.Id);
 
-            Configuration.Init(Process.GetProcessesByName("Baldur")[0]);
+            Configuration.Init(Process.GetProcessesByName(gameName)[0]);
             this.TextEntries     = new ObservableCollection<string>();
             this.ResourceManager = new ResourceManager();
             ResourceManager.Init();
             makeBorderless(Proc.MainWindowHandle);
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, Proc.Id);
-            this.moduleBase = WinAPIBindings.GetModuleBaseAddress(Proc, "Baldur.exe");
+            this.moduleBase = WinAPIBindings.GetModuleBaseAddress(Proc, $"{gameName}.exe");
             this.entityList = new List<BGEntity>();
             Configuration.hProc = hProc;
 

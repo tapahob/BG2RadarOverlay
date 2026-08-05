@@ -61,7 +61,7 @@ namespace WPFFrontend
             ListView.Items.Clear();
             ListView.ItemsSource = EnemyTextEntries;
 
-            while (Process.GetProcessesByName("Baldur").Length == 0)
+            while (Process.GetProcessesByName(ProcessHacker.gameName).Length == 0)
             {
                 Thread.Sleep(3000);
             }
