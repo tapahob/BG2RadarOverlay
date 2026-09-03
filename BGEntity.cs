@@ -439,6 +439,94 @@ namespace BGOverlay
 
         }
 
+        /// <summary>
+        /// Copy-constructor used by <see cref="RefreshedCopy"/> - copies only the fields
+        /// that <see cref="init"/> resolves via multi-hop pointer chases and string reads
+        /// and that stay constant for as long as the same creature occupies this slot
+        /// (name, resource file, list pointers, ...). Dynamic fields are left at their
+        /// default value; the caller fills them in via freshly read data.
+        ///
+        /// This object is never mutated after being handed out (every tick produces a new
+        /// instance instead) - mutating fields in place here would race with the UI thread
+        /// reading this same object (e.g. right-click hit testing against ProcessHacker's
+        /// published entity list) while a later tick's scan runs on the background thread.
+        /// </summary>
+        private BGEntity(BGEntity template)
+        {
+            this.entityIdPtr     = template.entityIdPtr;
+            this.resourceManager = template.resourceManager;
+            this.SpellProtection = new List<Tuple<string, Bitmap, uint>>();
+            this.Loaded          = false;
+
+            this.Id                    = template.Id;
+            this.Type                  = template.Type;
+            this.CreResourceFilename   = template.CreResourceFilename;
+            this.cInfGamePtr           = template.cInfGamePtr;
+            this.AreaName              = template.AreaName;
+            this.CInfinityPtr          = template.CInfinityPtr;
+            this.Name2                 = template.Name2;
+            this.Name1                 = template.Name1;
+            this.timedEffectsPointer   = template.timedEffectsPointer;
+            this.equipedEffectsPointer = template.equipedEffectsPointer;
+            this.curSpellPtr           = template.curSpellPtr;
+            this.equipmentPtr          = template.equipmentPtr;
+        }
+
+        /// <summary>
+        /// Builds a new, independent BGEntity for a creature already known to occupy this
+        /// slot, reusing this instance's cached static fields and re-reading only the ones
+        /// that can legitimately change from tick to tick (position, HP, disposition,
+        /// buffs/viewport state) - skipping the multi-hop pointer chases and string reads
+        /// that <see cref="init"/> already resolved.
+        ///
+        /// The scan that finds slots re-derives the entity pointer from slot position alone,
+        /// so a slot can end up holding a different creature between ticks (the previous one
+        /// died/left and a new one was placed there). That is detected by re-checking the
+        /// CGameAIBase id field before trusting anything else; on a mismatch (or any other
+        /// invalid read) this returns null so the caller falls back to a full <see cref="init"/>
+        /// instead of showing data that actually belongs to a different creature.
+        /// </summary>
+        public BGEntity RefreshedCopy()
+        {
+            try
+            {
+                var currentId = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x48 }));
+                if (currentId != this.Id)
+                    return null;
+
+                var copy = new BGEntity(this);
+
+                copy.X = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC }));
+                copy.Y = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC + 4 }));
+
+                if (copy.X < 0 || copy.Y < 0)
+                    return null;
+
+                IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
+                copy.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
+                copy.RACE      = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
+                copy.CLASS     = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
+
+                copy.updateTime();
+                copy.MousePosX      = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 }));
+                copy.MousePosY      = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 + 4 }));
+                copy.MousePosX1     = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 }));
+                copy.MousePosY1     = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
+                copy.ViewportHeight = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
+                copy.ViewportWidth  = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
+                copy.CurrentHP      = WinAPIBindings.ReadInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
+                copy.isInvisible    = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
+
+                copy.Loaded = true;
+                return copy;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Error during BGEntity refresh!", ex);
+                return null;
+            }
+        }
+
         public void LoadCREResource()
         {
             this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());

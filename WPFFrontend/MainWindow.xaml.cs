@@ -287,10 +287,10 @@ namespace WPFFrontend
 
                     if (entry == null && Configuration.CloseWithRightClick)
                     {
-                        this.removeAllEnemyControls();
+                        //this.removeAllEnemyControls();
                         return;
                     }
-                   
+
                     var a = e.X;
                     var b = e.Y;
                     // e.X/e.Y are absolute virtual-desktop coordinates, so the game's monitor
@@ -308,8 +308,8 @@ namespace WPFFrontend
                 } catch (Exception ex)
                 {
                     Logger.Error($"{nameof(MouseHook_MouseEvent)} Mouse Event Error!", ex);
-                }                
-            }));            
+                }
+            }));
         }
 
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)

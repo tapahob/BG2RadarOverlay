@@ -89,6 +89,18 @@ namespace WinApiBindings
             return buffer;
         }
 
+        // The scratch buffer is reused across calls, so unlike a freshly allocated array a
+        // failed read would otherwise leak stale bytes from whatever was read into it last.
+        // Zero the requested range on failure to keep the original new-byte[]-per-call
+        // behaviour (fresh arrays always came back zero-filled on failure).
+        private static bool ReadScratch(IntPtr hProc, IntPtr ptr, byte[] buffer, int size)
+        {
+            if (ReadProcessMemory(hProc, ptr, buffer, size, out _))
+                return true;
+            Array.Clear(buffer, 0, size);
+            return false;
+        }
+
         public static IntPtr FindDMAAddy(IntPtr ptr, int[] offsets = null)
         {
             offsets = offsets ?? new int[] { };
@@ -97,7 +109,7 @@ namespace WinApiBindings
             var buffer = GetScratchBuffer(IntPtr.Size);
             foreach (int i in offsets)
             {
-                ReadProcessMemory(hProc, ptr, buffer, IntPtr.Size, out var read);
+                ReadScratch(hProc, ptr, buffer, IntPtr.Size);
                 ptr = (IntPtr.Size == 4)
                     ? IntPtr.Add(new IntPtr(BitConverter.ToInt32(buffer, 0)), i)
                     : ptr = IntPtr.Add(new IntPtr(BitConverter.ToInt64(buffer, 0)), i);
@@ -109,7 +121,7 @@ namespace WinApiBindings
         {
             IntPtr hProc = Configuration.hProc;
             var buffer = GetScratchBuffer(4);
-            ReadProcessMemory(hProc, ptr, buffer, 4, out var read);
+            ReadScratch(hProc, ptr, buffer, 4);
             var result = BitConverter.ToUInt32(buffer, 0);
             return result;
         }
@@ -117,7 +129,7 @@ namespace WinApiBindings
         {
             IntPtr hProc = Configuration.hProc;
             var buffer = GetScratchBuffer(4);
-            ReadProcessMemory(hProc, ptr, buffer, 4, out var read);
+            ReadScratch(hProc, ptr, buffer, 4);
             var result = BitConverter.ToInt32(buffer, 0);
             return result;
         }
@@ -126,7 +138,7 @@ namespace WinApiBindings
         {
             IntPtr hProc = Configuration.hProc;
             var buffer = GetScratchBuffer(2);
-            ReadProcessMemory(hProc, ptr, buffer, 2, out var read);
+            ReadScratch(hProc, ptr, buffer, 2);
             var result = BitConverter.ToInt16(buffer, 0);
             return result;
         }
@@ -135,7 +147,7 @@ namespace WinApiBindings
         {
             IntPtr hProc = Configuration.hProc;
             var buffer = GetScratchBuffer(2);
-            ReadProcessMemory(hProc, ptr, buffer, 2, out var read);
+            ReadScratch(hProc, ptr, buffer, 2);
             var result = BitConverter.ToUInt16(buffer, 0);
             return result;
         }
@@ -144,7 +156,7 @@ namespace WinApiBindings
         {
             IntPtr hProc = Configuration.hProc;
             var buffer = GetScratchBuffer(1);
-            ReadProcessMemory(hProc, ptr, buffer, 1, out var read);
+            ReadScratch(hProc, ptr, buffer, 1);
             var result = buffer[0];
             return result;
         }
