@@ -13,6 +13,6 @@
 
 // This file stores version info for all of the projects, include in new projects using the "Add As Link" option
 
-[assembly: AssemblyVersion("2.0.8.0")]
-[assembly: AssemblyFileVersion("2.0.8.0")]
-[assembly: AssemblyInformationalVersion("2.0.8.0")]
+[assembly: AssemblyVersion("3.0.0.0")]
+[assembly: AssemblyFileVersion("3.0.0.0")]
+[assembly: AssemblyInformationalVersion("3.0.0.0")]

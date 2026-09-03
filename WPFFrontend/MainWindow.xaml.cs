@@ -290,9 +290,12 @@ namespace WPFFrontend
                     }
                    
                     var a = e.X;
-                    var b = e.Y;                    
-                    var xx = bounds.Width * (entry.MousePosX) / entry.ViewportWidth;
-                    var yy = bounds.Height * (entry.MousePosY) / entry.ViewportHeight;
+                    var b = e.Y;
+                    // e.X/e.Y are absolute virtual-desktop coordinates, so the game's monitor
+                    // offset (bounds.Left/Top) has to be added back on top of the in-monitor
+                    // fraction - otherwise this only lines up when the game sits at (0,0).
+                    var xx = bounds.Left + bounds.Width * (entry.MousePosX) / entry.ViewportWidth;
+                    var yy = bounds.Top + bounds.Height * (entry.MousePosY) / entry.ViewportHeight;
 
                     if (Math.Abs(e.X - xx) < 18 
                     && Math.Abs(e.Y - yy) < 18)

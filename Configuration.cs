@@ -161,12 +161,14 @@ namespace BGOverlay
             try
             {
                 var proc    = Process.GetProcessesByName(ProcessHacker.gameName)[0];
-                var bounds  = Screen.PrimaryScreen.Bounds;
                 var hwnd    = proc.MainWindowHandle;
-                
+                // Use whichever monitor the game window is currently on instead of always the
+                // primary one, so making it borderless doesn't drag it to a different screen.
+                var bounds  = Screen.FromHandle(hwnd).Bounds;
+
                 WinAPIBindings.SetWindowLong32(hwnd, -16, (uint)WinAPIBindings.WindowStyles.WS_MAXIMIZE);
                 WinAPIBindings.ShowWindow(hwnd.ToInt32(), 5);
-                WinAPIBindings.SetWindowPos(hwnd, IntPtr.Zero, 0, 0, bounds.Width, bounds.Height, 0x4000);
+                WinAPIBindings.SetWindowPos(hwnd, IntPtr.Zero, bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0x4000);
             } catch (Exception ex)
             {
                 Logger.Error("Could not make a window borderless!", ex);
