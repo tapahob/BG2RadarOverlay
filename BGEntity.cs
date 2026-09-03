@@ -85,12 +85,17 @@ namespace BGOverlay
             }
         }
 
+        private List<string> _protectionsCache;
+
         /// <summary>
-        /// Returns a list of strings representing various protections and immunities.
+        /// A list of strings representing various protections and immunities.
+        /// Recomputed once per LoadDerivedStats() call (i.e. once per refresh tick) rather
+        /// than on every access, since building it walks several effect lists with LINQ.
         /// </summary>
-        public List<string> Protections
+        public List<string> Protections => _protectionsCache ?? (_protectionsCache = computeProtections());
+
+        private List<string> computeProtections()
         {
-            get
             {
                 var allEffects = this.Reader?.Effects?
                     .Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String)
@@ -452,6 +457,9 @@ namespace BGOverlay
 
         public void LoadDerivedStats()
         {
+            // Protections depends on DerivedStats/TimedEffects/EquipedEffects, all of which
+            // this call (re)loads below - drop the cache so the next access recomputes once.
+            this._protectionsCache = null;
             this.DerivedStats      = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1120 }));
             this.DerivedStatsBonus = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x2A70 }));
             this.DerivedStatsTemp  = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1DC8 }));

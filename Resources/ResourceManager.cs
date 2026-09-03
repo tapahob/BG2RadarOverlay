@@ -132,9 +132,18 @@ namespace BGOverlay
         {
             creFilename = creFilename.ToUpperInvariant();
             CREReader reader;
-            var key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename));
-            if (!CREReaderCache.TryGetValue(key ?? creFilename, out reader))
+            // Cache entries are always stored under this exact normalized filename (see
+            // BIFResourceEntry.LoadCREFiles), so try the O(1) lookup first and only fall
+            // back to the O(n) suffix scan when that misses.
+            if (!CREReaderCache.TryGetValue(creFilename, out reader))
             {
+                var key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename));
+                if (key != null)
+                {
+                    reader = CREReaderCache[key];
+                    return reader;
+                }
+
                 if (creFilename == "<ERROR>.CRE")
                 {
                     return null;
@@ -167,7 +176,6 @@ namespace BGOverlay
         public ITMReader GetITMReader(string itmFilename)
         {
             itmFilename = itmFilename.ToUpperInvariant();
-            var key = ITMReaderCache.Keys.FirstOrDefault(x => x.EndsWith(itmFilename)) ?? itmFilename;
             ITMReader reader;
             if (!ITMReaderCache.TryGetValue(itmFilename, out reader))
             {
@@ -180,12 +188,12 @@ namespace BGOverlay
                     reader = new ITMReader(this, itmFilename);
                     if (reader.Version == null)
                     {
-                        key = ITMReaderCache.Keys.FirstOrDefault(x => x.EndsWith(itmFilename));
+                        var key = ITMReaderCache.Keys.FirstOrDefault(x => x.EndsWith(itmFilename));
                         reader = ITMReaderCache[key];
                         Logger.Info($"ITMReader created: {itmFilename}");
                     }
                     else
-                    {                        
+                    {
                         ITMReaderCache[itmFilename] = reader;
                     }
                 }

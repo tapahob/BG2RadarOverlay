@@ -72,6 +72,8 @@ namespace WPFFrontend
                 Logger.flush();
             };
             moveToGameScreen();
+            // LongRunning so this never-ending polling loop gets its own dedicated thread
+            // instead of permanently occupying a ThreadPool worker.
             Task.Factory.StartNew(() =>
             {
                 Logger.Debug("Main loop started");
@@ -101,7 +103,7 @@ namespace WPFFrontend
                         Logger.Error("Main loop error!", ex);
                     }
                 }
-            });
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         private void moveToGameScreen()

@@ -71,15 +71,33 @@ namespace WinApiBindings
             return IntPtr.Zero;
         }
 
+        // Reused per-thread instead of allocating a fresh byte[] on every single scalar
+        // read - the entity scan alone issues tens of thousands of these calls per tick.
+        // Safe because every caller below converts the bytes to a value type before
+        // returning, never handing the backing array itself out.
+        [ThreadStatic]
+        private static byte[] _scratchBuffer;
+
+        private static byte[] GetScratchBuffer(int minSize)
+        {
+            var buffer = _scratchBuffer;
+            if (buffer == null || buffer.Length < minSize)
+            {
+                buffer = new byte[Math.Max(minSize, IntPtr.Size)];
+                _scratchBuffer = buffer;
+            }
+            return buffer;
+        }
+
         public static IntPtr FindDMAAddy(IntPtr ptr, int[] offsets = null)
         {
             offsets = offsets ?? new int[] { };
 
             IntPtr hProc = Configuration.hProc;
-            var buffer = new byte[IntPtr.Size];
+            var buffer = GetScratchBuffer(IntPtr.Size);
             foreach (int i in offsets)
             {
-                ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
+                ReadProcessMemory(hProc, ptr, buffer, IntPtr.Size, out var read);
                 ptr = (IntPtr.Size == 4)
                     ? IntPtr.Add(new IntPtr(BitConverter.ToInt32(buffer, 0)), i)
                     : ptr = IntPtr.Add(new IntPtr(BitConverter.ToInt64(buffer, 0)), i);
@@ -90,16 +108,16 @@ namespace WinApiBindings
         public static UInt32 ReadUInt32(IntPtr ptr)
         {
             IntPtr hProc = Configuration.hProc;
-            var buffer = new byte[4];
-            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
+            var buffer = GetScratchBuffer(4);
+            ReadProcessMemory(hProc, ptr, buffer, 4, out var read);
             var result = BitConverter.ToUInt32(buffer, 0);
             return result;
         }
         public static int ReadInt32(IntPtr ptr)
         {
             IntPtr hProc = Configuration.hProc;
-            var buffer = new byte[4];
-            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
+            var buffer = GetScratchBuffer(4);
+            ReadProcessMemory(hProc, ptr, buffer, 4, out var read);
             var result = BitConverter.ToInt32(buffer, 0);
             return result;
         }
@@ -107,8 +125,8 @@ namespace WinApiBindings
         public static short ReadInt16(IntPtr ptr)
         {
             IntPtr hProc = Configuration.hProc;
-            var buffer = new byte[2];
-            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
+            var buffer = GetScratchBuffer(2);
+            ReadProcessMemory(hProc, ptr, buffer, 2, out var read);
             var result = BitConverter.ToInt16(buffer, 0);
             return result;
         }
@@ -116,8 +134,8 @@ namespace WinApiBindings
         public static ushort ReadUInt16(IntPtr ptr)
         {
             IntPtr hProc = Configuration.hProc;
-            var buffer = new byte[2];
-            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
+            var buffer = GetScratchBuffer(2);
+            ReadProcessMemory(hProc, ptr, buffer, 2, out var read);
             var result = BitConverter.ToUInt16(buffer, 0);
             return result;
         }
@@ -125,8 +143,8 @@ namespace WinApiBindings
         public static byte ReadByte(IntPtr ptr)
         {
             IntPtr hProc = Configuration.hProc;
-            var buffer = new byte[1];
-            ReadProcessMemory(hProc, ptr, buffer, buffer.Length, out var read);
+            var buffer = GetScratchBuffer(1);
+            ReadProcessMemory(hProc, ptr, buffer, 1, out var read);
             var result = buffer[0];
             return result;
         }
