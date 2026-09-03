@@ -77,7 +77,6 @@
             <Label Content="Other" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
             <StackPanel Orientation="Vertical">
                 <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" Content="Use Shift Click" ToolTip="Use Shift Right-Click instead of Right Click" FontFamily="Segoe Print" FontWeight="Bold"/>
-                <CheckBox x:Name="CloseWithRightClick" ToolTip="Close windows by Right Clicking outside the window" VerticalContentAlignment="Center" Content="Close windows with Right Click" FontFamily="Segoe Print" FontWeight="Bold"/>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Locale:" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                     <ComboBox x:Name="Locale" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Margin="5, -5, 0, 0" d:SelectedItem="en_US" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Width="77">

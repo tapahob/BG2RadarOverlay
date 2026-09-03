@@ -12,7 +12,6 @@ namespace BGOverlay
         public static bool UseShiftClick { get; set; }
         public static int EnemyListXOffset { get; private set; }
         public static bool DebugMode { get; private set; }
-        public static bool CloseWithRightClick { get; set; }
         public static string GameFolder { get; set; }
         public static string Locale { get; set; }
         public static bool Borderless { get; set; }
@@ -53,7 +52,6 @@ namespace BGOverlay
             FontSize2           = "16";
             FontSize3Big        = "16";
             FontSize3Small      = "16";
-            CloseWithRightClick = true;
             UseShiftClick       = false;
             EnemyListXOffset    = 0;
             DebugMode           = false;
@@ -89,7 +87,6 @@ namespace BGOverlay
                 $"FontSize2={FontSize2}",
                 $"FontSize3Big={FontSize3Big}",
                 $"FontSize3Small={FontSize3Small}",
-                $"CloseWithRightClick={CloseWithRightClick}",
                 $"UseShiftClick={UseShiftClick}",
                 $"EnemyListXOffset={EnemyListXOffset}",
                 $"DebugMode={DebugMode}",
@@ -129,7 +126,6 @@ namespace BGOverlay
                 FontSize2           = getProperty("FontSize2", "16");
                 FontSize3Big        = getProperty("FontSize3Big", "16");
                 FontSize3Small      = getProperty("FontSize3Small", "12");
-                CloseWithRightClick = getProperty("CloseWithRightClick", "true").Equals("true");
                 UseShiftClick       = getProperty("UseShiftClick", "false").Equals("true");
                 EnemyListXOffset    = int.Parse(getProperty("EnemyListXOffset", "0"));
                 DebugMode           = getProperty("DebugMode", "false").Equals("true");

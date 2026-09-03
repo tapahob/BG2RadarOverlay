@@ -218,26 +218,6 @@ namespace WPFFrontend
             this.MinMaxBtn.BeginAnimation(Button.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);            
         }
 
-        private void removeAllEnemyControls()
-        {
-            EnemyControl enemyControl;
-
-            try
-            {
-                foreach (int key in _currentEnemyControls.Keys)
-                {
-                    enemyControl = _currentEnemyControls[key];
-                    enemyControl.Label_MouseDown(null, null);
-
-                    MainCanvas.Children.Remove(enemyControl);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"{nameof(removeAllEnemyControls)} Error!", ex);
-            }
-        }
-
         private void changeEnemyControlStateByEntity(BGEntity bgEntity)
         {
             if (bgEntity == null)
@@ -285,11 +265,8 @@ namespace WPFFrontend
                         Math.Abs(x.MousePosX + x.MousePosX1 - x.X) < 18
                         && Math.Abs(x.MousePosY + x.MousePosY1 - x.Y) < 18);
 
-                    if (entry == null && Configuration.CloseWithRightClick)
-                    {
-                        //this.removeAllEnemyControls();
+                    if (entry == null)
                         return;
-                    }
 
                     var a = e.X;
                     var b = e.Y;

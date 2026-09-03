@@ -31,7 +31,6 @@ namespace WPFFrontend
             this.RefreshRate.TextChanged    += updateConfig;
             this.BigBuffIcons.Click         += updateConfig;
             this.UseShiftClick.Click        += updateConfig;
-            this.CloseWithRightClick.Click  += updateConfig;
             this.MouseUp                    += OptionsControl_MouseUp;
             this.CloseBtn.MouseUp           += Label_MouseDown;
             var app                          = System.Windows.Application.Current;
@@ -101,7 +100,6 @@ namespace WPFFrontend
             Configuration.RefreshTimeMS       = int.Parse(this.RefreshRate.Text);
             Configuration.BigBuffIcons        = (bool)this.BigBuffIcons.IsChecked;
             Configuration.UseShiftClick       = (bool)this.UseShiftClick.IsChecked;
-            Configuration.CloseWithRightClick = (bool)this.CloseWithRightClick.IsChecked;
             Configuration.Locale              = this.Locale.SelectedValue.ToString();
 
             this.Font3.Content = Configuration.BigBuffIcons 
@@ -118,7 +116,6 @@ namespace WPFFrontend
             this.RefreshRate.Text               = Configuration.RefreshTimeMS.ToString();
             this.BigBuffIcons.IsChecked         = Configuration.BigBuffIcons;
             this.UseShiftClick.IsChecked        = Configuration.UseShiftClick;
-            this.CloseWithRightClick.IsChecked  = Configuration.CloseWithRightClick;
         }
 
         public void Show()
