@@ -71,7 +71,7 @@ namespace WPFFrontend
                 _mouseHook.Uninstall();
                 Logger.flush();
             };
-            this.bounds = System.Windows.Forms.Screen.FromHandle(this._processHacker.Proc.MainWindowHandle).Bounds;
+            moveToGameScreen();
             Task.Factory.StartNew(() =>
             {
                 Logger.Debug("Main loop started");
@@ -104,6 +104,30 @@ namespace WPFFrontend
             });
         }
 
+        private void moveToGameScreen()
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    this.bounds = System.Windows.Forms.Screen.FromHandle(_processHacker.Proc.MainWindowHandle).Bounds;
+
+                    // WindowState="Maximized" without an explicit Left/Top maximizes onto whatever
+                    // monitor Windows picks at startup, which is not necessarily the game's monitor.
+                    // Position and size the borderless window explicitly onto the game's monitor instead.
+                    this.WindowState = WindowState.Normal;
+                    this.Left        = bounds.Left;
+                    this.Top         = bounds.Top;
+                    this.Width       = bounds.Width;
+                    this.Height      = bounds.Height;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"{nameof(moveToGameScreen)} error!", ex);
+                }
+            });
+        }
+
         private void updateEnemyListPosition()
         {
             var transform = this.StackPanel.RenderTransform as TranslateTransform ?? new TranslateTransform();
@@ -113,6 +137,9 @@ namespace WPFFrontend
 
         private void ProcessHacker_ProcessHooked(string processName, int pid)
         {
+            // The game may have (re)started on a different monitor than last time.
+            moveToGameScreen();
+
             // Initialize mouse hook.
 
             _mouseHook = new MouseHook(pid, MouseMessageTypes.Click);
