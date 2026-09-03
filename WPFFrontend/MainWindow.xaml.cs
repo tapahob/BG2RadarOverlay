@@ -12,7 +12,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using BGOverlay;
-using Winook;
+using BGOverlay.Input;
 using FontFamily = System.Windows.Media.FontFamily;
 
 namespace WPFFrontend
