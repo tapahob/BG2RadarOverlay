@@ -50,6 +50,7 @@ namespace WPFFrontend
             ApplyLocalization();
 
             updateEnemyListPosition();
+            updateRadarIconPosition();
 
             _options = new();
 
@@ -221,6 +222,105 @@ namespace WPFFrontend
             catch (Exception ex)
             {
                 Logger.Error($"{nameof(EnemyList_PreviewMouseLeftButtonUp)} error!", ex);
+            }
+        }
+
+        private void updateRadarIconPosition()
+        {
+            var transform = this.MinMaxBtn.RenderTransform as TranslateTransform ?? new TranslateTransform();
+            transform.X = Configuration.RadarIconXOffset;
+            this.MinMaxBtn.RenderTransform = transform;
+        }
+
+        private bool _isDraggingRadarIcon;
+        private System.Windows.Point _radarIconDragStartMouse;
+        private double _radarIconDragStartOffsetX;
+        // The button's layout-only (pre-transform) left edge in window coordinates, captured
+        // once when a drag starts, so clamping doesn't have to hardcode Grid column widths.
+        private double _radarIconDragBaseLeft;
+
+        private void RadarIcon_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                // Just note where the click/drag started - don't capture the mouse or mark the
+                // event handled yet, so a plain click (no meaningful movement before button-up)
+                // still reaches the button's own Click (show/hide the enemy list) untouched.
+                _isDraggingRadarIcon = false;
+                _radarIconDragStartMouse = e.GetPosition(this);
+                _radarIconDragStartOffsetX = Configuration.RadarIconXOffset;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(RadarIcon_PreviewMouseLeftButtonDown)} error!", ex);
+            }
+        }
+
+        private void RadarIcon_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                if (e.LeftButton != System.Windows.Input.MouseButtonState.Pressed)
+                    return;
+
+                var current = e.GetPosition(this);
+                var deltaX  = current.X - _radarIconDragStartMouse.X;
+
+                if (!_isDraggingRadarIcon)
+                {
+                    // Horizontal-only drag, so only horizontal movement should arm it - a
+                    // vertical wobble on what was meant to be a plain click shouldn't swallow it.
+                    if (Math.Abs(deltaX) < SystemParameters.MinimumHorizontalDragDistance)
+                        return;
+
+                    _isDraggingRadarIcon = true;
+                    this.MinMaxBtn.CaptureMouse();
+
+                    var transform = (TranslateTransform)this.MinMaxBtn.RenderTransform;
+                    var currentLeftInWindow = this.MinMaxBtn.TransformToAncestor(this).Transform(new System.Windows.Point(0, 0)).X;
+                    _radarIconDragBaseLeft = currentLeftInWindow - transform.X;
+                }
+
+                e.Handled = true;
+
+                // Window-local X 0 is the game monitor's left edge and this.ActualWidth is its
+                // right edge (moveToGameScreen() positions/sizes the window to exactly cover the
+                // game's monitor), so clamping the button's absolute left/right edges to
+                // [0, ActualWidth] keeps it from being dragged off that monitor.
+                var minOffset = -_radarIconDragBaseLeft;
+                var maxOffset = this.ActualWidth - _radarIconDragBaseLeft - this.MinMaxBtn.ActualWidth;
+                if (maxOffset < minOffset)
+                    maxOffset = minOffset; // button wider than the monitor - pin it instead of inverting the clamp
+
+                var proposedOffset = _radarIconDragStartOffsetX + deltaX;
+                var clampedOffset  = Math.Max(minOffset, Math.Min(maxOffset, proposedOffset));
+
+                ((TranslateTransform)this.MinMaxBtn.RenderTransform).X = clampedOffset;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(RadarIcon_PreviewMouseMove)} error!", ex);
+            }
+        }
+
+        private void RadarIcon_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (!_isDraggingRadarIcon)
+                    return;
+
+                _isDraggingRadarIcon = false;
+                this.MinMaxBtn.ReleaseMouseCapture();
+                e.Handled = true;
+
+                var transform = (TranslateTransform)this.MinMaxBtn.RenderTransform;
+                Configuration.RadarIconXOffset = (int)Math.Round(transform.X);
+                Configuration.SaveConfig();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(RadarIcon_PreviewMouseLeftButtonUp)} error!", ex);
             }
         }
 

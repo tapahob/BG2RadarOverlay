@@ -11,6 +11,7 @@ namespace BGOverlay
     {
         public static bool UseShiftClick { get; set; }
         public static int EnemyListXOffset { get; set; }
+        public static int RadarIconXOffset { get; set; }
         public static bool DebugMode { get; private set; }
         public static string GameFolder { get; set; }
         public static string Locale { get; set; }
@@ -54,6 +55,7 @@ namespace BGOverlay
             FontSize3Small      = "16";
             UseShiftClick       = false;
             EnemyListXOffset    = 0;
+            RadarIconXOffset    = 0;
             DebugMode           = false;
             loadConfig();
             detectLocale();
@@ -89,6 +91,7 @@ namespace BGOverlay
                 $"FontSize3Small={FontSize3Small}",
                 $"UseShiftClick={UseShiftClick}",
                 $"EnemyListXOffset={EnemyListXOffset}",
+                $"RadarIconXOffset={RadarIconXOffset}",
                 $"DebugMode={DebugMode}",
             });
         }
@@ -128,6 +131,7 @@ namespace BGOverlay
                 FontSize3Small      = getProperty("FontSize3Small", "12");
                 UseShiftClick       = getProperty("UseShiftClick", "false").Equals("true");
                 EnemyListXOffset    = int.Parse(getProperty("EnemyListXOffset", "0"));
+                RadarIconXOffset    = int.Parse(getProperty("RadarIconXOffset", "0"));
                 DebugMode           = getProperty("DebugMode", "false").Equals("true");
                 if (version != Configuration.Version)
                 {

@@ -5,4 +5,5 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>", Scope = "member", Target = "~M:WPFFrontend.EnemyControl.updateView(BGOverlay.BGEntity)")]
+// CA1416 is suppressed project-wide via <NoWarn> in WPFFrontend.csproj instead (this project
+// only ever runs on Windows), so no per-member suppressions are needed here.

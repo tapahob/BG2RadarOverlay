@@ -12,6 +12,10 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
 	<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <!-- This project only ever runs on Windows (WPF, WindowsDesktop SDK, System.Windows.Forms
+         references for FontDialog/Screen), so CA1416 (platform compatibility) warnings on
+         Windows-only APIs like Bitmap/Font are all false positives here. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
