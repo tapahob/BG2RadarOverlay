@@ -27,16 +27,26 @@ namespace BGOverlay
             else
             {
                 var lastTry = Directory.Exists($"{gameDirectory}\\override")
-                    ? Directory.GetFiles($"{gameDirectory}\\override").Select(x => x.ToUpper()).FirstOrDefault(x => x.EndsWith(itmFilename))
+                    ? Directory.GetFiles($"{gameDirectory}\\override").Select(x => x.ToUpper()).Where(x => x.EndsWith(itmFilename)).OrderBy(x => x.Length).FirstOrDefault()
                     : null;
+                var test2 = resourceManager.ITMResourceEntries.FirstOrDefault(x => x.FullName == itmFilename)
+                            ?? resourceManager.ITMResourceEntries.Where(x => x.FullName.EndsWith(itmFilename)).OrderBy(x => x.FullName.Length).FirstOrDefault();
+                if (lastTry != null && test2 != null)
+                {
+                    if (lastTry.Split("\\".ToCharArray()).Last().Length <= test2.FullName.Length)
+                    {
+                        test2 = null;
+                    }
+                    else
+                    {
+                        lastTry = null;
+                    }
+                }
                 if (lastTry == null)
                 {
                     filename = biffArchivePath;
                     if (biffArchivePath.Equals(""))
-                    {
-                        var test2 = resourceManager.ITMResourceEntries.FirstOrDefault(x => x.FullName == itmFilename)
-                            ?? resourceManager.ITMResourceEntries.FirstOrDefault(x => x.FullName.EndsWith(itmFilename));
-                        
+                    {                                                
                         if (test2 != null)
                         {
                             test2.LoadITMFiles();

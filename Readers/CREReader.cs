@@ -1,4 +1,5 @@
 ﻿using BGOverlay.Resources;
+using NLog.LayoutRenderers;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -172,16 +173,35 @@ namespace BGOverlay
                     // Items - the inventory table (not the equipped-item slots, which BGEntity
                     // reads live from process memory instead). Used for the "Pockets" list: which
                     // of these items can be stolen via pickpocket (Unstealable flag bit not set).
-                    reader.BaseStream.Seek(originOffset + 0x02bc - 4, SeekOrigin.Begin);
-                    reader.ReadInt32(); // offset to item slots - unused here
-                    var offsetToItems = reader.ReadInt32();
-                    int countOfItems  = reader.ReadInt32();
+                    reader.BaseStream.Seek(originOffset + 0x02b8, SeekOrigin.Begin);
+                    var offsetToItemSlots = reader.ReadInt32();                    
+                    var offsetToItems     = reader.ReadInt32();
+                    var countOfItems      = reader.ReadInt32();
+
+                    reader.BaseStream.Seek(originOffset + offsetToItemSlots, SeekOrigin.Begin);
+                    //var unstealableSlots = new[] { 0, 1, 2, 8, 10, 5, 6, 7, 8, 9, 34};
+                    var slotIndexes = new List<short>();
+                    for (int i = 0; i < 38; ++i)
+                    {
+                        //if (unstealableSlots.Contains(i))
+                        //{
+                        //    reader.BaseStream.Seek(2, SeekOrigin.Current);
+                        //    continue;
+                        //}
+                        var index = reader.ReadInt16();
+                        //if (index == -1)
+                        //    continue;
+                        slotIndexes.Add(index);
+                    }
 
                     this.Pockets = new List<PocketItemEntry>();
                     // bit 0: Identified, bit 1: Unstealable, bit 2: Stolen, bit 3: Undroppable
-                    const int UNSTEALABLE_FLAG = 0x2;
-                    for (int i = 0; i < countOfItems; ++i)
+                    const int UNSTEALABLE_FLAG = 0x2000000;
+                    const int UNDROPPABLE_FLAG = 0x8000000;
+                    foreach (var i in slotIndexes)
                     {
+                        if (i == -1)
+                            continue;
                         reader.BaseStream.Seek(originOffset + offsetToItems + i * 0x14, SeekOrigin.Begin);
                         var itemResRef = new string(reader.ReadChars(8)).TrimEnd('\0');
                         reader.ReadInt16(); // expiration time
@@ -189,11 +209,16 @@ namespace BGOverlay
                         reader.ReadInt16(); // quantity/charges 2
                         reader.ReadInt16(); // quantity/charges 3
                         var itemFlags = reader.ReadInt32();
-                        if (itemResRef.Length == 0 || (itemFlags & UNSTEALABLE_FLAG) != 0)
+                        if (itemResRef.Length == 0 || (itemFlags & UNDROPPABLE_FLAG) != 0 || (itemFlags & UNSTEALABLE_FLAG) != 0)
                             continue;
 
                         var pocketItmReader = this.resourceManager.GetITMReader($"{itemResRef}.ITM");
                         if (pocketItmReader == null)
+                            continue;
+
+                        const int DROPPABLE_FLAG = 4;
+                        var debugStrFlag = Convert.ToString(pocketItmReader.Flags, 2);
+                        if (((pocketItmReader.Flags & DROPPABLE_FLAG) == 0))
                             continue;
 
                         var flagWords = new List<string>();
@@ -206,7 +231,10 @@ namespace BGOverlay
                         {
                             Name      = pocketItmReader.IdentifiedName,
                             Icon      = pocketItmReader.Icon,
-                            FlagsText = string.Join(", ", flagWords)
+                            //FlagsText = string.Join(", ", flagWords),
+                            FlagsText = "",
+                            ITMReader = pocketItmReader,
+                            Count     = 0
                         });
                     }
 

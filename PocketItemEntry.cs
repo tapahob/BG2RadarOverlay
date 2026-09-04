@@ -15,5 +15,7 @@ namespace BGOverlay
         // Localized, comma-joined flag words (e.g. "Identified, Stealable") - shown right-aligned
         // next to the name, by analogy with MainWindow's enemy list Name/HP layout.
         public string FlagsText { get; set; }
+        public ITMReader ITMReader {get;set; }
+        public int Count { get; set; }
     }
 }

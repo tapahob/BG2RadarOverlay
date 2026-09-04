@@ -22,11 +22,12 @@
             <!-- EnemyControl's/OptionsControl's default/fallback width - some languages need
                  more room for their translated labels than English does; a locale file can
                  override either via the EnemyControlWidth/OptionsControlWidth key (see
-                 MainWindow.applyLocalization). 395 is OptionsControl's previous fixed width
-                 (the sum of its Grid's column widths: 10+180+15+180+10), now the default/fallback
-                 instead of a hardcoded value on the control itself. -->
+                 MainWindow.applyLocalization). 445 is OptionsControl's previous fixed width
+                 (the sum of its Grid's column widths: 10+180+15+180+10) plus the 50px widened
+                 for the Locale row's restart note, now the default/fallback instead of a
+                 hardcoded value on the control itself. -->
             <system:Double x:Key="EnemyControlWidth">450</system:Double>
-            <system:Double x:Key="OptionsControlWidth">395</system:Double>
+            <system:Double x:Key="OptionsControlWidth">445</system:Double>
 
             <Style TargetType="{x:Type Label}">
                 <Setter Property="FontSize" Value="{DynamicResource FontSize2}" />

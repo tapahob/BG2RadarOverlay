@@ -78,4 +78,32 @@ namespace WPFFrontend
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
             => throw new NotSupportedException();
     }
+
+    /// <summary>
+    /// Visibility.Collapsed for a null or empty string, Visibility.Visible otherwise - used to
+    /// hide the Pockets FlagsText line entirely (rather than leaving a blank line still taking
+    /// up its own row height) when there's no flag text to show.
+    /// </summary>
+    public class EmptyStringToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+            => string.IsNullOrEmpty(value as string) ? Visibility.Collapsed : Visibility.Visible;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// A PocketItemEntry.Count of 2 or more becomes " x{count}" (e.g. " x3"); 1 or less becomes
+    /// an empty string, so a single copy of an item shows no suffix at all. Not localized - "x"
+    /// as a multiplication/quantity marker reads the same in every language this radar ships.
+    /// </summary>
+    public class PocketCountToSuffixConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+            => value is int count && count > 1 ? $" x{count}" : "";
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
 }

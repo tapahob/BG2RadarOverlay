@@ -59,11 +59,11 @@ namespace BGOverlay
         {
             get
             {
-                if (this.Reader == null || this.Reader.Race != this.RACE)
-                {
-                    return this.RACE.ToString()[0] + this.RACE.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-");
-                }
-                return this.Reader.Race.ToString()[0] + this.Reader.Race.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-");
+                var race = (this.Reader == null || this.Reader.Race != this.RACE) ? this.RACE : this.Reader.Race;
+                if (RadarLocalization.TryGet($"Race_{race}", out var localized))
+                    return localized;
+
+                return race.ToString()[0] + race.ToString().ToLower().Substring(1).Replace('_', ' ').Replace("alf", "alf-");
             }
         }
 
@@ -78,10 +78,15 @@ namespace BGOverlay
                 {
                     return this.CLASS.ToString()[0] + this.CLASS.ToString().ToLower().Substring(1).Replace('_', ' ');
                 }
-                return (this.Reader.KitInformation != CREReader.KIT.NONE
+                if (this.Reader.KitInformation != CREReader.KIT.NONE
                     && this.Reader.KitInformation != CREReader.KIT.TRUECLASS)
-                        ? this.Reader.KitInformation.ToString().Replace('_', ' ')
-                        : this.Reader.Class.ToString()[0] + this.Reader.Class.ToString().ToLower().Substring(1).Replace('_', ' ');
+                {
+                    if (RadarLocalization.TryGet($"Kit_{this.Reader.KitInformation}", out var localizedKit))
+                        return localizedKit;
+
+                    return this.Reader.KitInformation.ToString().Replace('_', ' ');
+                }
+                return this.Reader.Class.ToString()[0] + this.Reader.Class.ToString().ToLower().Substring(1).Replace('_', ' ');
             }
         }
 
@@ -99,8 +104,12 @@ namespace BGOverlay
         /// <summary>
         /// Inventory items this creature is carrying that can be stolen via pickpocket -
         /// CREReader.Pockets already filters out items with the Unstealable flag set.
+        /// Must stay a property (not a plain field) - EnemyControl.xaml's
+        /// "{Binding Pockets}" ItemsSource can't resolve a field, so the ListView would
+        /// silently stay empty even though pocketsSection.Visibility (a direct code-behind
+        /// field read) correctly turns on.
         /// </summary>
-        public List<PocketItemEntry> Pockets => this.Reader?.Pockets ?? new List<PocketItemEntry>();
+        public List<PocketItemEntry> Pockets { get; set; } = new List<PocketItemEntry>();
 
         private List<object> computeProtections()
         {
@@ -623,23 +632,37 @@ namespace BGOverlay
         private void loadWeaponStats()
         {
             var selectedWeapon = WinAPIBindings.ReadByte(equipmentPtr + 0x138);
-            var tempItem       = new CItem(equipmentPtr + 0x140);
-            var lst            = new List<CItem>();
+            var lst            = new List<Tuple<CItem, ITMReader>>();
+            //var itmReaders   = new List<ITMReader>();
             this.CritImmune    = false;
             for (int i=0; i<40; ++i)
-            {
+            {                
                 var currentItem = new CItem(equipmentPtr + 8 * i);
-                lst.Add(currentItem);
-                if (currentItem.resRef == "<ERROR>" || i > 9)
+                var currentPair = new Tuple<CItem, ITMReader>(currentItem, null);
+                lst.Add(currentPair);
+                if (currentItem.resRef == "<ERROR>")
                     continue;
                 var read = resourceManager.GetITMReader($"{currentItem.resRef}.ITM");
+                lst[i] = new Tuple<CItem, ITMReader>(currentItem, read);
+                if (i > 9)
+                    continue;
                 this.CritImmune = this.CritImmune
                     || (i == 6 && ((read.Flags & 0x2000000) == 0))
                     || i != 6 && ((read.Flags & 0x2000000) != 0);
             }
 
-            var ITMRes = lst[selectedWeapon];
-            var reader = resourceManager.GetITMReader($"{ITMRes.resRef}.ITM");
+            this.Pockets = this.Reader?.Pockets ?? new List<PocketItemEntry>();
+            
+            var ITMRes = lst[selectedWeapon].Item1;
+            var reader = lst[selectedWeapon].Item2;
+            
+            var rtPockets = lst
+                .Where(x => x.Item2 != null && x.Item2 != reader && (this.Pockets.Any(y => y.ITMReader == x.Item2)))
+                .Select(x => x.Item2)
+                .GroupBy(x => x)
+                .Select(x => new PocketItemEntry{ ITMReader = x.Key, Count = x.Count(), Icon = x.Key.Icon, Name = x.Key.IdentifiedName, FlagsText = "" }).ToList();
+            this.Pockets = rtPockets;
+            
             this.CritImmune = this.CritImmune || ((reader.Flags & 0x2000000) != 0);
             if (reader != null)
             {
@@ -766,6 +789,6 @@ namespace BGOverlay
             { 3, "Familiars" },
             { 4, "Ally" },
             { 128, "Neutral" },
-        };
+        };        
     }
 }

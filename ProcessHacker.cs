@@ -26,8 +26,6 @@ namespace BGOverlay
         public ResourceManager ResourceManager { get; private set; }
         public List<BGEntity> NearestEnemies { get; private set; }
 
-        private BGEntity main;
-
         private List<BGEntity> entityListTemp = new List<BGEntity>();
         private List<BGEntity> allEntities    = new List<BGEntity>();
         private static IntPtr entityListPtr   = IntPtr.Zero;
@@ -40,9 +38,11 @@ namespace BGOverlay
         private readonly HashSet<int> seenIndexes = new HashSet<int>();
 
         // Set from the UI thread (InvalidateEntityCache), consumed only at the top of MainLoop()
-        // on its own dedicated thread - entityPool itself is only ever touched from there, so
-        // routing the actual Clear() through this flag avoids mutating the dictionary
-        // concurrently with MainLoop()'s own reads/writes of it.
+        // on its own dedicated thread - entityPool and ResourceManager.CREReaderCache are both
+        // only ever touched from there (CREReaderCache is also read off this thread, from
+        // BGEntity's constructor - see the "[CRE filename]" debug suffix), so routing the actual
+        // Clear() through this flag avoids mutating either dictionary concurrently with
+        // MainLoop()'s own reads/writes of it.
         private volatile bool cacheInvalidationRequested;
 
         private const int SlotSize       = 16;
@@ -53,6 +53,7 @@ namespace BGOverlay
             if (cacheInvalidationRequested)
             {
                 entityPool.Clear();
+                ResourceManager.CREReaderCache.Clear();
                 cacheInvalidationRequested = false;
             }
 
@@ -238,13 +239,16 @@ namespace BGOverlay
         }
 
         /// <summary>
-        /// Requests that every pooled BGEntity template be dropped so the next MainLoop() tick
-        /// reconstructs each one from scratch instead of handing back a RefreshedCopy() of the
-        /// cached template. Needed after a config change whose effect is only computed once, at
-        /// BGEntity construction time (e.g. Configuration.DebugMode's "[CRE filename]" name
-        /// suffix) - without this, an already-pooled creature would keep showing the old value
-        /// until it left and re-entered the pool on its own. Safe to call from any thread - the
-        /// actual Clear() happens on MainLoop()'s own thread (see cacheInvalidationRequested).
+        /// Requests that every pooled BGEntity template AND every cached CREReader (see
+        /// ResourceManager.CREReaderCache) be dropped, so the next tick reconstructs each one
+        /// from scratch instead of reusing the cached copy. Needed after a config change whose
+        /// effect is only computed once - either at BGEntity construction time
+        /// (Configuration.DebugMode's "[CRE filename]" name suffix) or at CREReader construction
+        /// time (CREReader.Pockets' localized flag words, e.g. Stealable/Droppable, which are
+        /// baked in using whatever RadarLocalization.Strings held at that moment) - without this,
+        /// an already-cached creature/CRE would keep showing the old value until it left and
+        /// re-entered the cache on its own. Safe to call from any thread - the actual Clear()
+        /// happens on MainLoop()'s own thread (see cacheInvalidationRequested).
         /// </summary>
         public void InvalidateEntityCache()
         {

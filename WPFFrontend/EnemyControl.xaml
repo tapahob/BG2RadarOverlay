@@ -15,6 +15,8 @@
         <wpffrontend:BitmapToImageSourceConverter x:Key="BitmapToImageSourceConverter"/>
         <wpffrontend:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <wpffrontend:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        <wpffrontend:PocketCountToSuffixConverter x:Key="PocketCountToSuffixConverter"/>
+        <wpffrontend:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
     </UserControl.Resources>
     <UserControl.BorderBrush>
         <ImageBrush/>
@@ -142,21 +144,35 @@
         <StackPanel x:Name="pocketsSection" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Visibility="Collapsed">
             <Label x:Name="PocketsHeader" d:Content="Pockets" HorizontalAlignment="Left" Padding="0"/>
             <ListView x:Name="pocketsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False" HorizontalContentAlignment="Stretch" ItemsSource="{Binding Pockets}" Background="{x:Null}" Foreground="{x:Null}">
+                <!-- 2 columns to save vertical space - each item's own Grid (icon/name/flags)
+                     still adapts to whatever width that gives it. -->
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="2"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="{x:Type bg:PocketItemEntry}">
-                        <Grid Margin="0,2,0,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <!-- No icon in the resource -> no placeholder, just the name. -->
-                            <Image Grid.Column="0" Source="{Binding Icon, Converter={StaticResource BitmapToImageSourceConverter}}"
-                                   Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
-                                   Width="24" Height="24" Margin="0,0,3,0"/>
-                            <TextBlock Grid.Column="1" Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black" HorizontalAlignment="Left"/>
-                            <TextBlock Grid.Column="2" Text="{Binding FlagsText}" Style="{StaticResource Protections}" Foreground="Black" HorizontalAlignment="Right" Margin="4,0,0,0"/>
-                        </Grid>
+                        <!-- Stacked (icon+name on top, flags below) rather than a single wide row -
+                             each item only gets half the control's width in the 2-column layout
+                             above, and a same-row right-aligned FlagsText would easily overflow
+                             that narrower slot. -->
+                        <StackPanel Orientation="Vertical" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                <!-- No icon in the resource -> no placeholder, just the name. -->
+                                <Image Source="{Binding Icon, Converter={StaticResource BitmapToImageSourceConverter}}"
+                                       Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
+                                       Width="24" Height="24" Margin="0,0,3,0"/>
+                                <!-- Same font as the rest of the control's Label text (default Label
+                                     style: FontFamily2/FontSize2/Bold) rather than Protections'
+                                     smaller FontSize1, so Pockets reads consistently with STR/DEX/etc. -->
+                                <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" FontWeight="Bold" Foreground="Black" TextWrapping="Wrap"/>
+                                <!-- "x{Count}" for 2+ of the same item, nothing for a single one. -->
+                                <TextBlock Text="{Binding Count, Converter={StaticResource PocketCountToSuffixConverter}}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" FontWeight="Bold" Foreground="Black"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding FlagsText}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" FontWeight="Bold" Foreground="Black" TextWrapping="Wrap" Margin="27,0,0,0"
+                                       Visibility="{Binding FlagsText, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
+                        </StackPanel>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

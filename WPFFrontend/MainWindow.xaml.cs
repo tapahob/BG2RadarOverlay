@@ -99,6 +99,7 @@ namespace WPFFrontend
 
                     _options = new();
                     _options.DebugModeChanged += _processHacker.InvalidateEntityCache;
+                    _options.LocaleChanged    += _processHacker.InvalidateEntityCache;
 
                     updateStyles();
 

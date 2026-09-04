@@ -27,10 +27,10 @@ namespace WPFFrontend
             } 
         }
         public float BuffDurationAbsolute { get; set; }
-        public BitmapSource Icon 
+        public BitmapSource Icon
         {
             get { return _icon; }
-            set { this.Image.Source = value; } 
+            set { _icon = value; this.Image.Source = value; }
         }
 
         private BitmapSource _icon;
