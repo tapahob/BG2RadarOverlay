@@ -19,6 +19,11 @@
             <system:Double x:Key="FontSize3Big">16</system:Double>
             <system:Double x:Key="FontSize3Small">12</system:Double>
 
+            <!-- EnemyControl's default/fallback width - some languages need more room for
+                 their translated labels than English does; a locale file can override this
+                 via the EnemyControlWidth key (see MainWindow.applyLocalization). -->
+            <system:Double x:Key="EnemyControlWidth">450</system:Double>
+
             <Style TargetType="{x:Type Label}">
                 <Setter Property="FontSize" Value="{DynamicResource FontSize2}" />
                 <Setter Property="FontFamily" Value="{DynamicResource FontFamily2}" />

@@ -1,0 +1,80 @@
+# BG Radar Overlay - felhasználói felület szövegei (magyar / hu_HU)
+# Egy sor "Kulcs=Érték" formában. A # jellel kezdődő és üres sorok figyelmen kívül maradnak.
+# A {0} helyőrzőket futás közben a megfelelő érték helyettesíti - a fordításban tartsd meg
+# őket, a pozíciójuk módosítható, ha a nyelv ezt megkívánja.
+
+# EnemyControl - karakterpanel
+EnemyControlWidth=450
+Str_Level=Sz.{0}
+Str_Race=Faj: {0}
+Str_STR=ERŐ: {0}
+Str_DEX=ÜGY: {0}
+Str_CON=ÁLL: {0}
+Str_INT=INT: {0}
+Str_WIS=BÖL: {0}
+Str_CHA=KAR: {0}
+Str_Health=Életerő: {0}
+Str_Attacks=Támadások: {0}
+Str_ArmorClass=Páncélosztály: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=Tapasztalat: {0}
+Str_Alignment=Beállítottság: {0}
+Str_SaveDeath=Mentés halál ellen: {0}
+Str_SaveWands=Mentés pálcák ellen: {0}
+Str_SavePoly=Mentés átváltoztatás ellen: {0}
+Str_SaveBreath=Mentés lehelet ellen: {0}
+Str_SaveSpells=Mentés varázslatok ellen: {0}
+Str_ResFire=Tűz ellenállás: {0}
+Str_ResCold=Hideg ellenállás: {0}
+Str_ResElectricity=Elektromosság ellenállás: {0}
+Str_ResAcid=Sav ellenállás: {0}
+Str_ResMagic=Mágia ellenállás: {0}
+Str_ResMagicDamage=Mágikus sebzés ellenállás: {0}
+Str_ResPoison=Méreg ellenállás: {0}
+Str_ResSlashing=Vágó ellenállás: {0}
+Str_ResCrushing=Zúzó ellenállás: {0}
+Str_ResPiercing=Szúró ellenállás: {0}
+Str_ResMissile=Lövedék ellenállás: {0}
+
+# EnemyControl - védelmek listája
+Str_ProtectedFromMagicWeapons=Védett mágikus fegyverek ellen
+Str_ProtectedFromMagicAndNormalWeapons=Védett mágikus és hagyományos fegyverek ellen
+Str_RequiresEnhancementToHit=+{0} fegyver szükséges a találathoz
+Str_ImmuneToSpellsUpToLevel=Immunis a(z) {0}. szintig terjedő varázslatokra
+Str_BackstabImmunity=Hátbaszúrás immunitás
+Str_SeeInvisible=Láthatatlanság észlelése
+Str_CritImmune=Immunis a kritikus találatokra
+Str_Proficiency=Jártasság:
+Str_OnMeleeHit=Közelharci találatkor: {0}
+Str_OnRangedHit=Távolsági találatkor: {0}
+Str_ImmuneToSpellsList=Immunis varázslatokra: {0}
+Str_EffectImmunities=Hatás immunitások: {0}
+Str_ACBonus=PO bónusz +{0}
+Str_ACvsCrushing=PO zúzó ellen +{0}
+Str_ACvsMissile=PO lövedék ellen +{0}
+Str_ACvsPiercing=PO szúró ellen +{0}
+Str_ACvsSlashing=PO vágó ellen +{0}
+Str_SetACTo=PO beállítva: {0}
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0 beállítva: {0}
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - beállítások ablak
+Str_Options=Beállítások
+Str_CharacterListFiltering=Karakterlista szűrése
+Str_HidePartyMembers=Csoporttagok elrejtése
+Str_HideNeutrals=Semlegesek elrejtése
+Str_HideAllies=Szövetségesek elrejtése
+Str_BuffPanel=Erősítés panel
+Str_BigBuffIcons=Nagy erősítés ikonok
+Str_BorderlessMode=Keret nélküli mód
+Str_BorderlessOnStartup=Keret nélkül indításkor
+Str_ForceBorderlessNow=Keret eltávolítása most!
+Str_Performance=Teljesítmény
+Str_RefreshRate=Frissítési gyakoriság (ms):
+Str_Fonts=Betűtípusok
+Str_Other=Egyéb
+Str_UseShiftClick=Shift+kattintás használata
+Str_UseShiftClickTooltip=Shift + jobb klikk használata jobb klikk helyett
+Str_Locale=Nyelv:
+Str_Save=Mentés

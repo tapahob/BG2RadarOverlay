@@ -120,6 +120,54 @@ namespace WPFFrontend
             WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
         }
 
+        /// <summary>
+        /// Sets every stat label's Content directly instead of relying on XAML's
+        /// ContentStringFormat="{DynamicResource ...}" - that binding only re-evaluates when
+        /// WPF decides the Content itself changed, so it can end up stuck showing the format
+        /// string as-is (or going stale after a locale switch) instead of the localized text.
+        /// Doing it here, every updateView() call, keeps these in lockstep with the locale the
+        /// same way BuffControl/App.xaml's font resources already work for everything else.
+        /// </summary>
+        private void updateLocalizedLabels(BGEntity item)
+        {
+            string L(string key) => RadarLocalization.Get(key);
+            string F(string key, object value) => string.Format(L(key), value);
+
+            this.Level.Content     = F("Str_Level", item.DerivedStatsTemp.Level);
+            this.Race.Content      = F("Str_Race", item.Race);
+
+            this.STR.Content       = F("Str_STR", item.DerivedStatsTemp.STRString);
+            this.DEX.Content       = F("Str_DEX", item.DerivedStatsTemp.DEX);
+            this.CON.Content       = F("Str_CON", item.DerivedStatsTemp.CON);
+            this.INT.Content       = F("Str_INT", item.DerivedStatsTemp.INT);
+            this.WIS.Content       = F("Str_WIS", item.DerivedStatsTemp.WIS);
+            this.CHA.Content       = F("Str_CHA", item.DerivedStatsTemp.CHA);
+
+            this.Health.Content        = F("Str_Health", item.HPString);
+            this.APR.Content           = F("Str_Attacks", item.Attacks);
+            this.AC.Content             = F("Str_ArmorClass", item.DerivedStatsTemp.ArmorClass);
+            this.THAC0.Content          = F("Str_THAC0", item.THAC0);
+            this.XP.Content             = F("Str_Experience", item.Reader.XPGained);
+            this.Alignment.Content      = F("Str_Alignment", item.Reader.ShortAlignment);
+            this.SaveDeath.Content      = F("Str_SaveDeath", item.DerivedStatsTemp.SaveVsDeath);
+            this.SaveWands.Content      = F("Str_SaveWands", item.DerivedStatsTemp.SaveVsWands);
+            this.SavePolymorph.Content  = F("Str_SavePoly", item.DerivedStatsTemp.SaveVsPoly);
+            this.SaveBreath.Content     = F("Str_SaveBreath", item.DerivedStatsTemp.SaveVsBreath);
+            this.SaveSpells.Content     = F("Str_SaveSpells", item.DerivedStatsTemp.SaveVsSpell);
+
+            this.ResFire.Content        = F("Str_ResFire", item.DerivedStatsTemp.ResistFire);
+            this.ResCold.Content        = F("Str_ResCold", item.DerivedStatsTemp.ResistCold);
+            this.ResElectro.Content     = F("Str_ResElectricity", item.DerivedStatsTemp.ResistElectricity);
+            this.ResAcid.Content        = F("Str_ResAcid", item.DerivedStatsTemp.ResistAcid);
+            this.ResMagic.Content       = F("Str_ResMagic", item.DerivedStatsTemp.ResistMagic);
+            this.ResMagicDamage.Content = F("Str_ResMagicDamage", item.DerivedStatsTemp.ResistMagicDamage);
+            this.ResPoison.Content      = F("Str_ResPoison", item.DerivedStatsTemp.ResistPoison);
+            this.ResSlashing.Content    = F("Str_ResSlashing", item.DerivedStatsTemp.ResistSlashing);
+            this.ResCrushing.Content    = F("Str_ResCrushing", item.DerivedStatsTemp.ResistCrushing);
+            this.ResPiercing.Content    = F("Str_ResPiercing", item.DerivedStatsTemp.ResistPiercing);
+            this.ResMissile.Content     = F("Str_ResMissile", item.DerivedStatsTemp.ResistMissile);
+        }
+
         internal void updateView(BGEntity item)
         {
             try
@@ -132,6 +180,7 @@ namespace WPFFrontend
                 this.BGEntity.LoadDerivedStats();
                 this.fetchWeaponEffects(item);
                 this.DataContext = this.BGEntity;
+                this.updateLocalizedLabels(item);
 
                 if (Configuration.BigBuffIcons && BuffStack.Columns == 16)
                 {

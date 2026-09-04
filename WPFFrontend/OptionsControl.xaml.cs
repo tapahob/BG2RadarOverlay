@@ -48,6 +48,10 @@ namespace WPFFrontend
             this.Locale.ItemsSource       = availableLocales.Select(x => x.ToString().ToLower().Substring(x.ToString().LastIndexOf('\\') + 1));
             this.Locale.SelectedItem      = Configuration.Locale;
             this.Locale.SelectionChanged += updateConfig;
+            // updateConfig() (above) writes the new selection into Configuration.Locale first;
+            // reload the radar's own UI text right after so the change is visible immediately
+            // instead of only after restarting the radar.
+            this.Locale.SelectionChanged += (s, e) => MainWindow.ApplyLocalization();
         }
 
         private void OptionsControl_MouseUp(object sender, MouseButtonEventArgs e)

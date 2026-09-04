@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,6 +46,8 @@ namespace WPFFrontend
             _processHacker.ProcessHooked += ProcessHacker_ProcessHooked;
 
             _processHacker.Init();
+
+            ApplyLocalization();
 
             updateEnemyListPosition();
 
@@ -158,6 +161,41 @@ namespace WPFFrontend
         {
             EnemyTextEntries.Clear();
             _mouseHook.Uninstall();
+        }
+
+        // Not text - a locale can widen EnemyControl for languages whose translated labels need
+        // more room than English does. Kept out of the plain string resources below so it stays
+        // a double (App.xaml's default is one too); Width can't bind to a string DynamicResource.
+        private const string EnemyControlWidthKey = "EnemyControlWidth";
+
+        /// <summary>
+        /// (Re)loads Configuration.Locale's string table and pushes it into Application.Resources.
+        /// Safe to call again after the constructor - e.g. when the user picks a different
+        /// locale in OptionsControl - since every DynamicResource-bound Content/Width in
+        /// EnemyControl and OptionsControl picks up the change immediately, the same way
+        /// changing fonts already does.
+        /// </summary>
+        public static void ApplyLocalization()
+        {
+            Logger.Debug($"Loading locale strings for '{Configuration.Locale}' ..");
+            RadarLocalization.Init(Configuration.Locale);
+            var app = System.Windows.Application.Current;
+            foreach (var entry in RadarLocalization.Strings)
+            {
+                if (entry.Key == EnemyControlWidthKey)
+                    continue;
+                app.Resources[entry.Key] = entry.Value;
+            }
+
+            // Only override when the locale actually specifies a valid number - otherwise
+            // EnemyControl.xaml keeps using App.xaml's default/fallback width (the control's
+            // current width).
+            if (RadarLocalization.Strings.TryGetValue(EnemyControlWidthKey, out var widthText)
+                && double.TryParse(widthText, NumberStyles.Float, CultureInfo.InvariantCulture, out var width))
+            {
+                app.Resources[EnemyControlWidthKey] = width;
+            }
+            Logger.Debug("Done!");
         }
 
         private void updateStyles()

@@ -1,0 +1,80 @@
+# BG Radar Overlay - textes de l'interface (français / fr_FR)
+# Une ligne "Clé=Valeur". Les lignes commençant par # et les lignes vides sont ignorées.
+# Les espaces réservés {0} sont remplacés par la valeur correspondante à l'exécution -
+# conservez-les dans la traduction, leur position peut être modifiée si la langue l'exige.
+
+# EnemyControl - panneau du personnage
+EnemyControlWidth=450
+Str_Level=Niv.{0}
+Str_Race=Race : {0}
+Str_STR=FOR : {0}
+Str_DEX=DEX : {0}
+Str_CON=CON : {0}
+Str_INT=INT : {0}
+Str_WIS=SAG : {0}
+Str_CHA=CHA : {0}
+Str_Health=Santé : {0}
+Str_Attacks=Attaques : {0}
+Str_ArmorClass=Classe d'Armure : {0}
+Str_THAC0=THAC0 : {0}
+Str_Experience=Expérience : {0}
+Str_Alignment=Alignement : {0}
+Str_SaveDeath=Jet de sauv. Mort : {0}
+Str_SaveWands=Jet de sauv. Baguettes : {0}
+Str_SavePoly=Jet de sauv. Polymorphe : {0}
+Str_SaveBreath=Jet de sauv. Souffle : {0}
+Str_SaveSpells=Jet de sauv. Sorts : {0}
+Str_ResFire=Résistance au Feu : {0}
+Str_ResCold=Résistance au Froid : {0}
+Str_ResElectricity=Résistance à l'Électricité : {0}
+Str_ResAcid=Résistance à l'Acide : {0}
+Str_ResMagic=Résistance à la Magie : {0}
+Str_ResMagicDamage=Rés. Dégâts Magiques : {0}
+Str_ResPoison=Résistance au Poison : {0}
+Str_ResSlashing=Rés. Tranchant : {0}
+Str_ResCrushing=Rés. Contondant : {0}
+Str_ResPiercing=Rés. Perforant : {0}
+Str_ResMissile=Rés. aux Projectiles : {0}
+
+# EnemyControl - liste des protections
+Str_ProtectedFromMagicWeapons=Protégé des Armes Magiques
+Str_ProtectedFromMagicAndNormalWeapons=Protégé des Armes Magiques et Normales
+Str_RequiresEnhancementToHit=Nécessite une arme +{0} pour être touché
+Str_ImmuneToSpellsUpToLevel=Immunisé aux sorts jusqu'au niveau {0}
+Str_BackstabImmunity=Immunité à l'Attaque Sournoise
+Str_SeeInvisible=Détection de l'Invisible
+Str_CritImmune=Immunisé aux Critiques
+Str_Proficiency=Compétence :
+Str_OnMeleeHit=Au contact en mêlée : {0}
+Str_OnRangedHit=Au contact à distance : {0}
+Str_ImmuneToSpellsList=Immunisé aux sorts : {0}
+Str_EffectImmunities=Immunités aux effets : {0}
+Str_ACBonus=Bonus de CA +{0}
+Str_ACvsCrushing=CA vs Contondant +{0}
+Str_ACvsMissile=CA vs Projectiles +{0}
+Str_ACvsPiercing=CA vs Perforant +{0}
+Str_ACvsSlashing=CA vs Tranchant +{0}
+Str_SetACTo=CA définie à {0}
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0 défini à {0}
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - fenêtre d'options
+Str_Options=Options
+Str_CharacterListFiltering=Filtrage de la Liste des Personnages
+Str_HidePartyMembers=Masquer les Membres du Groupe
+Str_HideNeutrals=Masquer les Neutres
+Str_HideAllies=Masquer les Alliés
+Str_BuffPanel=Panneau d'Améliorations
+Str_BigBuffIcons=Grandes Icônes d'Améliorations
+Str_BorderlessMode=Mode Sans Bordure
+Str_BorderlessOnStartup=Sans bordure au démarrage
+Str_ForceBorderlessNow=Retirer la bordure maintenant !
+Str_Performance=Performance
+Str_RefreshRate=Taux de rafraîchissement (ms) :
+Str_Fonts=Polices
+Str_Other=Autre
+Str_UseShiftClick=Utiliser Maj+Clic
+Str_UseShiftClickTooltip=Utiliser Maj + Clic droit au lieu de Clic droit
+Str_Locale=Langue :
+Str_Save=Enregistrer

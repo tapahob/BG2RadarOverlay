@@ -1,0 +1,80 @@
+# BG Radar Overlay - teksty interfejsu (polski / pl_PL)
+# Jedna linia "Klucz=Wartość". Linie zaczynające się od # oraz puste są ignorowane.
+# Symbole zastępcze {0} są podstawiane wartością w czasie działania programu - zachowaj je
+# w tłumaczeniu, ich pozycję można zmieniać, jeśli wymaga tego język.
+
+# EnemyControl - panel postaci
+EnemyControlWidth=450
+Str_Level=Poz.{0}
+Str_Race=Rasa: {0}
+Str_STR=SIŁ: {0}
+Str_DEX=ZRC: {0}
+Str_CON=KON: {0}
+Str_INT=INT: {0}
+Str_WIS=MDR: {0}
+Str_CHA=CHA: {0}
+Str_Health=Zdrowie: {0}
+Str_Attacks=Ataki: {0}
+Str_ArmorClass=Klasa Pancerza: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=Doświadczenie: {0}
+Str_Alignment=Charakter: {0}
+Str_SaveDeath=Rzut obronny na śmierć: {0}
+Str_SaveWands=Rzut obronny na różdżki: {0}
+Str_SavePoly=Rzut obronny na polimorfię: {0}
+Str_SaveBreath=Rzut obronny na oddech: {0}
+Str_SaveSpells=Rzut obronny na zaklęcia: {0}
+Str_ResFire=Odporność na ogień: {0}
+Str_ResCold=Odporność na zimno: {0}
+Str_ResElectricity=Odporność na elektryczność: {0}
+Str_ResAcid=Odporność na kwas: {0}
+Str_ResMagic=Odporność na magię: {0}
+Str_ResMagicDamage=Odp. na obr. magiczne: {0}
+Str_ResPoison=Odporność na truciznę: {0}
+Str_ResSlashing=Odp. na obr. sieczne: {0}
+Str_ResCrushing=Odp. na obr. obuchowe: {0}
+Str_ResPiercing=Odp. na obr. kłute: {0}
+Str_ResMissile=Odp. na pociski: {0}
+
+# EnemyControl - lista ochron
+Str_ProtectedFromMagicWeapons=Chroniony przed bronią magiczną
+Str_ProtectedFromMagicAndNormalWeapons=Chroniony przed bronią magiczną i zwykłą
+Str_RequiresEnhancementToHit=Wymaga broni +{0}, aby trafić
+Str_ImmuneToSpellsUpToLevel=Odporność na zaklęcia do poziomu {0}
+Str_BackstabImmunity=Odporność na atak z zaskoczenia
+Str_SeeInvisible=Widzenie niewidzialnych
+Str_CritImmune=Odporność na trafienia krytyczne
+Str_Proficiency=Biegłość:
+Str_OnMeleeHit=Przy trafieniu w walce wręcz: {0}
+Str_OnRangedHit=Przy trafieniu bronią dystansową: {0}
+Str_ImmuneToSpellsList=Odporność na zaklęcia: {0}
+Str_EffectImmunities=Odporność na efekty: {0}
+Str_ACBonus=Bonus do KP +{0}
+Str_ACvsCrushing=KP vs Obuchowe +{0}
+Str_ACvsMissile=KP vs Pociski +{0}
+Str_ACvsPiercing=KP vs Kłute +{0}
+Str_ACvsSlashing=KP vs Sieczne +{0}
+Str_SetACTo=Ustaw KP na {0}
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=Ustaw THAC0 na {0}
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - okno ustawień
+Str_Options=Opcje
+Str_CharacterListFiltering=Filtrowanie listy postaci
+Str_HidePartyMembers=Ukryj członków drużyny
+Str_HideNeutrals=Ukryj neutralnych
+Str_HideAllies=Ukryj sojuszników
+Str_BuffPanel=Panel wzmocnień
+Str_BigBuffIcons=Duże ikony wzmocnień
+Str_BorderlessMode=Tryb bez ramki
+Str_BorderlessOnStartup=Bez ramki przy starcie
+Str_ForceBorderlessNow=Usuń ramkę teraz!
+Str_Performance=Wydajność
+Str_RefreshRate=Częstotliwość odświeżania (ms):
+Str_Fonts=Czcionki
+Str_Other=Inne
+Str_UseShiftClick=Użyj Shift+klik
+Str_UseShiftClickTooltip=Użyj Shift + PPM zamiast PPM
+Str_Locale=Język:
+Str_Save=Zapisz

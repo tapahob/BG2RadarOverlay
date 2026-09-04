@@ -56,4 +56,17 @@
     <Resource Include="radar.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Loose text files (not embedded resources) so translators/users can add or edit a
+         locale without recompiling. ExcludeFromSingleFile keeps them out of the single-file
+         exe bundle - without it, IncludeAllContentForSelfExtract above would embed them and
+         self-extract to a temp cache directory on every run instead of leaving a real,
+         editable Locales folder next to the published exe. -->
+    <Content Include="Locales\*.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
 </Project>

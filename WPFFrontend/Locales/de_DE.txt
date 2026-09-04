@@ -1,0 +1,80 @@
+# BG Radar Overlay - Oberflächentexte (Deutsch / de_DE)
+# Eine Zeile "Schlüssel=Wert". Zeilen mit # und Leerzeilen werden ignoriert.
+# {0}-Platzhalter werden zur Laufzeit durch den entsprechenden Wert ersetzt - in der
+# Übersetzung beibehalten, Position kann bei Bedarf angepasst werden.
+
+# EnemyControl - Charakterpanel
+EnemyControlWidth=450
+Str_Level=St.{0}
+Str_Race=Rasse: {0}
+Str_STR=STK: {0}
+Str_DEX=GES: {0}
+Str_CON=KON: {0}
+Str_INT=INT: {0}
+Str_WIS=WEI: {0}
+Str_CHA=CHA: {0}
+Str_Health=Gesundheit: {0}
+Str_Attacks=Angriffe: {0}
+Str_ArmorClass=Rüstungsklasse: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=Erfahrung: {0}
+Str_Alignment=Gesinnung: {0}
+Str_SaveDeath=Rettungswurf gg. Tod: {0}
+Str_SaveWands=Rettungswurf gg. Zauberstäbe: {0}
+Str_SavePoly=Rettungswurf gg. Verwandlung: {0}
+Str_SaveBreath=Rettungswurf gg. Odem: {0}
+Str_SaveSpells=Rettungswurf gg. Zaubersprüche: {0}
+Str_ResFire=Feuerresistenz: {0}
+Str_ResCold=Kälteresistenz: {0}
+Str_ResElectricity=Elektrizitätsresistenz: {0}
+Str_ResAcid=Säureresistenz: {0}
+Str_ResMagic=Magieresistenz: {0}
+Str_ResMagicDamage=Magieschadenresistenz: {0}
+Str_ResPoison=Giftresistenz: {0}
+Str_ResSlashing=Hiebresistenz: {0}
+Str_ResCrushing=Wuchtresistenz: {0}
+Str_ResPiercing=Stichresistenz: {0}
+Str_ResMissile=Fernkampfresistenz: {0}
+
+# EnemyControl - Schutzliste
+Str_ProtectedFromMagicWeapons=Geschützt vor magischen Waffen
+Str_ProtectedFromMagicAndNormalWeapons=Geschützt vor magischen und normalen Waffen
+Str_RequiresEnhancementToHit=Benötigt +{0} Waffen, um getroffen zu werden
+Str_ImmuneToSpellsUpToLevel=Immun gegen Zauber bis Stufe {0}
+Str_BackstabImmunity=Rückenangriff-Immunität
+Str_SeeInvisible=Unsichtbares sehen
+Str_CritImmune=Immun gegen kritische Treffer
+Str_Proficiency=Fertigkeit:
+Str_OnMeleeHit=Bei Nahkampftreffer: {0}
+Str_OnRangedHit=Bei Fernkampftreffer: {0}
+Str_ImmuneToSpellsList=Immun gegen Zauber: {0}
+Str_EffectImmunities=Effektimmunitäten: {0}
+Str_ACBonus=RK-Bonus +{0}
+Str_ACvsCrushing=RK gg. Wucht +{0}
+Str_ACvsMissile=RK gg. Fernkampf +{0}
+Str_ACvsPiercing=RK gg. Stich +{0}
+Str_ACvsSlashing=RK gg. Hieb +{0}
+Str_SetACTo=RK gesetzt auf {0}
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0 gesetzt auf {0}
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - Einstellungsfenster
+Str_Options=Optionen
+Str_CharacterListFiltering=Charakterlisten-Filter
+Str_HidePartyMembers=Gruppenmitglieder ausblenden
+Str_HideNeutrals=Neutrale ausblenden
+Str_HideAllies=Verbündete ausblenden
+Str_BuffPanel=Verzauberungsanzeige
+Str_BigBuffIcons=Große Verzauberungssymbole
+Str_BorderlessMode=Randloser Modus
+Str_BorderlessOnStartup=Randlos beim Start
+Str_ForceBorderlessNow=Rand jetzt entfernen!
+Str_Performance=Leistung
+Str_RefreshRate=Aktualisierungsrate (ms):
+Str_Fonts=Schriftarten
+Str_Other=Sonstiges
+Str_UseShiftClick=Umschalt+Klick verwenden
+Str_UseShiftClickTooltip=Umschalt + Rechtsklick statt Rechtsklick verwenden
+Str_Locale=Sprache:
+Str_Save=Speichern

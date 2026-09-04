@@ -1,0 +1,80 @@
+# BG Radar Overlay - тексты интерфейса (русский / ru_RU)
+# Одна строка "Ключ=Значение". Строки с # и пустые строки игнорируются.
+# Плейсхолдеры {0} подставляются значениями во время выполнения - сохраняйте их
+# в переводе, порядок/позицию можно менять, если того требует язык.
+
+# EnemyControl - панель персонажа
+EnemyControlWidth=500
+Str_Level=Ур.{0}
+Str_Race=Раса: {0}
+Str_STR=СИЛ: {0}
+Str_DEX=ЛОВ: {0}
+Str_CON=ТЕЛ: {0}
+Str_INT=ИНТ: {0}
+Str_WIS=МУД: {0}
+Str_CHA=ХАР: {0}
+Str_Health=Здоровье: {0}
+Str_Attacks=Атаки: {0}
+Str_ArmorClass=Класс брони: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=Опыт: {0}
+Str_Alignment=Мировоззрение: {0}
+Str_SaveDeath=Спасбросок от смерти: {0}
+Str_SaveWands=Спасбросок от жезлов: {0}
+Str_SavePoly=Спасбросок от превращения: {0}
+Str_SaveBreath=Спасбросок от дыхания: {0}
+Str_SaveSpells=Спасбросок от заклинаний: {0}
+Str_ResFire=Сопр. огню: {0}
+Str_ResCold=Сопр. холоду: {0}
+Str_ResElectricity=Сопр. электричеству: {0}
+Str_ResAcid=Сопр. кислоте: {0}
+Str_ResMagic=Сопр. магии: {0}
+Str_ResMagicDamage=Сопр. маг. урону: {0}
+Str_ResPoison=Сопр. яду: {0}
+Str_ResSlashing=Сопр. рубящему: {0}
+Str_ResCrushing=Сопр. дробящему: {0}
+Str_ResPiercing=Сопр. колющему: {0}
+Str_ResMissile=Сопр. снарядам: {0}
+
+# EnemyControl - список защит
+Str_ProtectedFromMagicWeapons=Защита от магического оружия
+Str_ProtectedFromMagicAndNormalWeapons=Защита от магического и обычного оружия
+Str_RequiresEnhancementToHit=Требуется оружие +{0} для попадания
+Str_ImmuneToSpellsUpToLevel=Иммунитет к заклинаниям до {0} уровня
+Str_BackstabImmunity=Иммунитет к удару в спину
+Str_SeeInvisible=Видение невидимых
+Str_CritImmune=Иммунитет к критическим ударам
+Str_Proficiency=Владение:
+Str_OnMeleeHit=При ударе в ближнем бою: {0}
+Str_OnRangedHit=При ударе дальним оружием: {0}
+Str_ImmuneToSpellsList=Иммунитет к заклинаниям: {0}
+Str_EffectImmunities=Иммунитет к эффектам: {0}
+Str_ACBonus=Бонус КБ +{0}
+Str_ACvsCrushing=КБ против дробящего +{0}
+Str_ACvsMissile=КБ против снарядов +{0}
+Str_ACvsPiercing=КБ против колющего +{0}
+Str_ACvsSlashing=КБ против рубящего +{0}
+Str_SetACTo=КБ установлен на {0}
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0 установлен на {0}
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - окно настроек
+Str_Options=Настройки
+Str_CharacterListFiltering=Фильтр списка персонажей
+Str_HidePartyMembers=Скрыть членов группы
+Str_HideNeutrals=Скрыть нейтральных
+Str_HideAllies=Скрыть союзников
+Str_BuffPanel=Панель баффов
+Str_BigBuffIcons=Крупные иконки баффов
+Str_BorderlessMode=Режим без рамки
+Str_BorderlessOnStartup=Без рамки при запуске
+Str_ForceBorderlessNow=Убрать рамку сейчас!
+Str_Performance=Производительность
+Str_RefreshRate=Частота обновления (мс):
+Str_Fonts=Шрифты
+Str_Other=Другое
+Str_UseShiftClick=Использовать Shift+клик
+Str_UseShiftClickTooltip=Использовать Shift + ПКМ вместо ПКМ
+Str_Locale=Язык:
+Str_Save=Сохранить

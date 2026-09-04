@@ -1,0 +1,80 @@
+# BG Radar Overlay - textos de la interfaz (español / es_ES)
+# Una línea "Clave=Valor". Las líneas que empiezan con # y las líneas vacías se ignoran.
+# Los marcadores {0} se sustituyen por el valor correspondiente en tiempo de ejecución -
+# consérvalos en la traducción, su posición puede cambiarse si el idioma lo requiere.
+
+# EnemyControl - panel de personaje
+EnemyControlWidth=450
+Str_Level=Niv.{0}
+Str_Race=Raza: {0}
+Str_STR=FUE: {0}
+Str_DEX=DES: {0}
+Str_CON=CON: {0}
+Str_INT=INT: {0}
+Str_WIS=SAB: {0}
+Str_CHA=CAR: {0}
+Str_Health=Salud: {0}
+Str_Attacks=Ataques: {0}
+Str_ArmorClass=Clase de Armadura: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=Experiencia: {0}
+Str_Alignment=Alineamiento: {0}
+Str_SaveDeath=Salvación vs Muerte: {0}
+Str_SaveWands=Salvación vs Varitas: {0}
+Str_SavePoly=Salvación vs Polimorfia: {0}
+Str_SaveBreath=Salvación vs Aliento: {0}
+Str_SaveSpells=Salvación vs Conjuros: {0}
+Str_ResFire=Resistencia al Fuego: {0}
+Str_ResCold=Resistencia al Frío: {0}
+Str_ResElectricity=Resistencia a la Electricidad: {0}
+Str_ResAcid=Resistencia al Ácido: {0}
+Str_ResMagic=Resistencia a la Magia: {0}
+Str_ResMagicDamage=Res. a Daño Mágico: {0}
+Str_ResPoison=Resistencia al Veneno: {0}
+Str_ResSlashing=Res. Cortante: {0}
+Str_ResCrushing=Res. Contundente: {0}
+Str_ResPiercing=Res. Perforante: {0}
+Str_ResMissile=Res. a Proyectiles: {0}
+
+# EnemyControl - lista de protecciones
+Str_ProtectedFromMagicWeapons=Protegido de Armas Mágicas
+Str_ProtectedFromMagicAndNormalWeapons=Protegido de Armas Mágicas y Normales
+Str_RequiresEnhancementToHit=Requiere armas +{0} para ser golpeado
+Str_ImmuneToSpellsUpToLevel=Inmune a conjuros hasta nivel {0}
+Str_BackstabImmunity=Inmunidad a Ataque Furtivo
+Str_SeeInvisible=Ver Invisible
+Str_CritImmune=Inmune a Críticos
+Str_Proficiency=Competencia:
+Str_OnMeleeHit=Al golpear cuerpo a cuerpo: {0}
+Str_OnRangedHit=Al golpear a distancia: {0}
+Str_ImmuneToSpellsList=Inmune a conjuros: {0}
+Str_EffectImmunities=Inmunidades a efectos: {0}
+Str_ACBonus=Bono de CA +{0}
+Str_ACvsCrushing=CA vs Contundente +{0}
+Str_ACvsMissile=CA vs Proyectiles +{0}
+Str_ACvsPiercing=CA vs Perforante +{0}
+Str_ACvsSlashing=CA vs Cortante +{0}
+Str_SetACTo=CA establecida en {0}
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0 establecido en {0}
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - ventana de opciones
+Str_Options=Opciones
+Str_CharacterListFiltering=Filtrado de Lista de Personajes
+Str_HidePartyMembers=Ocultar Miembros del Grupo
+Str_HideNeutrals=Ocultar Neutrales
+Str_HideAllies=Ocultar Aliados
+Str_BuffPanel=Panel de Mejoras
+Str_BigBuffIcons=Iconos de Mejora Grandes
+Str_BorderlessMode=Modo Sin Bordes
+Str_BorderlessOnStartup=Sin bordes al iniciar
+Str_ForceBorderlessNow=¡Quitar bordes ahora!
+Str_Performance=Rendimiento
+Str_RefreshRate=Frecuencia de Actualización (ms):
+Str_Fonts=Fuentes
+Str_Other=Otro
+Str_UseShiftClick=Usar Shift+Clic
+Str_UseShiftClickTooltip=Usar Shift + Clic derecho en lugar de Clic derecho
+Str_Locale=Idioma:
+Str_Save=Guardar

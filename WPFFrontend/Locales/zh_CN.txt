@@ -1,0 +1,79 @@
+# BG Radar Overlay - 界面文本 (简体中文 / zh_CN)
+# 每行一个 "键=值"。以 # 开头的行和空行会被忽略。
+# {0} 占位符会在运行时被替换为对应的值 - 翻译时请保留它们，如果该语言需要，可以调整位置。
+
+# EnemyControl - 角色面板
+EnemyControlWidth=450
+Str_Level=等级{0}
+Str_Race=种族: {0}
+Str_STR=力量: {0}
+Str_DEX=敏捷: {0}
+Str_CON=体质: {0}
+Str_INT=智力: {0}
+Str_WIS=感知: {0}
+Str_CHA=魅力: {0}
+Str_Health=生命值: {0}
+Str_Attacks=攻击次数: {0}
+Str_ArmorClass=护甲等级: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=经验值: {0}
+Str_Alignment=阵营: {0}
+Str_SaveDeath=死亡豁免: {0}
+Str_SaveWands=法杖豁免: {0}
+Str_SavePoly=变形豁免: {0}
+Str_SaveBreath=吐息豁免: {0}
+Str_SaveSpells=法术豁免: {0}
+Str_ResFire=火焰抗性: {0}
+Str_ResCold=寒冷抗性: {0}
+Str_ResElectricity=电击抗性: {0}
+Str_ResAcid=酸液抗性: {0}
+Str_ResMagic=魔法抗性: {0}
+Str_ResMagicDamage=魔法伤害抗性: {0}
+Str_ResPoison=毒素抗性: {0}
+Str_ResSlashing=挥砍抗性: {0}
+Str_ResCrushing=钝击抗性: {0}
+Str_ResPiercing=穿刺抗性: {0}
+Str_ResMissile=远程抗性: {0}
+
+# EnemyControl - 抗性/免疫列表
+Str_ProtectedFromMagicWeapons=免疫魔法武器
+Str_ProtectedFromMagicAndNormalWeapons=免疫魔法及普通武器
+Str_RequiresEnhancementToHit=需要 +{0} 武器才能命中
+Str_ImmuneToSpellsUpToLevel=免疫 {0} 环及以下法术
+Str_BackstabImmunity=背刺免疫
+Str_SeeInvisible=看破隐形
+Str_CritImmune=免疫暴击
+Str_Proficiency=熟练项:
+Str_OnMeleeHit=近战命中时: {0}
+Str_OnRangedHit=远程命中时: {0}
+Str_ImmuneToSpellsList=法术免疫: {0}
+Str_EffectImmunities=效果免疫: {0}
+Str_ACBonus=护甲等级加成 +{0}
+Str_ACvsCrushing=对钝击护甲 +{0}
+Str_ACvsMissile=对远程护甲 +{0}
+Str_ACvsPiercing=对穿刺护甲 +{0}
+Str_ACvsSlashing=对挥砍护甲 +{0}
+Str_SetACTo=护甲等级设为 {0}
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0 设为 {0}
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - 设置窗口
+Str_Options=选项
+Str_CharacterListFiltering=角色列表过滤
+Str_HidePartyMembers=隐藏队伍成员
+Str_HideNeutrals=隐藏中立单位
+Str_HideAllies=隐藏盟友
+Str_BuffPanel=增益面板
+Str_BigBuffIcons=大号增益图标
+Str_BorderlessMode=无边框模式
+Str_BorderlessOnStartup=启动时无边框
+Str_ForceBorderlessNow=立即移除边框！
+Str_Performance=性能
+Str_RefreshRate=刷新率 (毫秒):
+Str_Fonts=字体
+Str_Other=其他
+Str_UseShiftClick=使用 Shift+点击
+Str_UseShiftClickTooltip=使用 Shift + 右键 代替 右键
+Str_Locale=语言:
+Str_Save=保存

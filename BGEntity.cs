@@ -115,14 +115,11 @@ namespace BGOverlay
                         // from PFMW
                         if (weaponProtectionFromBuffs.Any(x => x.dWFlags == 1))
                         {
-                            var str = $"Protected from Magic";
                             // from normal
-                            if (weaponProtectionFromBuffs.Any(x => x.dWFlags == 2))
-                            {
-                                str += " and Normal";
-                            }
-                            str += " Weapons";
-                            result.Add(str);
+                            var alsoNormal = weaponProtectionFromBuffs.Any(x => x.dWFlags == 2);
+                            result.Add(RadarLocalization.Get(alsoNormal
+                                ? "Str_ProtectedFromMagicAndNormalWeapons"
+                                : "Str_ProtectedFromMagicWeapons"));
                         }
                     } else
                     {
@@ -133,27 +130,27 @@ namespace BGOverlay
                         var enhancementProtection = DerivedStats.WeaponImmune.Where(x => x.Flags == 0 && x.FlagMask == 0).OrderByDescending(x=>x.Attributes).FirstOrDefault();
                         if (enhancementProtection != null)
                             requiredEnhancementToHit = enhancementProtection.Attributes + 1;
-                        result.Add($"Requires +{requiredEnhancementToHit} weapons to be hit");
+                        result.Add(string.Format(RadarLocalization.Get("Str_RequiresEnhancementToHit"), requiredEnhancementToHit));
                     }
                 }
                 for (int i = 9; i > 0; --i)
                 {
                     if (DerivedStatsTemp.spellImmuneLevel[i] > 0)
                     {
-                        result.Add($"Immune to spells up to level {i}");
+                        result.Add(string.Format(RadarLocalization.Get("Str_ImmuneToSpellsUpToLevel"), i));
                         break;
                     }
                 }
                 var thiefStr = "";
                 if (this.DerivedStats.BackstabImmunity > 0)
-                    thiefStr += "Backstab Immunity\t";
+                    thiefStr += RadarLocalization.Get("Str_BackstabImmunity") + "\t";
                 if (this.DerivedStats.SeeInvisible > 0)
-                    thiefStr += "See Invisible\t";
+                    thiefStr += RadarLocalization.Get("Str_SeeInvisible") + "\t";
                 if (this.CritImmune)
-                    thiefStr += "Crit Immune";
+                    thiefStr += RadarLocalization.Get("Str_CritImmune");
                 if (thiefStr != "")
                     result.Add(thiefStr);
-                string proficiencyStr = "Proficiency: ";
+                var proficiencyParts = new List<string>();
                 var allEffectsStrings = new List<string>();
 
                 foreach (var item in allEffects)
@@ -184,7 +181,7 @@ namespace BGOverlay
                     {
                         var amount = item.Param1;
                         var type = (Proficiency)item.Param2;
-                        proficiencyStr += $"{type.ToString().Replace("_", " ")} +{amount} ";
+                        proficiencyParts.Add($"{type.ToString().Replace("_", " ")} +{amount}");
                         continue;
                     }
                     if (item.EffectName == Effect.Item_Set_Melee_Effect)
@@ -220,22 +217,22 @@ namespace BGOverlay
                         switch (type)
                         {
                             case 0:
-                                result.Add($"AC Bonus +{amount}");
+                                result.Add(string.Format(RadarLocalization.Get("Str_ACBonus"), amount));
                                 break;
                             case 1:
-                                result.Add($"AC vs Crushing +{amount}");
+                                result.Add(string.Format(RadarLocalization.Get("Str_ACvsCrushing"), amount));
                                 break;
                             case 2:
-                                result.Add($"AC vs Missile +{amount}");
+                                result.Add(string.Format(RadarLocalization.Get("Str_ACvsMissile"), amount));
                                 break;
                             case 4:
-                                result.Add($"AC vs Piercing +{amount}");
+                                result.Add(string.Format(RadarLocalization.Get("Str_ACvsPiercing"), amount));
                                 break;
                             case 8:
-                                result.Add($"AC vs Slashing +{amount}");
+                                result.Add(string.Format(RadarLocalization.Get("Str_ACvsSlashing"), amount));
                                 break;
                             case 16:
-                                result.Add($"Set AC to {amount}");
+                                result.Add(string.Format(RadarLocalization.Get("Str_SetACTo"), amount));
                                 break;
                         }
                         continue;
@@ -246,13 +243,13 @@ namespace BGOverlay
                         switch (item.Param2)
                         {
                             case 0:
-                                result.Add($"THAC0 +{amount}");
+                                result.Add(string.Format(RadarLocalization.Get("Str_THAC0Bonus"), amount));
                                 break;
                             case 1:
-                                result.Add($"Set THAC0 to {amount}");
+                                result.Add(string.Format(RadarLocalization.Get("Str_SetTHAC0To"), amount));
                                 break;
                             case 2:
-                                result.Add($"THAC0 +{amount}%");
+                                result.Add(string.Format(RadarLocalization.Get("Str_THAC0Percent"), amount));
                                 break;
                         }
                         continue;
@@ -292,7 +289,7 @@ namespace BGOverlay
                     && !x.StartsWith("Colour")
                     && !x.Contains("Portrait"));
 
-                    result.Add(preprocess("On melee hit: " + string.Join(", ", onHitMeleeStringsFiltered)));
+                    result.Add(string.Format(RadarLocalization.Get("Str_OnMeleeHit"), string.Join(", ", onHitMeleeStringsFiltered)));
                 }
 
                 if (onHitRangedStrings.Any())
@@ -304,16 +301,19 @@ namespace BGOverlay
                     && !x.StartsWith("Colour")
                     && !x.Contains("Portrait"));
 
-                    result.Add(preprocess("On ranged hit: " + string.Join(", ", onHitRangedStringsFiltered)));
+                    result.Add(string.Format(RadarLocalization.Get("Str_OnRangedHit"), string.Join(", ", onHitRangedStringsFiltered)));
                 }
 
                 if (spellStrings.Any())
                 {
-                    result.Add(preprocess("Immune to spells: " + string.Join(", ", spellStrings.OrderBy(o => o))));
+                    result.Add(string.Format(RadarLocalization.Get("Str_ImmuneToSpellsList"), string.Join(", ", spellStrings.OrderBy(o => o))));
                 }
 
-                if (!proficiencyStr.EndsWith(": "))
-                    result.Add(proficiencyStr);
+                if (proficiencyParts.Any())
+                    // A trailing space is added explicitly (rather than baked into the locale
+                    // value) since trailing whitespace in a "Key=Value" text file line is easy
+                    // to lose to trimming, in an editor or otherwise.
+                    result.Add(RadarLocalization.Get("Str_Proficiency") + " " + string.Join(" ", proficiencyParts));
 
                 var inMemoryProtections = DerivedStats.EffectImmunes.Select(y => y.EffectId.ToString()).Where(x =>
                 !x.StartsWith("Text")
@@ -321,7 +321,7 @@ namespace BGOverlay
                 && !x.Contains("RGB")
                 && !x.StartsWith("Colour")).Select(z => preprocess(z)).Distinct().ToList();
                 if (inMemoryProtections.Any())
-                    result.Add("Effect immunities: " + string.Join(", ", inMemoryProtections.OrderBy(o => o)));
+                    result.Add(string.Format(RadarLocalization.Get("Str_EffectImmunities"), string.Join(", ", inMemoryProtections.OrderBy(o => o))));
                 var moreSpellImmunities = DerivedStats.SpellImmunities;
                 return result;
             }

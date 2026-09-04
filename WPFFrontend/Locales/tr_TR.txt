@@ -1,0 +1,80 @@
+# BG Radar Overlay - arayüz metinleri (Türkçe / tr_TR)
+# Her satır "Anahtar=Değer" biçiminde. # ile başlayan ve boş satırlar yok sayılır.
+# {0} yer tutucuları çalışma anında ilgili değerle doldurulur - çeviride bunları koruyun,
+# dil gerektiriyorsa yerleri değiştirilebilir.
+
+# EnemyControl - karakter paneli
+EnemyControlWidth=450
+Str_Level=Sv.{0}
+Str_Race=Irk: {0}
+Str_STR=GÜÇ: {0}
+Str_DEX=ÇEV: {0}
+Str_CON=DAY: {0}
+Str_INT=ZEK: {0}
+Str_WIS=BİL: {0}
+Str_CHA=KAR: {0}
+Str_Health=Sağlık: {0}
+Str_Attacks=Saldırılar: {0}
+Str_ArmorClass=Zırh Sınıfı: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=Tecrübe: {0}
+Str_Alignment=Eğilim: {0}
+Str_SaveDeath=Ölüme Karşı Kurtarma: {0}
+Str_SaveWands=Asalara Karşı Kurtarma: {0}
+Str_SavePoly=Şekil Değişimine Karşı Kurtarma: {0}
+Str_SaveBreath=Nefese Karşı Kurtarma: {0}
+Str_SaveSpells=Büyülere Karşı Kurtarma: {0}
+Str_ResFire=Ateşe Direnç: {0}
+Str_ResCold=Soğuğa Direnç: {0}
+Str_ResElectricity=Elektriğe Direnç: {0}
+Str_ResAcid=Aside Direnç: {0}
+Str_ResMagic=Büyüye Direnç: {0}
+Str_ResMagicDamage=Büyü Hasarına Direnç: {0}
+Str_ResPoison=Zehire Direnç: {0}
+Str_ResSlashing=Kesici Hasara Direnç: {0}
+Str_ResCrushing=Ezici Hasara Direnç: {0}
+Str_ResPiercing=Delici Hasara Direnç: {0}
+Str_ResMissile=Mermiye Direnç: {0}
+
+# EnemyControl - Korumalar listesi
+Str_ProtectedFromMagicWeapons=Büyülü Silahlara Karşı Korumalı
+Str_ProtectedFromMagicAndNormalWeapons=Büyülü ve Normal Silahlara Karşı Korumalı
+Str_RequiresEnhancementToHit=Vurmak için +{0} silah gerekir
+Str_ImmuneToSpellsUpToLevel={0}. seviyeye kadar büyülere bağışık
+Str_BackstabImmunity=Sırttan Bıçaklamaya Bağışıklık
+Str_SeeInvisible=Görünmezi Görme
+Str_CritImmune=Kritik Vuruşa Bağışık
+Str_Proficiency=Yeterlilik:
+Str_OnMeleeHit=Yakın dövüş vuruşunda: {0}
+Str_OnRangedHit=Menzilli vuruşta: {0}
+Str_ImmuneToSpellsList=Büyülere bağışık: {0}
+Str_EffectImmunities=Etki bağışıklıkları: {0}
+Str_ACBonus=ZS Bonusu +{0}
+Str_ACvsCrushing=Ezici Hasara Karşı ZS +{0}
+Str_ACvsMissile=Mermiye Karşı ZS +{0}
+Str_ACvsPiercing=Delici Hasara Karşı ZS +{0}
+Str_ACvsSlashing=Kesici Hasara Karşı ZS +{0}
+Str_SetACTo=ZS {0} olarak ayarlandı
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0 {0} olarak ayarlandı
+Str_THAC0Percent=THAC0 +%{0}
+
+# OptionsControl - ayarlar penceresi
+Str_Options=Ayarlar
+Str_CharacterListFiltering=Karakter Listesi Filtreleme
+Str_HidePartyMembers=Grup Üyelerini Gizle
+Str_HideNeutrals=Tarafsızları Gizle
+Str_HideAllies=Müttefikleri Gizle
+Str_BuffPanel=Güçlendirme Paneli
+Str_BigBuffIcons=Büyük Güçlendirme Simgeleri
+Str_BorderlessMode=Kenarlıksız Mod
+Str_BorderlessOnStartup=Başlangıçta Kenarlıksız
+Str_ForceBorderlessNow=Kenarlığı Şimdi Kaldır!
+Str_Performance=Performans
+Str_RefreshRate=Yenileme Hızı (ms):
+Str_Fonts=Yazı Tipleri
+Str_Other=Diğer
+Str_UseShiftClick=Shift+Tık Kullan
+Str_UseShiftClickTooltip=Sağ Tık yerine Shift + Sağ Tık kullan
+Str_Locale=Dil:
+Str_Save=Kaydet

@@ -1,0 +1,85 @@
+# BG Radar Overlay - UI text (English / en_US)
+# One "Key=Value" line per string. Lines starting with # and blank lines are ignored.
+# {0} placeholders are filled in with the corresponding value at runtime - keep them
+# in translations, but they may be moved/reordered if the target language needs it.
+
+# EnemyControl - character panel
+# EnemyControlWidth is the panel's width in pixels, not a translated string. It's optional -
+# omit it (or leave it blank/invalid) to keep the control's default width. 450 below is that
+# default, spelled out here so translators have something to compare against and widen if
+# their text needs more room.
+EnemyControlWidth=450
+Str_Level=Lv{0}
+Str_Race=Race: {0}
+Str_STR=STR: {0}
+Str_DEX=DEX: {0}
+Str_CON=CON: {0}
+Str_INT=INT: {0}
+Str_WIS=WIS: {0}
+Str_CHA=CHR: {0}
+Str_Health=Health: {0}
+Str_Attacks=Attacks: {0}
+Str_ArmorClass=Armor Class: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=Experience: {0}
+Str_Alignment=Alignment: {0}
+Str_SaveDeath=Save vs Death: {0}
+Str_SaveWands=Save vs Wands: {0}
+Str_SavePoly=Save vs Polymorph: {0}
+Str_SaveBreath=Save vs Breath: {0}
+Str_SaveSpells=Save vs Spells: {0}
+Str_ResFire=Resist Fire: {0}
+Str_ResCold=Resist Cold: {0}
+Str_ResElectricity=Resist Electricity: {0}
+Str_ResAcid=Resist Acid: {0}
+Str_ResMagic=Resist Magic: {0}
+Str_ResMagicDamage=Resist Magic Dmg: {0}
+Str_ResPoison=Resist Poison: {0}
+Str_ResSlashing=Resist Slashing: {0}
+Str_ResCrushing=Resist Crushing: {0}
+Str_ResPiercing=Resist Piercing: {0}
+Str_ResMissile=Resist Missile: {0}
+
+# EnemyControl - Protections list (BGEntity.computeProtections in the core project also pulls
+# from this same table, not just the WPF layer)
+Str_ProtectedFromMagicWeapons=Protected from Magic Weapons
+Str_ProtectedFromMagicAndNormalWeapons=Protected from Magic and Normal Weapons
+Str_RequiresEnhancementToHit=Requires +{0} weapons to be hit
+Str_ImmuneToSpellsUpToLevel=Immune to spells up to level {0}
+Str_BackstabImmunity=Backstab Immunity
+Str_SeeInvisible=See Invisible
+Str_CritImmune=Crit Immune
+Str_Proficiency=Proficiency:
+Str_OnMeleeHit=On melee hit: {0}
+Str_OnRangedHit=On ranged hit: {0}
+Str_ImmuneToSpellsList=Immune to spells: {0}
+Str_EffectImmunities=Effect immunities: {0}
+Str_ACBonus=AC Bonus +{0}
+Str_ACvsCrushing=AC vs Crushing +{0}
+Str_ACvsMissile=AC vs Missile +{0}
+Str_ACvsPiercing=AC vs Piercing +{0}
+Str_ACvsSlashing=AC vs Slashing +{0}
+Str_SetACTo=Set AC to {0}
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=Set THAC0 to {0}
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - settings window
+Str_Options=Options
+Str_CharacterListFiltering=Character List Filtering
+Str_HidePartyMembers=Hide Party Members
+Str_HideNeutrals=Hide Neutrals
+Str_HideAllies=Hide Allies
+Str_BuffPanel=Buff Panel
+Str_BigBuffIcons=Big Buff icons
+Str_BorderlessMode=Borderless Mode
+Str_BorderlessOnStartup=Borderless on startup
+Str_ForceBorderlessNow=Force Borderless now!
+Str_Performance=Performance
+Str_RefreshRate=Refresh Rate (ms):
+Str_Fonts=Fonts
+Str_Other=Other
+Str_UseShiftClick=Use Shift Click
+Str_UseShiftClickTooltip=Use Shift Right-Click instead of Right Click
+Str_Locale=Locale:
+Str_Save=Save

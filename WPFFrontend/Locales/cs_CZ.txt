@@ -1,0 +1,80 @@
+# BG Radar Overlay - texty rozhraní (čeština / cs_CZ)
+# Jeden řádek "Klíč=Hodnota". Řádky začínající # a prázdné řádky jsou ignorovány.
+# Zástupné symboly {0} se za běhu nahradí odpovídající hodnotou - v překladu je zachovejte,
+# pořadí/pozici lze upravit, pokud to daný jazyk vyžaduje.
+
+# EnemyControl - panel postavy
+EnemyControlWidth=450
+Str_Level=Úr.{0}
+Str_Race=Rasa: {0}
+Str_STR=SÍL: {0}
+Str_DEX=OBR: {0}
+Str_CON=ODO: {0}
+Str_INT=INT: {0}
+Str_WIS=MOU: {0}
+Str_CHA=CHA: {0}
+Str_Health=Zdraví: {0}
+Str_Attacks=Útoky: {0}
+Str_ArmorClass=Třída zbroje: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=Zkušenosti: {0}
+Str_Alignment=Zaměření: {0}
+Str_SaveDeath=Záchrana proti smrti: {0}
+Str_SaveWands=Záchrana proti hůlkám: {0}
+Str_SavePoly=Záchrana proti polymorfii: {0}
+Str_SaveBreath=Záchrana proti dechu: {0}
+Str_SaveSpells=Záchrana proti kouzlům: {0}
+Str_ResFire=Odolnost vůči ohni: {0}
+Str_ResCold=Odolnost vůči chladu: {0}
+Str_ResElectricity=Odolnost vůči elektřině: {0}
+Str_ResAcid=Odolnost vůči kyselině: {0}
+Str_ResMagic=Odolnost vůči magii: {0}
+Str_ResMagicDamage=Odolnost vůči mag. zranění: {0}
+Str_ResPoison=Odolnost vůči jedu: {0}
+Str_ResSlashing=Odolnost vůči sečnému: {0}
+Str_ResCrushing=Odolnost vůči drtivému: {0}
+Str_ResPiercing=Odolnost vůči bodnému: {0}
+Str_ResMissile=Odolnost vůči střelám: {0}
+
+# EnemyControl - seznam ochran
+Str_ProtectedFromMagicWeapons=Chráněn před magickými zbraněmi
+Str_ProtectedFromMagicAndNormalWeapons=Chráněn před magickými i běžnými zbraněmi
+Str_RequiresEnhancementToHit=Vyžaduje zbraň +{0} k zásahu
+Str_ImmuneToSpellsUpToLevel=Imunní vůči kouzlům do úrovně {0}
+Str_BackstabImmunity=Imunita vůči zezadu vedenému útoku
+Str_SeeInvisible=Vidění neviditelných
+Str_CritImmune=Imunní vůči kritickým zásahům
+Str_Proficiency=Zdatnost:
+Str_OnMeleeHit=Při zásahu zblízka: {0}
+Str_OnRangedHit=Při zásahu na dálku: {0}
+Str_ImmuneToSpellsList=Imunní vůči kouzlům: {0}
+Str_EffectImmunities=Imunita vůči efektům: {0}
+Str_ACBonus=Bonus TZ +{0}
+Str_ACvsCrushing=TZ proti drtivému +{0}
+Str_ACvsMissile=TZ proti střelám +{0}
+Str_ACvsPiercing=TZ proti bodnému +{0}
+Str_ACvsSlashing=TZ proti sečnému +{0}
+Str_SetACTo=TZ nastavena na {0}
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0 nastaveno na {0}
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - okno nastavení
+Str_Options=Možnosti
+Str_CharacterListFiltering=Filtrování seznamu postav
+Str_HidePartyMembers=Skrýt členy skupiny
+Str_HideNeutrals=Skrýt neutrální
+Str_HideAllies=Skrýt spojence
+Str_BuffPanel=Panel vylepšení
+Str_BigBuffIcons=Velké ikony vylepšení
+Str_BorderlessMode=Režim bez okrajů
+Str_BorderlessOnStartup=Bez okrajů při spuštění
+Str_ForceBorderlessNow=Odstranit okraje nyní!
+Str_Performance=Výkon
+Str_RefreshRate=Frekvence obnovení (ms):
+Str_Fonts=Písma
+Str_Other=Ostatní
+Str_UseShiftClick=Použít Shift+klik
+Str_UseShiftClickTooltip=Použít Shift + pravé tlačítko místo pravého tlačítka
+Str_Locale=Jazyk:
+Str_Save=Uložit

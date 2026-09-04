@@ -1,0 +1,80 @@
+# BG Radar Overlay - インターフェーステキスト (日本語 / ja_JP)
+# 1行につき "キー=値" の形式。# で始まる行と空行は無視されます。
+# {0} プレースホルダーは実行時に対応する値に置き換えられます。翻訳時にはそのまま残してください。
+# 言語の都合で位置を変更しても構いません。
+
+# EnemyControl - キャラクターパネル
+EnemyControlWidth=450
+Str_Level=Lv{0}
+Str_Race=種族: {0}
+Str_STR=筋力: {0}
+Str_DEX=敏捷力: {0}
+Str_CON=耐久力: {0}
+Str_INT=知力: {0}
+Str_WIS=判断力: {0}
+Str_CHA=魅力: {0}
+Str_Health=体力: {0}
+Str_Attacks=攻撃回数: {0}
+Str_ArmorClass=防御クラス: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=経験値: {0}
+Str_Alignment=属性: {0}
+Str_SaveDeath=対死亡セーヴ: {0}
+Str_SaveWands=対魔法の杖セーヴ: {0}
+Str_SavePoly=対変身セーヴ: {0}
+Str_SaveBreath=対ブレスセーヴ: {0}
+Str_SaveSpells=対呪文セーヴ: {0}
+Str_ResFire=火炎抵抗: {0}
+Str_ResCold=冷気抵抗: {0}
+Str_ResElectricity=電撃抵抗: {0}
+Str_ResAcid=酸抵抗: {0}
+Str_ResMagic=魔法抵抗: {0}
+Str_ResMagicDamage=魔法ダメージ抵抗: {0}
+Str_ResPoison=毒抵抗: {0}
+Str_ResSlashing=斬撃抵抗: {0}
+Str_ResCrushing=打撃抵抗: {0}
+Str_ResPiercing=刺突抵抗: {0}
+Str_ResMissile=飛び道具抵抗: {0}
+
+# EnemyControl - 耐性/免疫リスト
+Str_ProtectedFromMagicWeapons=魔法武器耐性
+Str_ProtectedFromMagicAndNormalWeapons=魔法武器および通常武器耐性
+Str_RequiresEnhancementToHit=命中には+{0}の武器が必要
+Str_ImmuneToSpellsUpToLevel={0}レベルまでの呪文に免疫
+Str_BackstabImmunity=背後からの攻撃への免疫
+Str_SeeInvisible=不可視看破
+Str_CritImmune=クリティカル無効
+Str_Proficiency=熟練度:
+Str_OnMeleeHit=近接命中時: {0}
+Str_OnRangedHit=遠隔命中時: {0}
+Str_ImmuneToSpellsList=呪文免疫: {0}
+Str_EffectImmunities=効果免疫: {0}
+Str_ACBonus=AC ボーナス +{0}
+Str_ACvsCrushing=AC 対打撃 +{0}
+Str_ACvsMissile=AC 対飛び道具 +{0}
+Str_ACvsPiercing=AC 対刺突 +{0}
+Str_ACvsSlashing=AC 対斬撃 +{0}
+Str_SetACTo=AC を {0} に設定
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0 を {0} に設定
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - 設定ウィンドウ
+Str_Options=オプション
+Str_CharacterListFiltering=キャラクターリストのフィルタ
+Str_HidePartyMembers=パーティメンバーを隠す
+Str_HideNeutrals=中立を隠す
+Str_HideAllies=味方を隠す
+Str_BuffPanel=バフパネル
+Str_BigBuffIcons=大きいバフアイコン
+Str_BorderlessMode=ボーダーレスモード
+Str_BorderlessOnStartup=起動時にボーダーレス
+Str_ForceBorderlessNow=今すぐボーダーレスにする！
+Str_Performance=パフォーマンス
+Str_RefreshRate=更新頻度 (ms):
+Str_Fonts=フォント
+Str_Other=その他
+Str_UseShiftClick=Shift+クリックを使用
+Str_UseShiftClickTooltip=右クリックの代わりにShift+右クリックを使用
+Str_Locale=言語:
+Str_Save=保存

@@ -36,56 +36,55 @@
             <ColumnDefinition Width="10"/>
         </Grid.ColumnDefinitions>
         <Label x:Name="CloseBtn" Grid.Row="1" Grid.Column="3" Content="X" FontSize="16" HorizontalAlignment="Left" FontFamily="Segoe Print" Margin="155,0,0,38" MouseDown="Label_MouseDown" Grid.RowSpan="2"/>
-        <Label Grid.Row="1" Grid.Column="1" FontSize="18" Content="Options" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Grid.ColumnSpan="3" Width="80"/>
+        <Label Grid.Row="1" Grid.Column="1" FontSize="18" Content="{DynamicResource Str_Options}" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Grid.ColumnSpan="3" Width="80"/>
         <Label x:Name="Version" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="10" d:Content="Ver. 2.0.3.2" Content="{Binding Configuration.Version}" FontFamily="Segoe Print" HorizontalAlignment="Center" Margin="0,26,0,30" Grid.RowSpan="2" Width="80"/>
         <Border Grid.RowSpan="14" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
         <Border Grid.Row="3"  Grid.Column="1" Grid.ColumnSpan="1" BorderThickness="1" BorderBrush="#FF151313"/>
         <StackPanel Grid.Row="3" Grid.Column="1" Margin="5,5,5,5">
-            <Label Style="{StaticResource BoldSmall}" Content="Character List Filtering" HorizontalAlignment="Center"/>
-            <CheckBox x:Name="HidePartyMembers" Content="Hide Party Members" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" />
-            <CheckBox x:Name="HideNeutrals" Content="Hide Neutrals" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold"/>
-            <CheckBox x:Name="HideAllies" VerticalContentAlignment="Center" Content="Hide Allies" FontFamily="Segoe Print" FontWeight="Bold"/>
+            <Label Style="{StaticResource BoldSmall}" Content="{DynamicResource Str_CharacterListFiltering}" HorizontalAlignment="Center"/>
+            <CheckBox x:Name="HidePartyMembers" Content="{DynamicResource Str_HidePartyMembers}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" />
+            <CheckBox x:Name="HideNeutrals" Content="{DynamicResource Str_HideNeutrals}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold"/>
+            <CheckBox x:Name="HideAllies" VerticalContentAlignment="Center" Content="{DynamicResource Str_HideAllies}" FontFamily="Segoe Print" FontWeight="Bold"/>
         </StackPanel>
         <Border Grid.Row="3" Grid.Column="3" BorderThickness="1" BorderBrush="#FF151313"/>
         <StackPanel Grid.Row="3" Grid.Column="3" Margin="5,5,5,5">
-            <Label Content="Buff Panel" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
-            <CheckBox x:Name="BigBuffIcons" VerticalContentAlignment="Center" Content="Big Buff icons" FontFamily="Segoe Print" FontWeight="Bold"/>
+            <Label Content="{DynamicResource Str_BuffPanel}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+            <CheckBox x:Name="BigBuffIcons" VerticalContentAlignment="Center" Content="{DynamicResource Str_BigBuffIcons}" FontFamily="Segoe Print" FontWeight="Bold"/>
         </StackPanel>
         <Border Grid.ColumnSpan="3" Grid.Row="4" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="2"/>
         <StackPanel Grid.ColumnSpan="3" Grid.Row="5" Grid.Column="1" Margin="5,5,5,5">
-            <Label Content="Borderless Mode" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
-            <CheckBox x:Name="EnableBorderlessMode" VerticalContentAlignment="Center" Content="Borderless on startup" FontFamily="Segoe Print" FontWeight="Bold"/>
-            <Button x:Name="ForceBorderless" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Force Borderless now!" FontFamily="Segoe Print" FontWeight="Bold" Click="ForceBorderless_Click"/>
+            <Label Content="{DynamicResource Str_BorderlessMode}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+            <CheckBox x:Name="EnableBorderlessMode" VerticalContentAlignment="Center" Content="{DynamicResource Str_BorderlessOnStartup}" FontFamily="Segoe Print" FontWeight="Bold"/>
+            <Button x:Name="ForceBorderless" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="{DynamicResource Str_ForceBorderlessNow}" FontFamily="Segoe Print" FontWeight="Bold" Click="ForceBorderless_Click"/>
         </StackPanel>
         <Border Grid.Row="6" Grid.ColumnSpan="1" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="3"/>
         <StackPanel Grid.ColumnSpan="1" Grid.Row="7" Grid.Column="1" Margin="5,5,5,5" Grid.RowSpan="2">
-            <Label Content="Performance" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+            <Label Content="{DynamicResource Str_Performance}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
             <StackPanel Orientation="Horizontal">
-                <Label Content="Refresh Rate (ms):" Style="{StaticResource BoldSmall}"/>
+                <Label Content="{DynamicResource Str_RefreshRate}" Style="{StaticResource BoldSmall}"/>
                 <TextBox x:Name="RefreshRate" PreviewTextInput="TextBox_PreviewTextInput" MinWidth="50" Text="300" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25" Width="46" Margin="-5" />
             </StackPanel>
         </StackPanel>
         <Border Grid.Row="6" Grid.ColumnSpan="1" Grid.Column="3" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="3"/>
         <StackPanel Grid.ColumnSpan="1" Grid.Row="7" Grid.Column="3" Margin="5,5,5,5" Grid.RowSpan="2">
-            <Label Style="{StaticResource BoldSmall}" HorizontalAlignment="Center">Fonts</Label>
+            <Label Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" Content="{DynamicResource Str_Fonts}"/>
             <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font1" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
             <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font2" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
             <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font3" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
         </StackPanel>
         <Border Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="3" BorderThickness="1" BorderBrush="#FF151313"/>
         <StackPanel Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="3" Margin="5,5,5,5">
-            <Label Content="Other" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+            <Label Content="{DynamicResource Str_Other}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
             <StackPanel Orientation="Vertical">
-                <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" Content="Use Shift Click" ToolTip="Use Shift Right-Click instead of Right Click" FontFamily="Segoe Print" FontWeight="Bold"/>
+                <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" Content="{DynamicResource Str_UseShiftClick}" ToolTip="{DynamicResource Str_UseShiftClickTooltip}" FontFamily="Segoe Print" FontWeight="Bold"/>
                 <StackPanel Orientation="Horizontal">
-                    <Label Content="Locale:" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+                    <Label Content="{DynamicResource Str_Locale}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                     <ComboBox x:Name="Locale" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Margin="5, -5, 0, 0" d:SelectedItem="en_US" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Width="77">
                         <d:ComboBoxItem Content="en_US" Height="23"/>
                     </ComboBox>
-                    <TextBlock Text="(Requires Radar Restart)" Margin="5, 0, 0, 0" VerticalAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold"/>
                 </StackPanel>
             </StackPanel>
         </StackPanel>
-        <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="11" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
+        <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="11" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
     </Grid>
 </UserControl>

@@ -1,0 +1,80 @@
+# BG Radar Overlay - 인터페이스 텍스트 (한국어 / ko_KR)
+# 한 줄에 "키=값" 형식입니다. #으로 시작하는 줄과 빈 줄은 무시됩니다.
+# {0} 자리표시자는 실행 시 해당 값으로 치환됩니다 - 번역 시 유지하되, 언어에 필요하면
+# 위치를 옮겨도 됩니다.
+
+# EnemyControl - 캐릭터 패널
+EnemyControlWidth=450
+Str_Level=Lv{0}
+Str_Race=종족: {0}
+Str_STR=근력: {0}
+Str_DEX=민첩: {0}
+Str_CON=건강: {0}
+Str_INT=지능: {0}
+Str_WIS=지혜: {0}
+Str_CHA=매력: {0}
+Str_Health=체력: {0}
+Str_Attacks=공격 횟수: {0}
+Str_ArmorClass=방어도: {0}
+Str_THAC0=THAC0: {0}
+Str_Experience=경험치: {0}
+Str_Alignment=성향: {0}
+Str_SaveDeath=죽음 내성: {0}
+Str_SaveWands=마법봉 내성: {0}
+Str_SavePoly=변신 내성: {0}
+Str_SaveBreath=브레스 내성: {0}
+Str_SaveSpells=주문 내성: {0}
+Str_ResFire=화염 저항: {0}
+Str_ResCold=냉기 저항: {0}
+Str_ResElectricity=전기 저항: {0}
+Str_ResAcid=산 저항: {0}
+Str_ResMagic=마법 저항: {0}
+Str_ResMagicDamage=마법 피해 저항: {0}
+Str_ResPoison=독 저항: {0}
+Str_ResSlashing=베기 저항: {0}
+Str_ResCrushing=타격 저항: {0}
+Str_ResPiercing=관통 저항: {0}
+Str_ResMissile=발사체 저항: {0}
+
+# EnemyControl - 저항/면역 목록
+Str_ProtectedFromMagicWeapons=마법 무기 보호
+Str_ProtectedFromMagicAndNormalWeapons=마법 및 일반 무기 보호
+Str_RequiresEnhancementToHit=명중을 위해 +{0} 무기가 필요함
+Str_ImmuneToSpellsUpToLevel={0}레벨까지의 주문에 면역
+Str_BackstabImmunity=암습 면역
+Str_SeeInvisible=투명체 감지
+Str_CritImmune=치명타 면역
+Str_Proficiency=숙련도:
+Str_OnMeleeHit=근접 명중 시: {0}
+Str_OnRangedHit=원거리 명중 시: {0}
+Str_ImmuneToSpellsList=주문 면역: {0}
+Str_EffectImmunities=효과 면역: {0}
+Str_ACBonus=방어도 보너스 +{0}
+Str_ACvsCrushing=타격 방어도 +{0}
+Str_ACvsMissile=발사체 방어도 +{0}
+Str_ACvsPiercing=관통 방어도 +{0}
+Str_ACvsSlashing=베기 방어도 +{0}
+Str_SetACTo=방어도를 {0}(으)로 설정
+Str_THAC0Bonus=THAC0 +{0}
+Str_SetTHAC0To=THAC0을 {0}(으)로 설정
+Str_THAC0Percent=THAC0 +{0}%
+
+# OptionsControl - 설정 창
+Str_Options=옵션
+Str_CharacterListFiltering=캐릭터 목록 필터링
+Str_HidePartyMembers=파티원 숨기기
+Str_HideNeutrals=중립 숨기기
+Str_HideAllies=동맹 숨기기
+Str_BuffPanel=버프 패널
+Str_BigBuffIcons=큰 버프 아이콘
+Str_BorderlessMode=테두리 없는 모드
+Str_BorderlessOnStartup=시작 시 테두리 없음
+Str_ForceBorderlessNow=지금 테두리 제거!
+Str_Performance=성능
+Str_RefreshRate=새로 고침 속도 (ms):
+Str_Fonts=글꼴
+Str_Other=기타
+Str_UseShiftClick=Shift+클릭 사용
+Str_UseShiftClickTooltip=우클릭 대신 Shift + 우클릭 사용
+Str_Locale=언어:
+Str_Save=저장
