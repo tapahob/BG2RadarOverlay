@@ -352,10 +352,14 @@ namespace BGOverlay
                 }
 
                 if (proficiencyParts.Any())
-                    // A trailing space is added explicitly (rather than baked into the locale
-                    // value) since trailing whitespace in a "Key=Value" text file line is easy
-                    // to lose to trimming, in an editor or otherwise.
-                    result.Add(RadarLocalization.Get("Str_Proficiency") + " " + string.Join(" ", proficiencyParts));
+                    // Kept as a small structured entry (label + a list of name-only "icon"
+                    // entries with no actual icon) instead of one joined string, by analogy
+                    // with the "Immune to spells" line, so the UI can lay it out in columns.
+                    result.Add(new SpellImmunityLine
+                    {
+                        Label  = RadarLocalization.Get("Str_Proficiency"),
+                        Spells = proficiencyParts.Select(p => new SpellIconEntry { Name = p, Icon = null }).ToList()
+                    });
 
                 var inMemoryProtections = DerivedStats.EffectImmunes.Where(y =>
                 {
@@ -365,9 +369,13 @@ namespace BGOverlay
                         && !x.StartsWith("Graphics")
                         && !x.Contains("RGB")
                         && !x.StartsWith("Colour");
-                }).Select(y => localizeEffect(y.EffectId)).Distinct().ToList();
+                }).Select(y => localizeEffect(y.EffectId)).Distinct().OrderBy(o => o).ToList();
                 if (inMemoryProtections.Any())
-                    result.Add(string.Format(RadarLocalization.Get("Str_EffectImmunities"), string.Join(", ", inMemoryProtections.OrderBy(o => o))));
+                    result.Add(new SpellImmunityLine
+                    {
+                        Label  = RadarLocalization.Get("Str_EffectImmunities"),
+                        Spells = inMemoryProtections.Select(name => new SpellIconEntry { Name = name, Icon = null }).ToList()
+                    });
                 var moreSpellImmunities = DerivedStats.SpellImmunities;
                 return result;
             }

@@ -81,7 +81,11 @@ namespace WPFFrontend
                     item.Children.Add(new Image() { MaxHeight = 24, Source = newIcon });
                     item.Children.Add(new Label() {  Content = this.BGEntity.Reader.OnHitEffectsStrings[0] });
                     this.itemEffectsListView.Items.Add(item);
-                    this.itemEffectsListView.Items.Add(new Label() { Padding = new Thickness(0, 0, 0, -10), Content = string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings.Skip(1))});
+                    // Only add a second row when there's actually more content - an empty Label
+                    // still takes up its own height, which left an unbalanced gap under the
+                    // weapon name/icon row whenever OnHitEffectsStrings had just the one entry.
+                    if (this.BGEntity.Reader.OnHitEffectsStrings.Count > 1)
+                        this.itemEffectsListView.Items.Add(new Label() { Padding = new Thickness(0, 0, 0, -10), Content = string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings.Skip(1))});
                 }
                 else
                 {

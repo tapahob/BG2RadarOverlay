@@ -14,7 +14,6 @@
     <UserControl.Resources>
         <wpffrontend:BitmapToImageSourceConverter x:Key="BitmapToImageSourceConverter"/>
         <wpffrontend:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
-        <wpffrontend:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         <wpffrontend:PocketCountToSuffixConverter x:Key="PocketCountToSuffixConverter"/>
         <wpffrontend:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
     </UserControl.Resources>
@@ -96,7 +95,7 @@
             <Label x:Name="ResPiercing" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
             <Label x:Name="ResMissile" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
         </StackPanel>
-        <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
+        <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False" HorizontalContentAlignment="Stretch" Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
             <ListView.Resources>
                 <!-- Most Protections entries are plain strings, rendered exactly as before.
                      Implicit (DataType-keyed, no x:Key) templates here let this single
@@ -109,12 +108,21 @@
                 <!-- The "Immune to spells" entry carries each spell's icon (when the resource
                      has one) alongside its name instead of one long comma-joined string. -->
                 <DataTemplate DataType="{x:Type bg:SpellImmunityLine}">
-                    <StackPanel Orientation="Vertical">
-                        <TextBlock Text="{Binding Label}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch">
+                        <!-- HorizontalAlignment="Stretch" + TextAlignment="Center" (rather than
+                             HorizontalAlignment="Center", which shrinks the TextBlock to its own
+                             text and can look off-center against the ItemsControl below it) so
+                             the header spans the exact same width as the UniformGrid underneath
+                             and centers within that, not within its own tight bounding box. -->
+                        <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource FontFamily1}" FontSize="13" FontWeight="Bold" Foreground="Black"
+                                   TextWrapping="Wrap" HorizontalAlignment="Stretch" TextAlignment="Center"/>
+                        <!-- 2 columns to save space, by analogy with the Pockets section - no
+                             trailing commas needed once spells aren't run together in a wrapped
+                             single-line list. -->
                         <ItemsControl ItemsSource="{Binding Spells}" Margin="0,2,0,0">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal"/>
+                                    <UniformGrid Columns="3"/>
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
@@ -124,10 +132,7 @@
                                         <Image Source="{Binding Icon, Converter={StaticResource BitmapToImageSourceConverter}}"
                                                Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
                                                Width="24" Height="24" Margin="0,0,3,0"/>
-                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black"/>
-                                        <!-- Trailing comma between spells, omitted after the last one (IsLast is set once the final sorted order is known). -->
-                                        <TextBlock Text="," Style="{StaticResource Protections}" Foreground="Black"
-                                                   Visibility="{Binding IsLast, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
