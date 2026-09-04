@@ -256,10 +256,11 @@ namespace WPFFrontend
             _mouseHook.Uninstall();
         }
 
-        // Not text - a locale can widen EnemyControl for languages whose translated labels need
-        // more room than English does. Kept out of the plain string resources below so it stays
-        // a double (App.xaml's default is one too); Width can't bind to a string DynamicResource.
-        private const string EnemyControlWidthKey = "EnemyControlWidth";
+        // Not text - a locale can widen EnemyControl/OptionsControl for languages whose
+        // translated labels need more room than English does. Kept out of the plain string
+        // resources below so they stay doubles (App.xaml's defaults are too); Width can't bind
+        // to a string DynamicResource.
+        private static readonly string[] WidthResourceKeys = { "EnemyControlWidth", "OptionsControlWidth" };
 
         /// <summary>
         /// (Re)loads Configuration.Locale's string table and pushes it into Application.Resources.
@@ -275,18 +276,21 @@ namespace WPFFrontend
             var app = System.Windows.Application.Current;
             foreach (var entry in RadarLocalization.Strings)
             {
-                if (entry.Key == EnemyControlWidthKey)
+                if (Array.IndexOf(WidthResourceKeys, entry.Key) >= 0)
                     continue;
                 app.Resources[entry.Key] = entry.Value;
             }
 
-            // Only override when the locale actually specifies a valid number - otherwise
-            // EnemyControl.xaml keeps using App.xaml's default/fallback width (the control's
-            // current width).
-            if (RadarLocalization.Strings.TryGetValue(EnemyControlWidthKey, out var widthText)
-                && double.TryParse(widthText, NumberStyles.Float, CultureInfo.InvariantCulture, out var width))
+            // Only override a given control's width when the locale actually specifies a valid
+            // number for it - otherwise that control keeps using App.xaml's default/fallback
+            // width (the control's previous fixed width).
+            foreach (var key in WidthResourceKeys)
             {
-                app.Resources[EnemyControlWidthKey] = width;
+                if (RadarLocalization.Strings.TryGetValue(key, out var widthText)
+                    && double.TryParse(widthText, NumberStyles.Float, CultureInfo.InvariantCulture, out var width))
+                {
+                    app.Resources[key] = width;
+                }
             }
             Logger.Debug("Done!");
         }

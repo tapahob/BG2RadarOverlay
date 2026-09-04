@@ -96,6 +96,7 @@
     <Compile Include="Resources\BIFResourceEntry.cs" />
     <Compile Include="Resources\EffectEntry.cs" />
     <Compile Include="Resources\TLKEntry.cs" />
+    <Compile Include="SpellIconEntry.cs" />
     <Compile Include="Readers\SPLReader.cs" />
     <Compile Include="Readers\TLKReader.cs" />
     <Compile Include="WinAPIBindings.cs" />

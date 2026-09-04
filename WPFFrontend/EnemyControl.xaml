@@ -5,6 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors" 
              xmlns:wpffrontend="clr-namespace:WPFFrontend"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:bg="clr-namespace:BGOverlay;assembly=BGOverlayAPI"
     x:Class="WPFFrontend.EnemyControl"
              mc:Ignorable="d" 
              Height="Auto" Width="{DynamicResource EnemyControlWidth}"
@@ -87,11 +89,48 @@
             <Label x:Name="ResMissile" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
         </StackPanel>
         <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
-            <ListView.ItemTemplate>
-                <DataTemplate>
+            <ListView.Resources>
+                <wpffrontend:BitmapToImageSourceConverter x:Key="BitmapToImageSourceConverter"/>
+                <wpffrontend:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+                <wpffrontend:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+
+                <!-- Most Protections entries are plain strings, rendered exactly as before.
+                     Implicit (DataType-keyed, no x:Key) templates here let this single
+                     ListView render both plain-string lines and the icon-carrying
+                     SpellImmunityLine entry below without a template selector. -->
+                <DataTemplate DataType="{x:Type sys:String}">
                     <TextBlock Text="{Binding}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
                 </DataTemplate>
-            </ListView.ItemTemplate>
+
+                <!-- The "Immune to spells" entry carries each spell's icon (when the resource
+                     has one) alongside its name instead of one long comma-joined string. -->
+                <DataTemplate DataType="{x:Type bg:SpellImmunityLine}">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="{Binding Label}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
+                        <ItemsControl ItemsSource="{Binding Spells}" Margin="0,2,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type bg:SpellIconEntry}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,8,2">
+                                        <!-- No icon in the resource -> no placeholder, just the name (Visibility Collapsed removes the slot instead of leaving blank space). -->
+                                        <Image Source="{Binding Icon, Converter={StaticResource BitmapToImageSourceConverter}}"
+                                               Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
+                                               Width="24" Height="24" Margin="0,0,3,0"/>
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black"/>
+                                        <!-- Trailing comma between spells, omitted after the last one (IsLast is set once the final sorted order is known). -->
+                                        <TextBlock Text="," Style="{StaticResource Protections}" Foreground="Black"
+                                                   Visibility="{Binding IsLast, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.Resources>
         </ListView>
         <ListView x:Name="itemEffectsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
         </ListView>

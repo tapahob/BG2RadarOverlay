@@ -30,6 +30,18 @@ namespace BGOverlay
             return Strings.TryGetValue(key, out var value) ? value : key;
         }
 
+        /// <summary>
+        /// Like <see cref="Get"/>, but reports whether the key was actually found instead of
+        /// silently falling back to the key itself - for callers (e.g. Effect/Proficiency enum
+        /// name lookups in BGEntity) that have their own, more useful fallback (a readable
+        /// English-shaped name derived from the enum member) to use when no translation exists
+        /// yet for that particular value.
+        /// </summary>
+        public static bool TryGet(string key, out string value)
+        {
+            return Strings.TryGetValue(key, out value);
+        }
+
         public static void Init(string locale)
         {
             Logger.Debug($"RadarLocalization.Init: requested locale = '{locale}', app directory = '{getAppDirectory()}'");

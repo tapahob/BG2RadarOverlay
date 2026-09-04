@@ -85,24 +85,26 @@ namespace BGOverlay
             }
         }
 
-        private List<string> _protectionsCache;
+        private List<object> _protectionsCache;
 
         /// <summary>
-        /// A list of strings representing various protections and immunities.
+        /// A list of protections and immunities to render. Most entries are plain strings;
+        /// the "Immune to spells" entry (when present) is a <see cref="SpellImmunityLine"/>
+        /// instead, so the UI can show each spell's icon next to its name.
         /// Recomputed once per LoadDerivedStats() call (i.e. once per refresh tick) rather
         /// than on every access, since building it walks several effect lists with LINQ.
         /// </summary>
-        public List<string> Protections => _protectionsCache ?? (_protectionsCache = computeProtections());
+        public List<object> Protections => _protectionsCache ?? (_protectionsCache = computeProtections());
 
-        private List<string> computeProtections()
+        private List<object> computeProtections()
         {
             {
                 var allEffects = this.Reader?.Effects?
                     .Where(x => x.EffectName != Effect.Text_Protection_from_Display_Specific_String)
                     ?? new List<EffectEntry>();
-                var result             = new List<String>();
+                var result             = new List<object>();
                 var opCodeStrings      = new List<String>();
-                var spellStrings       = new List<String>();
+                var spellStrings       = new List<SpellIconEntry>();
                 var onHitMeleeStrings  = new List<String>();
                 var onHitRangedStrings = new List<String>();
 
@@ -168,20 +170,23 @@ namespace BGOverlay
                     }
                     if (item.EffectName == Effect.Spell_Protection_from_Spell)
                     {
-                        var spellName = resourceManager.GetSPLReader($"{item.Resource.Trim('\0')}.SPL".ToUpper()).Name1;
+                        var splReader = resourceManager.GetSPLReader($"{item.Resource.Trim('\0')}.SPL".ToUpper());
+                        var spellName = splReader.Name1;
                         if (spellName == "-1")
                         {
-                            spellName = resourceManager.GetSPLReader($"{item.Resource.Substring(0, item.Resource.Length - 1).Trim('\0')}.SPL".ToUpper()).Name1;
+                            splReader = resourceManager.GetSPLReader($"{item.Resource.Substring(0, item.Resource.Length - 1).Trim('\0')}.SPL".ToUpper());
+                            spellName = splReader.Name1;
                             spellName = spellName == "-1" ? item.Resource : spellName;
                         }
-                        spellStrings.Add(preprocess(spellName));
+                        var icon = splReader?.IconBAM != null ? resourceManager.GetBAMReader(splReader.IconBAM)?.Image : null;
+                        spellStrings.Add(new SpellIconEntry { Name = preprocess(spellName), Icon = icon });
                         continue;
                     }
                     if (item.EffectName == Effect.Stat_Proficiency_Modifier)
                     {
                         var amount = item.Param1;
                         var type = (Proficiency)item.Param2;
-                        proficiencyParts.Add($"{type.ToString().Replace("_", " ")} +{amount}");
+                        proficiencyParts.Add($"{localizeProficiency(type)} +{amount}");
                         continue;
                     }
                     if (item.EffectName == Effect.Item_Set_Melee_Effect)
@@ -262,16 +267,32 @@ namespace BGOverlay
                         && !(item.EffectName == Effect.Protection_Backstab)
                         && !(item.EffectName == Effect.Spell_Effect_Invisible_Detection_by_Script)
                         && !(item.EffectName == Effect.State_Set_State)
+                        // These are excluded here (on the raw English enum name, so the check
+                        // stays correct regardless of locale) because they're already shown via
+                        // their own dedicated lines/labels elsewhere (Res* labels, AC/Save
+                        // modifier lines) - keeping them out of this generic bucket too would
+                        // just duplicate them.
+                        && !effectName.Contains("Resistance")
+                        && !effectName.Contains("Backstab")
+                        && !effectName.Contains("AC")
+                        && !effectName.Contains("Save")
                         )
-                        allEffectsStrings.Add(preprocess(effectName));
+                        allEffectsStrings.Add(localizeEffect(item.EffectName));
                 }
                 foreach (var spell in SpellEquipEffects)
                 {
-                    spellStrings.Add(preprocess(spell.Item1));
+                    spellStrings.Add(new SpellIconEntry { Name = preprocess(spell.Item1), Icon = spell.Item2 });
                 }
-                spellStrings = spellStrings.Distinct().OrderBy(o => o).ToList();
+                // Distinct-by-name (keeping the first icon seen for a given name), same as the
+                // plain string.Distinct() this replaced.
+                spellStrings = spellStrings.GroupBy(s => s.Name).Select(g => g.First()).OrderBy(s => s.Name).ToList();
+                if (spellStrings.Any())
+                    spellStrings[spellStrings.Count - 1].IsLast = true;
                 if (allEffectsStrings.Any())
-                    result.Add(String.Join(", ", allEffectsStrings.Distinct().Where(x => !x.Contains("Resistance") && !x.Contains("Backstab") && !x.Contains("AC") && !x.Contains("Save")).OrderBy(o => o)));
+                    // The Resistance/Backstab/AC/Save exclusion already happened above, against
+                    // the raw (locale-independent) enum name - this list holds only localized
+                    // display text now, so it's just deduped and sorted here.
+                    result.Add(String.Join(", ", allEffectsStrings.Distinct().OrderBy(o => o)));
 
                 // seems like these are always covered by "Effect Immunities"
                 //if (opCodeStrings.Any())
@@ -306,7 +327,13 @@ namespace BGOverlay
 
                 if (spellStrings.Any())
                 {
-                    result.Add(string.Format(RadarLocalization.Get("Str_ImmuneToSpellsList"), string.Join(", ", spellStrings.OrderBy(o => o))));
+                    // Kept as a small structured entry (label + per-spell icon/name pairs)
+                    // instead of one joined string, so the UI can show each spell's icon.
+                    result.Add(new SpellImmunityLine
+                    {
+                        Label  = RadarLocalization.Get("Str_ImmuneToSpellsList"),
+                        Spells = spellStrings
+                    });
                 }
 
                 if (proficiencyParts.Any())
@@ -315,11 +342,15 @@ namespace BGOverlay
                     // to lose to trimming, in an editor or otherwise.
                     result.Add(RadarLocalization.Get("Str_Proficiency") + " " + string.Join(" ", proficiencyParts));
 
-                var inMemoryProtections = DerivedStats.EffectImmunes.Select(y => y.EffectId.ToString()).Where(x =>
-                !x.StartsWith("Text")
-                && !x.StartsWith("Graphics")
-                && !x.Contains("RGB")
-                && !x.StartsWith("Colour")).Select(z => preprocess(z)).Distinct().ToList();
+                var inMemoryProtections = DerivedStats.EffectImmunes.Where(y =>
+                {
+                    // Filtered against the raw (locale-independent) enum name, same as before.
+                    var x = y.EffectId.ToString();
+                    return !x.StartsWith("Text")
+                        && !x.StartsWith("Graphics")
+                        && !x.Contains("RGB")
+                        && !x.StartsWith("Colour");
+                }).Select(y => localizeEffect(y.EffectId)).Distinct().ToList();
                 if (inMemoryProtections.Any())
                     result.Add(string.Format(RadarLocalization.Get("Str_EffectImmunities"), string.Join(", ", inMemoryProtections.OrderBy(o => o))));
                 var moreSpellImmunities = DerivedStats.SpellImmunities;
@@ -364,6 +395,33 @@ namespace BGOverlay
                 str = str.Replace(pattern, "");
             }
             return str.Replace("_"," ");
+        }
+
+        /// <summary>
+        /// A display name for an Effect enum value, from the locale's "Effect_&lt;EnumName&gt;"
+        /// key when the current locale has one, falling back to the existing
+        /// underscore-stripping heuristic (<see cref="preprocess"/>) for any value that hasn't
+        /// been translated yet - so an as-yet-unmapped or partially-translated locale still
+        /// shows readable (if English-shaped) text instead of nothing.
+        /// </summary>
+        private string localizeEffect(Effect effect)
+        {
+            return RadarLocalization.TryGet($"Effect_{effect}", out var localized)
+                ? localized
+                : preprocess(effect.ToString());
+        }
+
+        /// <summary>
+        /// A display name for a Proficiency enum value, from the locale's
+        /// "Proficiency_&lt;EnumName&gt;" key when the current locale has one, falling back to
+        /// the same underscore-to-space heuristic this used before Proficiency had its own
+        /// locale keys.
+        /// </summary>
+        private string localizeProficiency(Proficiency proficiency)
+        {
+            return RadarLocalization.TryGet($"Proficiency_{proficiency}", out var localized)
+                ? localized
+                : proficiency.ToString().Replace("_", " ");
         }
 
         public BGEntity(ResourceManager resourceManager, IntPtr entityIdPtr)
