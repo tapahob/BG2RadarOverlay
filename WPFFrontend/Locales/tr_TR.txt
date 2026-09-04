@@ -3,6 +3,9 @@
 # {0} yer tutucuları çalışma anında ilgili değerle doldurulur - çeviride bunları koruyun,
 # dil gerektiriyorsa yerleri değiştirilebilir.
 
+# MainWindow - startup
+Str_WaitingForGame=Oyun bekleniyor
+
 # EnemyControl - karakter paneli
 EnemyControlWidth=450
 Str_Level=Sv.{0}
@@ -14,12 +17,22 @@ Str_INT=ZEK: {0}
 Str_WIS=BİL: {0}
 Str_CHA=KAR: {0}
 Str_Health=Sağlık: {0}
-Str_EnemyListHP=CP:{0}
+Str_EnemyListHP=CP: {0}
 Str_Attacks=Saldırılar: {0}
 Str_ArmorClass=Zırh Sınıfı: {0}
 Str_THAC0=THAC0: {0}
 Str_Experience=Tecrübe: {0}
 Str_Alignment=Eğilim: {0}
+Alignment_NONE=Yok
+Alignment_LAWFUL_GOOD=Yasal iyi
+Alignment_LAWFUL_NEUTRAL=Yasal tarafsız
+Alignment_LAWFUL_EVIL=Yasal kötü
+Alignment_NEUTRAL_GOOD=Tarafsız iyi
+Alignment_NEUTRAL=Tarafsız
+Alignment_NEUTRAL_EVIL=Tarafsız kötü
+Alignment_CHAOTIC_GOOD=Kaotik iyi
+Alignment_CHAOTIC_NEUTRAL=Kaotik tarafsız
+Alignment_CHAOTIC_EVIL=Kaotik kötü
 Str_SaveDeath=Ölüme Karşı Kurtarma: {0}
 Str_SaveWands=Asalara Karşı Kurtarma: {0}
 Str_SavePoly=Şekil Değişimine Karşı Kurtarma: {0}
@@ -36,6 +49,13 @@ Str_ResSlashing=Kesici Hasara Direnç: {0}
 Str_ResCrushing=Ezici Hasara Direnç: {0}
 Str_ResPiercing=Delici Hasara Direnç: {0}
 Str_ResMissile=Mermiye Direnç: {0}
+Str_Pockets=Cepler
+Str_ItemIdentified=Tanımlandı
+Str_ItemStealable=Çalınabilir
+Str_ItemUnstealable=Çalınamaz
+Str_ItemStolen=Çalıntı
+Str_ItemDroppable=Yağmalanabilir
+Str_ItemUndroppable=Yağmalanamaz
 
 # EnemyControl - Korumalar listesi
 Str_ProtectedFromMagicWeapons=Büyülü Silahlara Karşı Korumalı
@@ -446,5 +466,6 @@ Str_Fonts=Yazı Tipleri
 Str_Other=Diğer
 Str_UseShiftClick=Shift+Tık Kullan
 Str_UseShiftClickTooltip=Sağ Tık yerine Shift + Sağ Tık kullan
+Str_DebugMode=Hata Ayıklama Modu
 Str_Locale=Dil:
 Str_Save=Kaydet

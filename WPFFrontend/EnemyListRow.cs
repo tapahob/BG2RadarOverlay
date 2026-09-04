@@ -43,11 +43,27 @@ namespace WPFFrontend
             }
         }
 
-        public EnemyListRow(int tag, string name, int currentHP)
+        private bool _isPartyMember;
+        // Not just informational - MainWindow.syncEnemyList sorts party members to the top of
+        // the list using this, so it's kept updated in case a mid-game effect (e.g. Charm)
+        // changes a creature's allegiance while it's already on screen.
+        public bool IsPartyMember
+        {
+            get => _isPartyMember;
+            set
+            {
+                if (_isPartyMember == value) return;
+                _isPartyMember = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public EnemyListRow(int tag, string name, int currentHP, bool isPartyMember)
         {
             Tag = tag;
             _name = name;
             _currentHP = currentHP;
+            _isPartyMember = isPartyMember;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

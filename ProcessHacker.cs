@@ -39,11 +39,23 @@ namespace BGOverlay
         private readonly Dictionary<int, BGEntity> entityPool = new Dictionary<int, BGEntity>();
         private readonly HashSet<int> seenIndexes = new HashSet<int>();
 
+        // Set from the UI thread (InvalidateEntityCache), consumed only at the top of MainLoop()
+        // on its own dedicated thread - entityPool itself is only ever touched from there, so
+        // routing the actual Clear() through this flag avoids mutating the dictionary
+        // concurrently with MainLoop()'s own reads/writes of it.
+        private volatile bool cacheInvalidationRequested;
+
         private const int SlotSize       = 16;
         private const int ScanChunkSlots = 4096; // 64KB/chunk - far fewer syscalls than one-per-slot, small enough to stay a plain gen0 allocation.
 
         public void MainLoop()
         {
+            if (cacheInvalidationRequested)
+            {
+                entityPool.Clear();
+                cacheInvalidationRequested = false;
+            }
+
             entityListTemp.Clear();
             allEntities.Clear();
             seenIndexes.Clear();
@@ -223,6 +235,20 @@ namespace BGOverlay
         public Process GetHookedProcess()
         {
             return Proc;
+        }
+
+        /// <summary>
+        /// Requests that every pooled BGEntity template be dropped so the next MainLoop() tick
+        /// reconstructs each one from scratch instead of handing back a RefreshedCopy() of the
+        /// cached template. Needed after a config change whose effect is only computed once, at
+        /// BGEntity construction time (e.g. Configuration.DebugMode's "[CRE filename]" name
+        /// suffix) - without this, an already-pooled creature would keep showing the old value
+        /// until it left and re-entered the pool on its own. Safe to call from any thread - the
+        /// actual Clear() happens on MainLoop()'s own thread (see cacheInvalidationRequested).
+        /// </summary>
+        public void InvalidateEntityCache()
+        {
+            cacheInvalidationRequested = true;
         }
     }
 }

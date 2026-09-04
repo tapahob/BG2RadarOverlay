@@ -67,6 +67,11 @@ namespace BGOverlay
                     this.Flags = reader.ReadInt32();
                     reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
 
+                    // Icon
+                    reader.BaseStream.Seek(originOffset + 0x03a, SeekOrigin.Begin);
+                    var iconBAM = new String(reader.ReadChars(8)).Trim('\0');
+                    this.Icon = this.Icon ?? resourceManager.GetBAMReader(iconBAM)?.Image;
+
                     // Abilities
                     reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
                     this.Enchantment = reader.ReadInt32();
@@ -91,9 +96,9 @@ namespace BGOverlay
                         var abilityType = reader.ReadByte();
                         if (abilityType != 1)
                             continue;
-                        reader.BaseStream.Seek(abilityOffset + 0x4, SeekOrigin.Begin);
-                        var iconBAM = new String(reader.ReadChars(8)).Trim('\0');
-                        this.Icon = this.Icon ?? resourceManager.GetBAMReader(iconBAM)?.Image;
+                        //reader.BaseStream.Seek(abilityOffset + 0x4, SeekOrigin.Begin);
+                        //var iconBAM = new String(reader.ReadChars(8)).Trim('\0');
+                        //this.Icon = this.Icon ?? resourceManager.GetBAMReader(iconBAM)?.Image;
                         reader.BaseStream.Seek(abilityOffset + 0x1E, SeekOrigin.Begin);
                         var abilityEffectsCount = reader.ReadInt16();
                         var abilityEffectsIndex = reader.ReadInt16();

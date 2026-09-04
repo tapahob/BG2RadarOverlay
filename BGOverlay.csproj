@@ -81,6 +81,7 @@
     <Compile Include="Readers\ITMReader.cs" />
     <Compile Include="Readers\CREReader.cs" />
     <Compile Include="Readers\KeyReader.cs" />
+    <Compile Include="PocketItemEntry.cs" />
     <Compile Include="NativeStructs\CGameEffect.cs" />
     <Compile Include="NativeStructs\CImmunitySpell.cs" />
     <Compile Include="NativeStructs\CPtrList.cs" />

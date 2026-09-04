@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media.Animation;
 using BGOverlay;
 
@@ -55,9 +56,29 @@ namespace WPFFrontend
             }
         }
 
+        // Str_EnemyListHP is a "<label>{0}" format string (e.g. "HP: {0}") - split it at the
+        // placeholder so the label can render bold while the number itself stays regular weight,
+        // instead of setting Text to the fully-formatted string as one uniformly-styled run.
         private static void OnDisplayedHPChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((HpRollText)d).Text = string.Format(RadarLocalization.Get("Str_EnemyListHP"), (int)e.NewValue);
+            var self   = (HpRollText)d;
+            var format = RadarLocalization.Get("Str_EnemyListHP");
+            var value  = ((int)e.NewValue).ToString();
+
+            self.Inlines.Clear();
+            var placeholderIndex = format.IndexOf("{0}", StringComparison.Ordinal);
+            if (placeholderIndex < 0)
+            {
+                self.Inlines.Add(new Run(string.Format(format, value)));
+                return;
+            }
+
+            var label  = format.Substring(0, placeholderIndex);
+            var suffix = format.Substring(placeholderIndex + "{0}".Length);
+            self.Inlines.Add(new Run(label) { FontWeight = FontWeights.Bold });
+            self.Inlines.Add(new Run(value));
+            if (!string.IsNullOrEmpty(suffix))
+                self.Inlines.Add(new Run(suffix));
         }
     }
 }

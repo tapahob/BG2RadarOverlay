@@ -169,40 +169,46 @@ namespace BGOverlay
                     reader.BaseStream.Seek(originOffset + 0x027b, SeekOrigin.Begin);
                     this.setAlignment((ALIGNMENT)reader.ReadByte());
 
-                    // Items
-                    //reader.BaseStream.Seek(originOffset + 0x02bc - 4, SeekOrigin.Begin);
-                    //var offsetToItemSlots = reader.ReadInt32();
-                    //var offsetToItems = reader.ReadInt32();
-                    //int countOfItems = reader.ReadInt32();
+                    // Items - the inventory table (not the equipped-item slots, which BGEntity
+                    // reads live from process memory instead). Used for the "Pockets" list: which
+                    // of these items can be stolen via pickpocket (Unstealable flag bit not set).
+                    reader.BaseStream.Seek(originOffset + 0x02bc - 4, SeekOrigin.Begin);
+                    reader.ReadInt32(); // offset to item slots - unused here
+                    var offsetToItems = reader.ReadInt32();
+                    int countOfItems  = reader.ReadInt32();
 
-                    //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 39, SeekOrigin.Begin);
-                    //var activeWeaponSlot = reader.ReadInt16();
+                    this.Pockets = new List<PocketItemEntry>();
+                    // bit 0: Identified, bit 1: Unstealable, bit 2: Stolen, bit 3: Undroppable
+                    const int UNSTEALABLE_FLAG = 0x2;
+                    for (int i = 0; i < countOfItems; ++i)
+                    {
+                        reader.BaseStream.Seek(originOffset + offsetToItems + i * 0x14, SeekOrigin.Begin);
+                        var itemResRef = new string(reader.ReadChars(8)).TrimEnd('\0');
+                        reader.ReadInt16(); // expiration time
+                        reader.ReadInt16(); // quantity/charges 1
+                        reader.ReadInt16(); // quantity/charges 2
+                        reader.ReadInt16(); // quantity/charges 3
+                        var itemFlags = reader.ReadInt32();
+                        if (itemResRef.Length == 0 || (itemFlags & UNSTEALABLE_FLAG) != 0)
+                            continue;
 
-                    //reader.BaseStream.Seek(originOffset + offsetToItemSlots + 0x2 * 9, SeekOrigin.Begin);
-                    //var weaponIndexes = new List<short>
-                    //{
-                    //    reader.ReadInt16(),
-                    //    reader.ReadInt16(),
-                    //    reader.ReadInt16(),
-                    //    reader.ReadInt16()
-                    //};
+                        var pocketItmReader = this.resourceManager.GetITMReader($"{itemResRef}.ITM");
+                        if (pocketItmReader == null)
+                            continue;
 
-                    //this.ItemEffects = new List<ItemEffectEntry>();
-                    //var activeWeaponTableIndex = weaponIndexes[activeWeaponSlot];
-                    //if (activeWeaponTableIndex != 1000 && activeWeaponTableIndex != -1)
-                    //{
-                    //    reader.BaseStream.Seek(originOffset + offsetToItems + activeWeaponTableIndex * (0x14), SeekOrigin.Begin);
-                    //    string itmFileName = new String(reader.ReadChars(8)).TrimEnd('\0');
-                    //    ITMReader itmReader = this.resourceManager.GetITMReader(itmFileName + ".ITM");
+                        var flagWords = new List<string>();
+                        if ((itemFlags & 0x1) != 0) flagWords.Add(RadarLocalization.Get("Str_ItemIdentified"));
+                        flagWords.Add(RadarLocalization.Get((itemFlags & 0x2) != 0 ? "Str_ItemUnstealable" : "Str_ItemStealable"));
+                        if ((itemFlags & 0x4) != 0) flagWords.Add(RadarLocalization.Get("Str_ItemStolen"));
+                        flagWords.Add(RadarLocalization.Get((itemFlags & 0x8) != 0 ? "Str_ItemUndroppable" : "Str_ItemDroppable"));
 
-                    //    if (itmReader != null)
-                    //    {
-                    //        this.Enchantment = itmReader.Enchantment;
-                    //        this.EquippedWeaponName = itmReader.IdentifiedName;
-                    //        this.EquippedWeaponIcon = itmReader.Icon;
-                    //        itmReader.Effects.FindAll(itemEffect => !this.excludedItemEffectOpcodes.Contains((Effect)itemEffect.OpCode)).ForEach(itemEffect => ItemEffects.Add(itemEffect));
-                    //    }
-                    //} else { this.EquippedWeaponName = "Fists"; }
+                        this.Pockets.Add(new PocketItemEntry
+                        {
+                            Name      = pocketItmReader.IdentifiedName,
+                            Icon      = pocketItmReader.Icon,
+                            FlagsText = string.Join(", ", flagWords)
+                        });
+                    }
 
                     // Effects
                     reader.BaseStream.Seek(originOffset + 0x02c4, SeekOrigin.Begin);
@@ -622,8 +628,11 @@ namespace BGOverlay
         {
             get
             {
+                if (RadarLocalization.TryGet($"Alignment_{alignment}", out var localized))
+                    return localized;
+
                 var alignmentString = alignment.ToString().ToLowerInvariant().Replace("_", " ");
-                return alignmentString[0].ToString().ToUpperInvariant() + alignmentString.Substring(1);                
+                return alignmentString[0].ToString().ToUpperInvariant() + alignmentString.Substring(1);
             }
         }
 
@@ -639,5 +648,6 @@ namespace BGOverlay
         public string EquippedWeaponName { get; set; }
         public Bitmap EquippedWeaponIcon { get; set; }
         public String WeaponDamageType { get; set; }
+        public List<PocketItemEntry> Pockets { get; private set; } = new List<PocketItemEntry>();
     }
 }

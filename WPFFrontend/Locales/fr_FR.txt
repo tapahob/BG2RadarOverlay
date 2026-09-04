@@ -3,6 +3,9 @@
 # Les espaces réservés {0} sont remplacés par la valeur correspondante à l'exécution -
 # conservez-les dans la traduction, leur position peut être modifiée si la langue l'exige.
 
+# MainWindow - startup
+Str_WaitingForGame=En attente du jeu
+
 # EnemyControl - panneau du personnage
 EnemyControlWidth=450
 Str_Level=Niv.{0}
@@ -14,12 +17,22 @@ Str_INT=INT : {0}
 Str_WIS=SAG : {0}
 Str_CHA=CHA : {0}
 Str_Health=Santé : {0}
-Str_EnemyListHP=PV:{0}
+Str_EnemyListHP=PV: {0}
 Str_Attacks=Attaques : {0}
 Str_ArmorClass=Classe d'Armure : {0}
 Str_THAC0=THAC0 : {0}
 Str_Experience=Expérience : {0}
 Str_Alignment=Alignement : {0}
+Alignment_NONE=Aucun
+Alignment_LAWFUL_GOOD=Loyal bon
+Alignment_LAWFUL_NEUTRAL=Loyal neutre
+Alignment_LAWFUL_EVIL=Loyal mauvais
+Alignment_NEUTRAL_GOOD=Neutre bon
+Alignment_NEUTRAL=Neutre
+Alignment_NEUTRAL_EVIL=Neutre mauvais
+Alignment_CHAOTIC_GOOD=Chaotique bon
+Alignment_CHAOTIC_NEUTRAL=Chaotique neutre
+Alignment_CHAOTIC_EVIL=Chaotique mauvais
 Str_SaveDeath=Jet de sauv. Mort : {0}
 Str_SaveWands=Jet de sauv. Baguettes : {0}
 Str_SavePoly=Jet de sauv. Polymorphe : {0}
@@ -36,6 +49,13 @@ Str_ResSlashing=Rés. Tranchant : {0}
 Str_ResCrushing=Rés. Contondant : {0}
 Str_ResPiercing=Rés. Perforant : {0}
 Str_ResMissile=Rés. aux Projectiles : {0}
+Str_Pockets=Poches
+Str_ItemIdentified=Identifié
+Str_ItemStealable=Volable
+Str_ItemUnstealable=Non volable
+Str_ItemStolen=Volé
+Str_ItemDroppable=Pillable
+Str_ItemUndroppable=Non pillable
 
 # EnemyControl - liste des protections
 Str_ProtectedFromMagicWeapons=Protégé des Armes Magiques
@@ -447,5 +467,6 @@ Str_Fonts=Polices
 Str_Other=Autre
 Str_UseShiftClick=Utiliser Maj+Clic
 Str_UseShiftClickTooltip=Utiliser Maj + Clic droit au lieu de Clic droit
+Str_DebugMode=Mode débogage
 Str_Locale=Langue :
 Str_Save=Enregistrer

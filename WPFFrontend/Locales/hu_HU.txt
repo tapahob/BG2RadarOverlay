@@ -3,6 +3,9 @@
 # A {0} helyőrzőket futás közben a megfelelő érték helyettesíti - a fordításban tartsd meg
 # őket, a pozíciójuk módosítható, ha a nyelv ezt megkívánja.
 
+# MainWindow - startup
+Str_WaitingForGame=Várakozás a játékra
+
 # EnemyControl - karakterpanel
 EnemyControlWidth=450
 Str_Level=Sz.{0}
@@ -14,12 +17,22 @@ Str_INT=INT: {0}
 Str_WIS=BÖL: {0}
 Str_CHA=KAR: {0}
 Str_Health=Életerő: {0}
-Str_EnemyListHP=ÉP:{0}
+Str_EnemyListHP=ÉP: {0}
 Str_Attacks=Támadások: {0}
 Str_ArmorClass=Páncélosztály: {0}
 Str_THAC0=THAC0: {0}
 Str_Experience=Tapasztalat: {0}
 Str_Alignment=Beállítottság: {0}
+Alignment_NONE=Nincs
+Alignment_LAWFUL_GOOD=Törvényes jó
+Alignment_LAWFUL_NEUTRAL=Törvényes semleges
+Alignment_LAWFUL_EVIL=Törvényes gonosz
+Alignment_NEUTRAL_GOOD=Semleges jó
+Alignment_NEUTRAL=Semleges
+Alignment_NEUTRAL_EVIL=Semleges gonosz
+Alignment_CHAOTIC_GOOD=Kaotikus jó
+Alignment_CHAOTIC_NEUTRAL=Kaotikus semleges
+Alignment_CHAOTIC_EVIL=Kaotikus gonosz
 Str_SaveDeath=Mentés halál ellen: {0}
 Str_SaveWands=Mentés pálcák ellen: {0}
 Str_SavePoly=Mentés átváltoztatás ellen: {0}
@@ -36,6 +49,13 @@ Str_ResSlashing=Vágó ellenállás: {0}
 Str_ResCrushing=Zúzó ellenállás: {0}
 Str_ResPiercing=Szúró ellenállás: {0}
 Str_ResMissile=Lövedék ellenállás: {0}
+Str_Pockets=Zsebek
+Str_ItemIdentified=Azonosítva
+Str_ItemStealable=Lopható
+Str_ItemUnstealable=Nem lopható
+Str_ItemStolen=Ellopva
+Str_ItemDroppable=Zsákmányolható
+Str_ItemUndroppable=Nem zsákmányolható
 
 # EnemyControl - védelmek listája
 Str_ProtectedFromMagicWeapons=Védett mágikus fegyverek ellen
@@ -446,5 +466,6 @@ Str_Fonts=Betűtípusok
 Str_Other=Egyéb
 Str_UseShiftClick=Shift+kattintás használata
 Str_UseShiftClickTooltip=Shift + jobb klikk használata jobb klikk helyett
+Str_DebugMode=Hibakereső mód
 Str_Locale=Nyelv:
 Str_Save=Mentés

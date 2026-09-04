@@ -3,6 +3,9 @@
 # {0}-Platzhalter werden zur Laufzeit durch den entsprechenden Wert ersetzt - in der
 # Übersetzung beibehalten, Position kann bei Bedarf angepasst werden.
 
+# MainWindow - startup
+Str_WaitingForGame=Warte auf Spiel
+
 # EnemyControl - Charakterpanel
 EnemyControlWidth=450
 Str_Level=St.{0}
@@ -14,12 +17,22 @@ Str_INT=INT: {0}
 Str_WIS=WEI: {0}
 Str_CHA=CHA: {0}
 Str_Health=Gesundheit: {0}
-Str_EnemyListHP=TP:{0}
+Str_EnemyListHP=TP: {0}
 Str_Attacks=Angriffe: {0}
 Str_ArmorClass=Rüstungsklasse: {0}
 Str_THAC0=THAC0: {0}
 Str_Experience=Erfahrung: {0}
 Str_Alignment=Gesinnung: {0}
+Alignment_NONE=Keine
+Alignment_LAWFUL_GOOD=Rechtschaffen gut
+Alignment_LAWFUL_NEUTRAL=Rechtschaffen neutral
+Alignment_LAWFUL_EVIL=Rechtschaffen böse
+Alignment_NEUTRAL_GOOD=Neutral gut
+Alignment_NEUTRAL=Neutral
+Alignment_NEUTRAL_EVIL=Neutral böse
+Alignment_CHAOTIC_GOOD=Chaotisch gut
+Alignment_CHAOTIC_NEUTRAL=Chaotisch neutral
+Alignment_CHAOTIC_EVIL=Chaotisch böse
 Str_SaveDeath=Rettungswurf gg. Tod: {0}
 Str_SaveWands=Rettungswurf gg. Zauberstäbe: {0}
 Str_SavePoly=Rettungswurf gg. Verwandlung: {0}
@@ -36,6 +49,13 @@ Str_ResSlashing=Hiebresistenz: {0}
 Str_ResCrushing=Wuchtresistenz: {0}
 Str_ResPiercing=Stichresistenz: {0}
 Str_ResMissile=Fernkampfresistenz: {0}
+Str_Pockets=Taschen
+Str_ItemIdentified=Identifiziert
+Str_ItemStealable=Stehlbar
+Str_ItemUnstealable=Nicht stehlbar
+Str_ItemStolen=Gestohlen
+Str_ItemDroppable=Plünderbar
+Str_ItemUndroppable=Nicht plünderbar
 
 # EnemyControl - Schutzliste
 Str_ProtectedFromMagicWeapons=Geschützt vor magischen Waffen
@@ -447,5 +467,6 @@ Str_Fonts=Schriftarten
 Str_Other=Sonstiges
 Str_UseShiftClick=Umschalt+Klick verwenden
 Str_UseShiftClickTooltip=Umschalt + Rechtsklick statt Rechtsklick verwenden
+Str_DebugMode=Debug-Modus
 Str_Locale=Sprache:
 Str_Save=Speichern

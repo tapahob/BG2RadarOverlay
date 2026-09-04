@@ -3,6 +3,9 @@
 # {0} プレースホルダーは実行時に対応する値に置き換えられます。翻訳時にはそのまま残してください。
 # 言語の都合で位置を変更しても構いません。
 
+# MainWindow - startup
+Str_WaitingForGame=ゲーム起動待ち
+
 # EnemyControl - キャラクターパネル
 EnemyControlWidth=450
 Str_Level=Lv{0}
@@ -14,12 +17,22 @@ Str_INT=知力: {0}
 Str_WIS=判断力: {0}
 Str_CHA=魅力: {0}
 Str_Health=体力: {0}
-Str_EnemyListHP=HP:{0}
+Str_EnemyListHP=HP: {0}
 Str_Attacks=攻撃回数: {0}
 Str_ArmorClass=防御クラス: {0}
 Str_THAC0=THAC0: {0}
 Str_Experience=経験値: {0}
 Str_Alignment=属性: {0}
+Alignment_NONE=なし
+Alignment_LAWFUL_GOOD=秩序にして善
+Alignment_LAWFUL_NEUTRAL=秩序にして中立
+Alignment_LAWFUL_EVIL=秩序にして悪
+Alignment_NEUTRAL_GOOD=中立にして善
+Alignment_NEUTRAL=中立
+Alignment_NEUTRAL_EVIL=中立にして悪
+Alignment_CHAOTIC_GOOD=混沌にして善
+Alignment_CHAOTIC_NEUTRAL=混沌にして中立
+Alignment_CHAOTIC_EVIL=混沌にして悪
 Str_SaveDeath=対死亡セーヴ: {0}
 Str_SaveWands=対魔法の杖セーヴ: {0}
 Str_SavePoly=対変身セーヴ: {0}
@@ -36,6 +49,13 @@ Str_ResSlashing=斬撃抵抗: {0}
 Str_ResCrushing=打撃抵抗: {0}
 Str_ResPiercing=刺突抵抗: {0}
 Str_ResMissile=飛び道具抵抗: {0}
+Str_Pockets=ポケット
+Str_ItemIdentified=鑑定済み
+Str_ItemStealable=盗める
+Str_ItemUnstealable=盗めない
+Str_ItemStolen=盗品
+Str_ItemDroppable=ドロップ可能
+Str_ItemUndroppable=ドロップ不可
 
 # EnemyControl - 耐性/免疫リスト
 Str_ProtectedFromMagicWeapons=魔法武器耐性
@@ -445,5 +465,6 @@ Str_Fonts=フォント
 Str_Other=その他
 Str_UseShiftClick=Shift+クリックを使用
 Str_UseShiftClickTooltip=右クリックの代わりにShift+右クリックを使用
+Str_DebugMode=デバッグモード
 Str_Locale=言語:
 Str_Save=保存

@@ -12,7 +12,7 @@ namespace BGOverlay
         public static bool UseShiftClick { get; set; }
         public static int EnemyListXOffset { get; set; }
         public static int RadarIconXOffset { get; set; }
-        public static bool DebugMode { get; private set; }
+        public static bool DebugMode { get; set; }
         public static string GameFolder { get; set; }
         public static string Locale { get; set; }
         public static bool Borderless { get; set; }
@@ -94,6 +94,33 @@ namespace BGOverlay
                 $"RadarIconXOffset={RadarIconXOffset}",
                 $"DebugMode={DebugMode}",
             });
+        }
+
+        /// <summary>
+        /// Reads just the persisted Locale value out of config.cfg, without requiring the game
+        /// process Init() otherwise needs (for GameFolder etc.) - for MainWindow's
+        /// waiting-for-game indicator, which needs a locale before the process (and therefore
+        /// Init()) is available yet. Returns null if config.cfg doesn't exist yet or has no
+        /// Locale entry, same as a fresh/first-ever run.
+        /// </summary>
+        public static string PeekPersistedLocale()
+        {
+            if (!File.Exists("config.cfg"))
+                return null;
+            try
+            {
+                foreach (var line in File.ReadAllLines("config.cfg"))
+                {
+                    var split = line.Split('=');
+                    if (split.Length >= 2 && split[0].Trim().Equals("Locale", StringComparison.OrdinalIgnoreCase))
+                        return split[1].Trim().ToLower();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("PeekPersistedLocale error!", ex);
+            }
+            return null;
         }
 
         private static void loadConfig()

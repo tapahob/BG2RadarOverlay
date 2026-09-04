@@ -166,6 +166,8 @@ namespace WPFFrontend
             this.ResCrushing.Content    = F("Str_ResCrushing", item.DerivedStatsTemp.ResistCrushing);
             this.ResPiercing.Content    = F("Str_ResPiercing", item.DerivedStatsTemp.ResistPiercing);
             this.ResMissile.Content     = F("Str_ResMissile", item.DerivedStatsTemp.ResistMissile);
+
+            this.PocketsHeader.Content  = L("Str_Pockets");
         }
 
         internal void updateView(BGEntity item)
@@ -255,6 +257,11 @@ namespace WPFFrontend
                 if (this.BGEntity.Protections.Count > 0)
                 {
                     this.protectionsListView.Visibility = Visibility.Visible;
+                }
+
+                if (this.BGEntity.Pockets.Count > 0)
+                {
+                    this.pocketsSection.Visibility = Visibility.Visible;
                 }
             } catch (Exception ex)
             {

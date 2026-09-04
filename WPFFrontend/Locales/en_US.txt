@@ -3,6 +3,9 @@
 # {0} placeholders are filled in with the corresponding value at runtime - keep them
 # in translations, but they may be moved/reordered if the target language needs it.
 
+# MainWindow - startup
+Str_WaitingForGame=Waiting for game
+
 # EnemyControl - character panel
 # EnemyControlWidth is the panel's width in pixels, not a translated string. It's optional -
 # omit it (or leave it blank/invalid) to keep the control's default width. 450 below is that
@@ -18,12 +21,22 @@ Str_INT=INT: {0}
 Str_WIS=WIS: {0}
 Str_CHA=CHR: {0}
 Str_Health=Health: {0}
-Str_EnemyListHP=HP:{0}
+Str_EnemyListHP=HP: {0}
 Str_Attacks=Attacks: {0}
 Str_ArmorClass=Armor Class: {0}
 Str_THAC0=THAC0: {0}
 Str_Experience=Experience: {0}
 Str_Alignment=Alignment: {0}
+Alignment_NONE=None
+Alignment_LAWFUL_GOOD=Lawful good
+Alignment_LAWFUL_NEUTRAL=Lawful neutral
+Alignment_LAWFUL_EVIL=Lawful evil
+Alignment_NEUTRAL_GOOD=Neutral good
+Alignment_NEUTRAL=Neutral
+Alignment_NEUTRAL_EVIL=Neutral evil
+Alignment_CHAOTIC_GOOD=Chaotic good
+Alignment_CHAOTIC_NEUTRAL=Chaotic neutral
+Alignment_CHAOTIC_EVIL=Chaotic evil
 Str_SaveDeath=Save vs Death: {0}
 Str_SaveWands=Save vs Wands: {0}
 Str_SavePoly=Save vs Polymorph: {0}
@@ -40,6 +53,13 @@ Str_ResSlashing=Resist Slashing: {0}
 Str_ResCrushing=Resist Crushing: {0}
 Str_ResPiercing=Resist Piercing: {0}
 Str_ResMissile=Resist Missile: {0}
+Str_Pockets=Pockets
+Str_ItemIdentified=Identified
+Str_ItemStealable=Stealable
+Str_ItemUnstealable=Unstealable
+Str_ItemStolen=Stolen
+Str_ItemDroppable=Droppable
+Str_ItemUndroppable=Undroppable
 
 # EnemyControl - Protections list (BGEntity.computeProtections in the core project also pulls
 # from this same table, not just the WPF layer)
@@ -452,5 +472,6 @@ Str_Fonts=Fonts
 Str_Other=Other
 Str_UseShiftClick=Use Shift Click
 Str_UseShiftClickTooltip=Use Shift Right-Click instead of Right Click
+Str_DebugMode=Debug Mode
 Str_Locale=Locale:
 Str_Save=Save

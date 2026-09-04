@@ -3,6 +3,9 @@
 # I segnaposto {0} vengono sostituiti dal valore corrispondente durante l'esecuzione -
 # mantienili nella traduzione, la posizione può essere cambiata se la lingua lo richiede.
 
+# MainWindow - startup
+Str_WaitingForGame=In attesa del gioco
+
 # EnemyControl - pannello del personaggio
 EnemyControlWidth=450
 Str_Level=Liv.{0}
@@ -14,12 +17,22 @@ Str_INT=INT: {0}
 Str_WIS=SAG: {0}
 Str_CHA=CAR: {0}
 Str_Health=Salute: {0}
-Str_EnemyListHP=PF:{0}
+Str_EnemyListHP=PF: {0}
 Str_Attacks=Attacchi: {0}
 Str_ArmorClass=Classe Armatura: {0}
 Str_THAC0=THAC0: {0}
 Str_Experience=Esperienza: {0}
 Str_Alignment=Allineamento: {0}
+Alignment_NONE=Nessuno
+Alignment_LAWFUL_GOOD=Legale buono
+Alignment_LAWFUL_NEUTRAL=Legale neutrale
+Alignment_LAWFUL_EVIL=Legale malvagio
+Alignment_NEUTRAL_GOOD=Neutrale buono
+Alignment_NEUTRAL=Neutrale
+Alignment_NEUTRAL_EVIL=Neutrale malvagio
+Alignment_CHAOTIC_GOOD=Caotico buono
+Alignment_CHAOTIC_NEUTRAL=Caotico neutrale
+Alignment_CHAOTIC_EVIL=Caotico malvagio
 Str_SaveDeath=TS vs Morte: {0}
 Str_SaveWands=TS vs Bacchette: {0}
 Str_SavePoly=TS vs Polimorfismo: {0}
@@ -36,6 +49,13 @@ Str_ResSlashing=Res. Taglio: {0}
 Str_ResCrushing=Res. Contundente: {0}
 Str_ResPiercing=Res. Perforazione: {0}
 Str_ResMissile=Res. ai Proiettili: {0}
+Str_Pockets=Tasche
+Str_ItemIdentified=Identificato
+Str_ItemStealable=Rubabile
+Str_ItemUnstealable=Non rubabile
+Str_ItemStolen=Rubato
+Str_ItemDroppable=Si può saccheggiare
+Str_ItemUndroppable=Non si può saccheggiare
 
 # EnemyControl - elenco protezioni
 Str_ProtectedFromMagicWeapons=Protetto dalle Armi Magiche
@@ -447,5 +467,6 @@ Str_Fonts=Caratteri
 Str_Other=Altro
 Str_UseShiftClick=Usa Shift+Clic
 Str_UseShiftClickTooltip=Usa Shift + Clic destro invece di Clic destro
+Str_DebugMode=Modalità debug
 Str_Locale=Lingua:
 Str_Save=Salva

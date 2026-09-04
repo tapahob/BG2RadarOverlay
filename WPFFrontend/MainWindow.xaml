@@ -53,7 +53,18 @@
                     PreviewMouseLeftButtonUp="RadarIcon_PreviewMouseLeftButtonUp">
                 <Image Source="/radar.png"/>
             </Button>
+            <!-- Shown while waiting for the game process to launch, hidden once it's found -
+                 see startWaitingForGameIndicator/stopWaitingForGameIndicator in code-behind. -->
+            <Border x:Name="WaitingForGameBorder" Grid.Row="0" Grid.Column="1" Margin="200,0,0,0" MaxHeight="30" Panel.ZIndex="1"
+                    HorizontalAlignment="Left" VerticalAlignment="Top" BorderBrush="Black" BorderThickness="2" Visibility="Collapsed">
+                <Border.Background>
+                    <ImageBrush Stretch="UniformToFill" ImageSource="/pexels-photo-235985.jpeg"/>
+                </Border.Background>
+                <Label x:Name="WaitingForGameLabel" Padding="4,0,4,0" Foreground="Black" FontWeight="Bold"
+                       FontFamily="Segoe Print" FontSize="12" VerticalContentAlignment="Center" d:Content="Waiting for game..."/>
+            </Border>
             <StackPanel x:Name="StackPanel" Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Left" Width="380"
+                        Visibility="Collapsed"
                         PreviewMouseLeftButtonDown="EnemyList_PreviewMouseLeftButtonDown"
                         PreviewMouseMove="EnemyList_PreviewMouseMove"
                         PreviewMouseLeftButtonUp="EnemyList_PreviewMouseLeftButtonUp">

@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -12,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using BGOverlay;
 using BGOverlay.Input;
 using FontFamily = System.Windows.Media.FontFamily;
@@ -31,7 +31,13 @@ namespace WPFFrontend
         private readonly object _stocksLock = new();
         private readonly ProcessHacker _processHacker = new();
         private readonly ConcurrentDictionary<int, EnemyControl> _currentEnemyControls = new();
-        private readonly OptionsControl _options;
+        // Not readonly - created only once _processHacker.Init() has finished (it needs
+        // Configuration.Font1/2/3 etc., set during that call), from a background-thread
+        // continuation rather than directly in the constructor body.
+        private OptionsControl _options;
+
+        private DispatcherTimer _waitingForGameDotsTimer;
+        private int _waitingForGameDotsCount;
 
         internal void deleteEnemyControlByTag(int tag)
         {
@@ -42,44 +48,67 @@ namespace WPFFrontend
         {
             InitializeComponent();
 
+            // Logger.Init() normally runs first thing inside _processHacker.Init(), but that now
+            // only happens later on the background thread (see below) - Logger.Debug/Error would
+            // NullReferenceException before then otherwise, and both positionOnPrimaryScreenForStartup()
+            // and startWaitingForGameIndicator() below already log.
+            Logger.Init();
+
+            // WindowStartupLocation="Manual" (see MainWindow.xaml) with no Left/Top/Width/Height
+            // set leaves the OS to pick a default position/size for the window - which, combined
+            // with the fully transparent Window.Background, made the waiting-for-game indicator
+            // effectively invisible (wrong monitor, or a stray sliver of the window). Cover the
+            // primary monitor for now; moveToGameScreen() repositions onto the game's actual
+            // monitor once _processHacker.Init() finds it (which may differ from the primary one).
+            positionOnPrimaryScreenForStartup();
+
             _processHacker.ProcessDestroyed += ProcessHacker_ProcessDestroyed;
             _processHacker.ProcessHooked += ProcessHacker_ProcessHooked;
-
-            _processHacker.Init();
-
-            ApplyLocalization();
-
-            updateEnemyListPosition();
-            updateRadarIconPosition();
-
-            _options = new();
-
-            updateStyles();
-
-            MainGrid.Children.Add(_options);
-            this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
-            this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;
 
             EnemyTextEntries = new ObservableCollection<EnemyListRow>();
             BindingOperations.EnableCollectionSynchronization(EnemyTextEntries, _stocksLock);
             ListView.Items.Clear();
             ListView.ItemsSource = EnemyTextEntries;
 
-            while (Process.GetProcessesByName(ProcessHacker.gameName).Length == 0)
-            {
-                Thread.Sleep(3000);
-            }
-
             this.Closed += (o, e) =>
             {
-                _mouseHook.Uninstall();
+                _mouseHook?.Uninstall();
                 Logger.flush();
             };
-            moveToGameScreen();
+
+            startWaitingForGameIndicator();
+
             // LongRunning so this never-ending polling loop gets its own dedicated thread
-            // instead of permanently occupying a ThreadPool worker.
+            // instead of permanently occupying a ThreadPool worker. _processHacker.Init() itself
+            // blocks - first polling until the game process appears (shown via the waiting
+            // indicator above), then loading resources - so it has to run here too instead of
+            // directly in the constructor, otherwise the window would never even get shown while
+            // waiting for the game to launch.
             Task.Factory.StartNew(() =>
             {
+                _processHacker.Init();
+
+                this.Dispatcher.Invoke(() =>
+                {
+                    stopWaitingForGameIndicator();
+
+                    ApplyLocalization();
+
+                    updateEnemyListPosition();
+                    updateRadarIconPosition();
+
+                    _options = new();
+                    _options.DebugModeChanged += _processHacker.InvalidateEntityCache;
+
+                    updateStyles();
+
+                    MainGrid.Children.Add(_options);
+                    this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
+                    this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;
+
+                    moveToGameScreen();
+                });
+
                 Logger.Debug("Main loop started");
 
                 while (true)
@@ -99,6 +128,52 @@ namespace WPFFrontend
                     }
                 }
             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }
+
+        /// <summary>
+        /// Shows a "Waiting for game..." label near the radar icon with an animated
+        /// dot-cycling suffix, for the window's initial state before the game process is found
+        /// (previously nothing was shown at all during that wait). Configuration.Locale itself
+        /// isn't set yet at this point (Configuration.Init() needs the game process), so this
+        /// reads the persisted locale straight out of config.cfg instead - same result once
+        /// ApplyLocalization() re-Init()s RadarLocalization for real, just available earlier.
+        /// </summary>
+        private void startWaitingForGameIndicator()
+        {
+            RadarLocalization.Init(Configuration.PeekPersistedLocale());
+            this.WaitingForGameLabel.Content = RadarLocalization.Get("Str_WaitingForGame");
+            this.WaitingForGameBorder.Visibility = Visibility.Visible;
+
+            _waitingForGameDotsCount = 0;
+            _waitingForGameDotsTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _waitingForGameDotsTimer.Tick += (s, e) =>
+            {
+                _waitingForGameDotsCount = (_waitingForGameDotsCount + 1) % 4;
+                this.WaitingForGameLabel.Content = RadarLocalization.Get("Str_WaitingForGame") + new string('.', _waitingForGameDotsCount);
+            };
+            _waitingForGameDotsTimer.Start();
+        }
+
+        private void stopWaitingForGameIndicator()
+        {
+            _waitingForGameDotsTimer?.Stop();
+            this.WaitingForGameBorder.Visibility = Visibility.Collapsed;
+        }
+
+        private void positionOnPrimaryScreenForStartup()
+        {
+            try
+            {
+                this.WindowState = WindowState.Normal;
+                this.Left        = 0;
+                this.Top         = 0;
+                this.Width       = SystemParameters.PrimaryScreenWidth;
+                this.Height      = SystemParameters.PrimaryScreenHeight;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(positionOnPrimaryScreenForStartup)} error!", ex);
+            }
         }
 
         private void moveToGameScreen()
@@ -440,10 +515,13 @@ namespace WPFFrontend
                     foreach (var entity in nearestEnemies)
                     {
                         seenTags.Add(entity.tag);
+                        // EnemyAlly == 2 is "Regular party members" (BGEntity.EnemyAllyDict) -
+                        // the same check ProcessHacker.MainLoop uses for Configuration.HidePartyMembers.
+                        var isPartyMember = entity.EnemyAlly == 2;
                         var row = EnemyTextEntries.FirstOrDefault(r => r.Tag == entity.tag);
                         if (row == null)
                         {
-                            EnemyTextEntries.Add(new EnemyListRow(entity.tag, entity.Name2, entity.CurrentHP));
+                            EnemyTextEntries.Add(new EnemyListRow(entity.tag, entity.Name2, entity.CurrentHP, isPartyMember));
                         }
                         else
                         {
@@ -451,6 +529,7 @@ namespace WPFFrontend
                             // is cheap even though it runs every tick for every visible row.
                             row.Name = entity.Name2;
                             row.CurrentHP = entity.CurrentHP;
+                            row.IsPartyMember = isPartyMember;
                         }
                     }
 
@@ -461,12 +540,85 @@ namespace WPFFrontend
                     {
                         EnemyTextEntries.Remove(row);
                     }
+
+                    sortPartyMembersFirst();
+                    updateEnemyListVisibility();
                 }
                 catch (Exception ex)
                 {
                     Logger.Error($"{nameof(syncEnemyList)} error!", ex);
                 }
             }));
+        }
+
+        /// <summary>
+        /// Repositions EnemyTextEntries so party members come first (in their existing relative
+        /// order), followed by everyone else (also in their existing relative order) - via
+        /// ObservableCollection.Move rather than removing/re-adding, so each row's
+        /// ListViewItem/HpRollText instance stays alive (see syncEnemyList's own comment on why
+        /// that matters for the HP roll-down animation).
+        /// </summary>
+        private void sortPartyMembersFirst()
+        {
+            // OrderByDescending is a stable sort, so within each group (party members / everyone
+            // else) rows keep whatever relative order they were already in.
+            var desiredOrder = EnemyTextEntries.OrderByDescending(r => r.IsPartyMember).ToList();
+            for (int i = 0; i < desiredOrder.Count; i++)
+            {
+                var currentIndex = EnemyTextEntries.IndexOf(desiredOrder[i]);
+                if (currentIndex != i)
+                    EnemyTextEntries.Move(currentIndex, i);
+            }
+        }
+
+        /// <summary>
+        /// The enemy list should only actually be on screen while the user hasn't collapsed it
+        /// (_toShowEnemyList) AND there's at least one row to show - an empty list is hidden
+        /// automatically even while _toShowEnemyList is true, and reappears on its own (via the
+        /// next syncEnemyList call) as soon as a row is added again, without needing another
+        /// click on the radar icon.
+        /// </summary>
+        private void updateEnemyListVisibility()
+        {
+            var shouldShow = _toShowEnemyList && EnemyTextEntries.Count > 0;
+            var isCurrentlyShown = this.StackPanel.Visibility == Visibility.Visible;
+            if (shouldShow == isCurrentlyShown)
+                return;
+
+            if (shouldShow)
+                showEnemyList();
+            else
+                hideEnemyList();
+        }
+
+        private void hideEnemyList()
+        {
+            ThicknessAnimation anim = new ThicknessAnimation();
+            anim.From = this.StackPanel.Margin;
+            var newMargin = this.StackPanel.Margin;
+            newMargin.Top = -this.StackPanel.ActualHeight;
+            anim.To = newMargin;
+            anim.EasingFunction = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
+            anim.Duration = TimeSpan.FromSeconds(.45);
+            anim.FillBehavior = FillBehavior.HoldEnd;
+            anim.Completed += (o, e) => this.StackPanel.Visibility = Visibility.Collapsed;
+            this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
+        }
+
+        private void showEnemyList()
+        {
+            ThicknessAnimation anim = new ThicknessAnimation();
+            var newMargin1 = this.StackPanel.Margin;
+            newMargin1.Top /= 2;
+            anim.From = newMargin1;
+            var newMargin = this.StackPanel.Margin;
+            newMargin.Top = 0;
+            anim.To = newMargin;
+            anim.EasingFunction = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };
+            anim.Duration = TimeSpan.FromSeconds(.85);
+            anim.FillBehavior = FillBehavior.HoldEnd;
+            this.StackPanel.Visibility = Visibility.Visible;
+            this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
         }
 
         private void MinMaxBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
@@ -598,48 +750,21 @@ namespace WPFFrontend
                 WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);
                 WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
                 _toShowEnemyList = !_toShowEnemyList;
-                //this.listView.Visibility = this.listView.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;            
-
-                if (!_toShowEnemyList)
-                {
-                    ThicknessAnimation anim = new ThicknessAnimation();
-                    anim.From = this.StackPanel.Margin;
-                    var newMargin = this.StackPanel.Margin;
-                    newMargin.Top = -this.StackPanel.ActualHeight;
-                    anim.To = newMargin;
-                    anim.EasingFunction = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
-                    anim.Duration = TimeSpan.FromSeconds(.45);
-                    anim.FillBehavior = FillBehavior.HoldEnd;
-                    anim.Completed += (o, e) => this.StackPanel.Visibility = Visibility.Collapsed;
-                    this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
-                }
-                else
-                {
-                    ThicknessAnimation anim = new ThicknessAnimation();
-                    var newMargin1 = this.StackPanel.Margin;
-                    newMargin1.Top /= 2;
-                    anim.From = newMargin1;
-                    var newMargin = this.StackPanel.Margin;
-                    newMargin.Top = 0;
-                    anim.To = newMargin;
-                    anim.EasingFunction = new PowerEase() { Power = 10, EasingMode = EasingMode.EaseOut };
-                    anim.Duration = TimeSpan.FromSeconds(.85);
-                    anim.FillBehavior = FillBehavior.HoldEnd;
-                    this.StackPanel.Visibility = Visibility.Visible;
-                    this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
-                }
+                updateEnemyListVisibility();
             } catch (Exception ex)
             {
                 Logger.Error($"{nameof(MinMaxBtn_Click)} Min/Max error!", ex);
             }
-            
-            
         }
 
         private void MinMaxBtn_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             try
             {
+                // Not ready yet if the game process hasn't been found (see startWaitingForGameIndicator).
+                if (_options == null)
+                    return;
+
                 _options.Init();
                 _options.Show();
             }

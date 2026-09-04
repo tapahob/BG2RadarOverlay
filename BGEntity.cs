@@ -96,6 +96,12 @@ namespace BGOverlay
         /// </summary>
         public List<object> Protections => _protectionsCache ?? (_protectionsCache = computeProtections());
 
+        /// <summary>
+        /// Inventory items this creature is carrying that can be stolen via pickpocket -
+        /// CREReader.Pockets already filters out items with the Unstealable flag set.
+        /// </summary>
+        public List<PocketItemEntry> Pockets => this.Reader?.Pockets ?? new List<PocketItemEntry>();
+
         private List<object> computeProtections()
         {
             {

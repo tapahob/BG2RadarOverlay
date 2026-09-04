@@ -8,9 +8,14 @@
              xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              xmlns:bg="clr-namespace:BGOverlay;assembly=BGOverlayAPI"
     x:Class="WPFFrontend.EnemyControl"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              Height="Auto" Width="{DynamicResource EnemyControlWidth}"
     Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="3" VerticalAlignment="Center" MouseUp="UserControl_MouseUp" MouseLeave="UserControl_MouseLeave">
+    <UserControl.Resources>
+        <wpffrontend:BitmapToImageSourceConverter x:Key="BitmapToImageSourceConverter"/>
+        <wpffrontend:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+        <wpffrontend:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+    </UserControl.Resources>
     <UserControl.BorderBrush>
         <ImageBrush/>
     </UserControl.BorderBrush>
@@ -29,6 +34,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="10"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -37,7 +43,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="10"/>
         </Grid.ColumnDefinitions>
-        <Border Grid.RowSpan="8" Grid.ColumnSpan="4" BorderThickness="5" BorderBrush="#FF151313"/>
+        <Border Grid.RowSpan="9" Grid.ColumnSpan="4" BorderThickness="5" BorderBrush="#FF151313"/>
         <Label x:Name="Level" Grid.Row="1" Grid.Column="1" d:Content="41" />
         <Label Grid.Row="1" Grid.Column="2" Content="X" d:Content="X" HorizontalAlignment="Right" MouseDown="Label_MouseDown" Margin="0,0,3,0"/>
         <Border Grid.ColumnSpan="2" Grid.Row="1" Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="1">
@@ -90,10 +96,6 @@
         </StackPanel>
         <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
             <ListView.Resources>
-                <wpffrontend:BitmapToImageSourceConverter x:Key="BitmapToImageSourceConverter"/>
-                <wpffrontend:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
-                <wpffrontend:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
-
                 <!-- Most Protections entries are plain strings, rendered exactly as before.
                      Implicit (DataType-keyed, no x:Key) templates here let this single
                      ListView render both plain-string lines and the icon-carrying
@@ -134,5 +136,30 @@
         </ListView>
         <ListView x:Name="itemEffectsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
         </ListView>
+
+        <!-- Items this creature is carrying that can be stolen via pickpocket
+             (BGEntity.Pockets already excludes ones with the Unstealable flag set). -->
+        <StackPanel x:Name="pocketsSection" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Visibility="Collapsed">
+            <Label x:Name="PocketsHeader" d:Content="Pockets" HorizontalAlignment="Left" Padding="0"/>
+            <ListView x:Name="pocketsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False" HorizontalContentAlignment="Stretch" ItemsSource="{Binding Pockets}" Background="{x:Null}" Foreground="{x:Null}">
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="{x:Type bg:PocketItemEntry}">
+                        <Grid Margin="0,2,0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- No icon in the resource -> no placeholder, just the name. -->
+                            <Image Grid.Column="0" Source="{Binding Icon, Converter={StaticResource BitmapToImageSourceConverter}}"
+                                   Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
+                                   Width="24" Height="24" Margin="0,0,3,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="2" Text="{Binding FlagsText}" Style="{StaticResource Protections}" Foreground="Black" HorizontalAlignment="Right" Margin="4,0,0,0"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </StackPanel>
     </Grid>
 </UserControl>

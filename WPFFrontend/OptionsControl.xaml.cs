@@ -20,9 +20,17 @@ namespace WPFFrontend
     {
         private bool hidden = true;
 
+        /// <summary>
+        /// Raised right after the Debug Mode checkbox is toggled (Configuration.DebugMode is
+        /// already updated by then) - MainWindow uses this to invalidate the pooled BGEntity
+        /// cache and pick up debug-only display rules (e.g. the "[CRE filename]" name suffix)
+        /// that are otherwise only computed once, when an entity is first cached.
+        /// </summary>
+        public event Action DebugModeChanged;
+
         public OptionsControl()
         {
-            InitializeComponent();   
+            InitializeComponent();
             this.Version.Content             = $"Ver. {Configuration.Version}";
             this.HidePartyMembers.Click     += updateConfig;
             this.HideNeutrals.Click         += updateConfig;
@@ -31,6 +39,8 @@ namespace WPFFrontend
             this.RefreshRate.TextChanged    += updateConfig;
             this.BigBuffIcons.Click         += updateConfig;
             this.UseShiftClick.Click        += updateConfig;
+            this.DebugMode.Click            += updateConfig;
+            this.DebugMode.Click            += (s, e) => DebugModeChanged?.Invoke();
             this.MouseUp                    += OptionsControl_MouseUp;
             this.CloseBtn.MouseUp           += Label_MouseDown;
             var app                          = System.Windows.Application.Current;
@@ -104,6 +114,7 @@ namespace WPFFrontend
             Configuration.RefreshTimeMS       = int.Parse(this.RefreshRate.Text);
             Configuration.BigBuffIcons        = (bool)this.BigBuffIcons.IsChecked;
             Configuration.UseShiftClick       = (bool)this.UseShiftClick.IsChecked;
+            Configuration.DebugMode           = (bool)this.DebugMode.IsChecked;
             Configuration.Locale              = this.Locale.SelectedValue.ToString();
 
             this.Font3.Content = Configuration.BigBuffIcons 
@@ -120,6 +131,7 @@ namespace WPFFrontend
             this.RefreshRate.Text               = Configuration.RefreshTimeMS.ToString();
             this.BigBuffIcons.IsChecked         = Configuration.BigBuffIcons;
             this.UseShiftClick.IsChecked        = Configuration.UseShiftClick;
+            this.DebugMode.IsChecked            = Configuration.DebugMode;
         }
 
         public void Show()

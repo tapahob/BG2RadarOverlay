@@ -3,6 +3,9 @@
 # Symbole zastępcze {0} są podstawiane wartością w czasie działania programu - zachowaj je
 # w tłumaczeniu, ich pozycję można zmieniać, jeśli wymaga tego język.
 
+# MainWindow - startup
+Str_WaitingForGame=Oczekiwanie na grę
+
 # EnemyControl - panel postaci
 EnemyControlWidth=450
 Str_Level=Poz.{0}
@@ -14,12 +17,22 @@ Str_INT=INT: {0}
 Str_WIS=MDR: {0}
 Str_CHA=CHA: {0}
 Str_Health=Zdrowie: {0}
-Str_EnemyListHP=PW:{0}
+Str_EnemyListHP=PW: {0}
 Str_Attacks=Ataki: {0}
 Str_ArmorClass=Klasa Pancerza: {0}
 Str_THAC0=THAC0: {0}
 Str_Experience=Doświadczenie: {0}
 Str_Alignment=Charakter: {0}
+Alignment_NONE=Brak
+Alignment_LAWFUL_GOOD=Praworządny dobry
+Alignment_LAWFUL_NEUTRAL=Praworządny neutralny
+Alignment_LAWFUL_EVIL=Praworządny zły
+Alignment_NEUTRAL_GOOD=Neutralny dobry
+Alignment_NEUTRAL=Neutralny
+Alignment_NEUTRAL_EVIL=Neutralny zły
+Alignment_CHAOTIC_GOOD=Chaotyczny dobry
+Alignment_CHAOTIC_NEUTRAL=Chaotyczny neutralny
+Alignment_CHAOTIC_EVIL=Chaotyczny zły
 Str_SaveDeath=Rzut obronny na śmierć: {0}
 Str_SaveWands=Rzut obronny na różdżki: {0}
 Str_SavePoly=Rzut obronny na polimorfię: {0}
@@ -36,6 +49,13 @@ Str_ResSlashing=Odp. na obr. sieczne: {0}
 Str_ResCrushing=Odp. na obr. obuchowe: {0}
 Str_ResPiercing=Odp. na obr. kłute: {0}
 Str_ResMissile=Odp. na pociski: {0}
+Str_Pockets=Kieszenie
+Str_ItemIdentified=Zidentyfikowany
+Str_ItemStealable=Można ukraść
+Str_ItemUnstealable=Nie można ukraść
+Str_ItemStolen=Skradziony
+Str_ItemDroppable=Można zdobyć
+Str_ItemUndroppable=Nie można zdobyć
 
 # EnemyControl - lista ochron
 Str_ProtectedFromMagicWeapons=Chroniony przed bronią magiczną
@@ -446,5 +466,6 @@ Str_Fonts=Czcionki
 Str_Other=Inne
 Str_UseShiftClick=Użyj Shift+klik
 Str_UseShiftClickTooltip=Użyj Shift + PPM zamiast PPM
+Str_DebugMode=Tryb debugowania
 Str_Locale=Język:
 Str_Save=Zapisz

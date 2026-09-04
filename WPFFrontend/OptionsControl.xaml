@@ -33,7 +33,7 @@
             <RowDefinition Height="50"/>
             <RowDefinition Height="70"/>
             <RowDefinition Height="15"/>
-            <RowDefinition Height="120"/>
+            <RowDefinition Height="145"/>
             <RowDefinition Height="15"/>
             <RowDefinition Height="30"/>
             <RowDefinition Height="35"/>
@@ -87,6 +87,7 @@
             <Label Content="{DynamicResource Str_Other}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
             <StackPanel Orientation="Vertical">
                 <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" Content="{DynamicResource Str_UseShiftClick}" ToolTip="{DynamicResource Str_UseShiftClickTooltip}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                <CheckBox x:Name="DebugMode" VerticalContentAlignment="Center" Content="{DynamicResource Str_DebugMode}" FontFamily="Segoe Print" FontWeight="Bold"/>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="{DynamicResource Str_Locale}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                     <ComboBox x:Name="Locale" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Margin="5, -5, 0, 0" d:SelectedItem="en_US" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Width="77">

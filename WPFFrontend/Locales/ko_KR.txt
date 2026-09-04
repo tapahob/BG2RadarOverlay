@@ -3,6 +3,9 @@
 # {0} 자리표시자는 실행 시 해당 값으로 치환됩니다 - 번역 시 유지하되, 언어에 필요하면
 # 위치를 옮겨도 됩니다.
 
+# MainWindow - startup
+Str_WaitingForGame=게임 대기 중
+
 # EnemyControl - 캐릭터 패널
 EnemyControlWidth=450
 Str_Level=Lv{0}
@@ -14,12 +17,22 @@ Str_INT=지능: {0}
 Str_WIS=지혜: {0}
 Str_CHA=매력: {0}
 Str_Health=체력: {0}
-Str_EnemyListHP=체력:{0}
+Str_EnemyListHP=체력: {0}
 Str_Attacks=공격 횟수: {0}
 Str_ArmorClass=방어도: {0}
 Str_THAC0=THAC0: {0}
 Str_Experience=경험치: {0}
 Str_Alignment=성향: {0}
+Alignment_NONE=없음
+Alignment_LAWFUL_GOOD=질서 선
+Alignment_LAWFUL_NEUTRAL=질서 중립
+Alignment_LAWFUL_EVIL=질서 악
+Alignment_NEUTRAL_GOOD=중립 선
+Alignment_NEUTRAL=중립
+Alignment_NEUTRAL_EVIL=중립 악
+Alignment_CHAOTIC_GOOD=혼돈 선
+Alignment_CHAOTIC_NEUTRAL=혼돈 중립
+Alignment_CHAOTIC_EVIL=혼돈 악
 Str_SaveDeath=죽음 내성: {0}
 Str_SaveWands=마법봉 내성: {0}
 Str_SavePoly=변신 내성: {0}
@@ -36,6 +49,13 @@ Str_ResSlashing=베기 저항: {0}
 Str_ResCrushing=타격 저항: {0}
 Str_ResPiercing=관통 저항: {0}
 Str_ResMissile=발사체 저항: {0}
+Str_Pockets=주머니
+Str_ItemIdentified=감정됨
+Str_ItemStealable=훔칠 수 있음
+Str_ItemUnstealable=훔칠 수 없음
+Str_ItemStolen=도난품
+Str_ItemDroppable=드롭 가능
+Str_ItemUndroppable=드롭 불가능
 
 # EnemyControl - 저항/면역 목록
 Str_ProtectedFromMagicWeapons=마법 무기 보호
@@ -445,5 +465,6 @@ Str_Fonts=글꼴
 Str_Other=기타
 Str_UseShiftClick=Shift+클릭 사용
 Str_UseShiftClickTooltip=우클릭 대신 Shift + 우클릭 사용
+Str_DebugMode=디버그 모드
 Str_Locale=언어:
 Str_Save=저장

@@ -2,6 +2,9 @@
 # 每行一个 "键=值"。以 # 开头的行和空行会被忽略。
 # {0} 占位符会在运行时被替换为对应的值 - 翻译时请保留它们，如果该语言需要，可以调整位置。
 
+# MainWindow - startup
+Str_WaitingForGame=等待游戏启动
+
 # EnemyControl - 角色面板
 EnemyControlWidth=450
 Str_Level=等级{0}
@@ -13,12 +16,22 @@ Str_INT=智力: {0}
 Str_WIS=感知: {0}
 Str_CHA=魅力: {0}
 Str_Health=生命值: {0}
-Str_EnemyListHP=HP:{0}
+Str_EnemyListHP=HP: {0}
 Str_Attacks=攻击次数: {0}
 Str_ArmorClass=护甲等级: {0}
 Str_THAC0=THAC0: {0}
 Str_Experience=经验值: {0}
 Str_Alignment=阵营: {0}
+Alignment_NONE=无
+Alignment_LAWFUL_GOOD=守序善良
+Alignment_LAWFUL_NEUTRAL=守序中立
+Alignment_LAWFUL_EVIL=守序邪恶
+Alignment_NEUTRAL_GOOD=中立善良
+Alignment_NEUTRAL=绝对中立
+Alignment_NEUTRAL_EVIL=中立邪恶
+Alignment_CHAOTIC_GOOD=混乱善良
+Alignment_CHAOTIC_NEUTRAL=混乱中立
+Alignment_CHAOTIC_EVIL=混乱邪恶
 Str_SaveDeath=死亡豁免: {0}
 Str_SaveWands=法杖豁免: {0}
 Str_SavePoly=变形豁免: {0}
@@ -35,6 +48,13 @@ Str_ResSlashing=挥砍抗性: {0}
 Str_ResCrushing=钝击抗性: {0}
 Str_ResPiercing=穿刺抗性: {0}
 Str_ResMissile=远程抗性: {0}
+Str_Pockets=口袋
+Str_ItemIdentified=已识别
+Str_ItemStealable=可偷
+Str_ItemUnstealable=不可偷
+Str_ItemStolen=已偷
+Str_ItemDroppable=可拾取
+Str_ItemUndroppable=不可拾取
 
 # EnemyControl - 抗性/免疫列表
 Str_ProtectedFromMagicWeapons=免疫魔法武器
@@ -444,5 +464,6 @@ Str_Fonts=字体
 Str_Other=其他
 Str_UseShiftClick=使用 Shift+点击
 Str_UseShiftClickTooltip=使用 Shift + 右键 代替 右键
+Str_DebugMode=调试模式
 Str_Locale=语言:
 Str_Save=保存
