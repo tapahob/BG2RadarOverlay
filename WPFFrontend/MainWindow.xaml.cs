@@ -140,6 +140,99 @@ namespace WPFFrontend
             this.StackPanel.RenderTransform = transform;
         }
 
+        private bool _isDraggingEnemyList;
+        private System.Windows.Point _enemyListDragStartMouse;
+        private double _enemyListDragStartOffsetX;
+        // The panel's layout-only (pre-transform) left edge in window coordinates, captured
+        // once when a drag starts, so clamping doesn't have to hardcode Grid column widths.
+        private double _enemyListDragBaseLeft;
+
+        private void EnemyList_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                // Just note where the click/drag started - don't capture the mouse or mark the
+                // event handled yet, so a plain click (no meaningful movement before button-up)
+                // still reaches the ListView's own item-selection handling untouched.
+                _isDraggingEnemyList = false;
+                _enemyListDragStartMouse = e.GetPosition(this);
+                _enemyListDragStartOffsetX = Configuration.EnemyListXOffset;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(EnemyList_PreviewMouseLeftButtonDown)} error!", ex);
+            }
+        }
+
+        private void EnemyList_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                if (e.LeftButton != System.Windows.Input.MouseButtonState.Pressed)
+                    return;
+
+                var current = e.GetPosition(this);
+                var deltaX  = current.X - _enemyListDragStartMouse.X;
+
+                if (!_isDraggingEnemyList)
+                {
+                    // Horizontal-only drag, so only horizontal movement should arm it - a
+                    // vertical wobble on what was meant to be a plain click on a list item
+                    // shouldn't swallow that click.
+                    if (Math.Abs(deltaX) < SystemParameters.MinimumHorizontalDragDistance)
+                        return;
+
+                    _isDraggingEnemyList = true;
+                    this.StackPanel.CaptureMouse();
+
+                    var transform = (TranslateTransform)this.StackPanel.RenderTransform;
+                    var currentLeftInWindow = this.StackPanel.TransformToAncestor(this).Transform(new System.Windows.Point(0, 0)).X;
+                    _enemyListDragBaseLeft = currentLeftInWindow - transform.X;
+                }
+
+                e.Handled = true;
+
+                // Window-local X 0 is the game monitor's left edge and this.ActualWidth is its
+                // right edge (moveToGameScreen() positions/sizes the window to exactly cover the
+                // game's monitor), so clamping the panel's absolute left/right edges to
+                // [0, ActualWidth] keeps it from being dragged off that monitor.
+                var minOffset = -_enemyListDragBaseLeft;
+                var maxOffset = this.ActualWidth - _enemyListDragBaseLeft - this.StackPanel.ActualWidth;
+                if (maxOffset < minOffset)
+                    maxOffset = minOffset; // panel wider than the monitor - pin it instead of inverting the clamp
+
+                var proposedOffset = _enemyListDragStartOffsetX + deltaX;
+                var clampedOffset  = Math.Max(minOffset, Math.Min(maxOffset, proposedOffset));
+
+                ((TranslateTransform)this.StackPanel.RenderTransform).X = clampedOffset;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(EnemyList_PreviewMouseMove)} error!", ex);
+            }
+        }
+
+        private void EnemyList_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (!_isDraggingEnemyList)
+                    return;
+
+                _isDraggingEnemyList = false;
+                this.StackPanel.ReleaseMouseCapture();
+                e.Handled = true;
+
+                var transform = (TranslateTransform)this.StackPanel.RenderTransform;
+                Configuration.EnemyListXOffset = (int)Math.Round(transform.X);
+                Configuration.SaveConfig();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(EnemyList_PreviewMouseLeftButtonUp)} error!", ex);
+            }
+        }
+
         private void ProcessHacker_ProcessHooked(string processName, int pid)
         {
             // The game may have (re)started on a different monitor than last time.

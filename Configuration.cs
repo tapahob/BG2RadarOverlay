@@ -10,7 +10,7 @@ namespace BGOverlay
     public static class Configuration
     {
         public static bool UseShiftClick { get; set; }
-        public static int EnemyListXOffset { get; private set; }
+        public static int EnemyListXOffset { get; set; }
         public static bool DebugMode { get; private set; }
         public static string GameFolder { get; set; }
         public static string Locale { get; set; }
