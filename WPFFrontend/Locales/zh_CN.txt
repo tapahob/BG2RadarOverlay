@@ -13,6 +13,7 @@ Str_INT=智力: {0}
 Str_WIS=感知: {0}
 Str_CHA=魅力: {0}
 Str_Health=生命值: {0}
+Str_EnemyListHP=HP:{0}
 Str_Attacks=攻击次数: {0}
 Str_ArmorClass=护甲等级: {0}
 Str_THAC0=THAC0: {0}

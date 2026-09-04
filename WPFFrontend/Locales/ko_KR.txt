@@ -14,6 +14,7 @@ Str_INT=지능: {0}
 Str_WIS=지혜: {0}
 Str_CHA=매력: {0}
 Str_Health=체력: {0}
+Str_EnemyListHP=체력:{0}
 Str_Attacks=공격 횟수: {0}
 Str_ArmorClass=방어도: {0}
 Str_THAC0=THAC0: {0}

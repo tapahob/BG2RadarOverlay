@@ -151,6 +151,82 @@ namespace WPFFrontend
             OptionsControl_MouseUp(null, null);
         }
 
+        private bool _isDraggingOptions;
+        private Point _optionsDragStartMouse;
+        private double _optionsDragStartOffsetX;
+        private double _optionsDragStartOffsetY;
+
+        private void OptionsControl_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                // Just note where the click/drag started - don't capture the mouse or mark the
+                // event handled yet, so a plain click on a checkbox/button/etc. inside the
+                // panel still reaches its own handler untouched.
+                _isDraggingOptions = false;
+                _optionsDragStartMouse = e.GetPosition((IInputElement)this.Parent);
+                var transform = (TranslateTransform)this.RenderTransform;
+                _optionsDragStartOffsetX = transform.X;
+                _optionsDragStartOffsetY = transform.Y;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(OptionsControl_PreviewMouseLeftButtonDown)} error!", ex);
+            }
+        }
+
+        private void OptionsControl_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                if (e.LeftButton != MouseButtonState.Pressed)
+                    return;
+
+                var current = e.GetPosition((IInputElement)this.Parent);
+                var deltaX  = current.X - _optionsDragStartMouse.X;
+                var deltaY  = current.Y - _optionsDragStartMouse.Y;
+
+                if (!_isDraggingOptions)
+                {
+                    // Free 2D drag (unlike the enemy list's horizontal-only drag), so arm as
+                    // soon as movement on either axis exceeds its own threshold.
+                    if (Math.Abs(deltaX) < SystemParameters.MinimumHorizontalDragDistance
+                        && Math.Abs(deltaY) < SystemParameters.MinimumVerticalDragDistance)
+                        return;
+
+                    _isDraggingOptions = true;
+                    this.CaptureMouse();
+                }
+
+                e.Handled = true;
+
+                var transform = (TranslateTransform)this.RenderTransform;
+                transform.X = _optionsDragStartOffsetX + deltaX;
+                transform.Y = _optionsDragStartOffsetY + deltaY;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(OptionsControl_PreviewMouseMove)} error!", ex);
+            }
+        }
+
+        private void OptionsControl_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (!_isDraggingOptions)
+                    return;
+
+                _isDraggingOptions = false;
+                this.ReleaseMouseCapture();
+                e.Handled = true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(OptionsControl_PreviewMouseLeftButtonUp)} error!", ex);
+            }
+        }
+
         private void SelectFont(object sender, RoutedEventArgs e)
         {
             var button = (Button)sender;

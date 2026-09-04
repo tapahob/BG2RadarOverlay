@@ -14,6 +14,7 @@ Str_INT=INT: {0}
 Str_WIS=MOU: {0}
 Str_CHA=CHA: {0}
 Str_Health=Zdraví: {0}
+Str_EnemyListHP=ŽB:{0}
 Str_Attacks=Útoky: {0}
 Str_ArmorClass=Třída zbroje: {0}
 Str_THAC0=THAC0: {0}

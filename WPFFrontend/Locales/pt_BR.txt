@@ -14,6 +14,7 @@ Str_INT=INT: {0}
 Str_WIS=SAB: {0}
 Str_CHA=CAR: {0}
 Str_Health=Vida: {0}
+Str_EnemyListHP=PV:{0}
 Str_Attacks=Ataques: {0}
 Str_ArmorClass=Classe de Armadura: {0}
 Str_THAC0=THAC0: {0}

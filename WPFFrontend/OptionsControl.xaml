@@ -8,7 +8,16 @@
              Width="{DynamicResource OptionsControlWidth}"
              Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="5" Grid.RowSpan="5"
              VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="9000"
+             PreviewMouseLeftButtonDown="OptionsControl_PreviewMouseLeftButtonDown"
+             PreviewMouseMove="OptionsControl_PreviewMouseMove"
+             PreviewMouseLeftButtonUp="OptionsControl_PreviewMouseLeftButtonUp"
     xmlns:theme="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2">
+    <UserControl.RenderTransform>
+        <!-- Holds the left-click drag offset (see OptionsControl_PreviewMouse* in
+             code-behind) - kept separate from the Margin-based show/hide slide animations
+             (OptionsControl_MouseUp/Show), so a drag persists across toggling the panel. -->
+        <TranslateTransform/>
+    </UserControl.RenderTransform>
     <UserControl.Background>
         <ImageBrush ImageSource="/pexels-photo-235985.jpeg" Stretch="UniformToFill"/>
     </UserControl.Background>

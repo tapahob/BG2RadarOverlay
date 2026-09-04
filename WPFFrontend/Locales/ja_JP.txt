@@ -14,6 +14,7 @@ Str_INT=知力: {0}
 Str_WIS=判断力: {0}
 Str_CHA=魅力: {0}
 Str_Health=体力: {0}
+Str_EnemyListHP=HP:{0}
 Str_Attacks=攻撃回数: {0}
 Str_ArmorClass=防御クラス: {0}
 Str_THAC0=THAC0: {0}

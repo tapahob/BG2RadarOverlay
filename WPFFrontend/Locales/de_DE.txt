@@ -14,6 +14,7 @@ Str_INT=INT: {0}
 Str_WIS=WEI: {0}
 Str_CHA=CHA: {0}
 Str_Health=Gesundheit: {0}
+Str_EnemyListHP=TP:{0}
 Str_Attacks=Angriffe: {0}
 Str_ArmorClass=Rüstungsklasse: {0}
 Str_THAC0=THAC0: {0}

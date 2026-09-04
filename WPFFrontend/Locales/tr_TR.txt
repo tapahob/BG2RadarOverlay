@@ -14,6 +14,7 @@ Str_INT=ZEK: {0}
 Str_WIS=BİL: {0}
 Str_CHA=KAR: {0}
 Str_Health=Sağlık: {0}
+Str_EnemyListHP=CP:{0}
 Str_Attacks=Saldırılar: {0}
 Str_ArmorClass=Zırh Sınıfı: {0}
 Str_THAC0=THAC0: {0}

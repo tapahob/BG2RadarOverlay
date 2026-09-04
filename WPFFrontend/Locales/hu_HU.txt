@@ -14,6 +14,7 @@ Str_INT=INT: {0}
 Str_WIS=BÖL: {0}
 Str_CHA=KAR: {0}
 Str_Health=Életerő: {0}
+Str_EnemyListHP=ÉP:{0}
 Str_Attacks=Támadások: {0}
 Str_ArmorClass=Páncélosztály: {0}
 Str_THAC0=THAC0: {0}

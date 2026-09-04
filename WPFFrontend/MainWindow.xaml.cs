@@ -23,7 +23,7 @@ namespace WPFFrontend
     /// </summary>
     public partial class MainWindow : Window
     {
-        ObservableCollection<BGEntity> EnemyTextEntries { get; set; }
+        ObservableCollection<EnemyListRow> EnemyTextEntries { get; set; }
 
         private MouseHook _mouseHook;
         private bool _toShowEnemyList = true;
@@ -59,7 +59,7 @@ namespace WPFFrontend
             this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
             this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;
 
-            EnemyTextEntries = new ObservableCollection<BGEntity>();
+            EnemyTextEntries = new ObservableCollection<EnemyListRow>();
             BindingOperations.EnableCollectionSynchronization(EnemyTextEntries, _stocksLock);
             ListView.Items.Clear();
             ListView.ItemsSource = EnemyTextEntries;
@@ -86,20 +86,11 @@ namespace WPFFrontend
                     try
                     {
                         _processHacker.MainLoop();
-                        if (_processHacker.NearestEnemies.Count() == EnemyTextEntries.Count && _processHacker.NearestEnemies.All(x => EnemyTextEntries.Any(y => y.ToString() == x.ToString())))
-                        {
-                            foreach (var item in _processHacker.NearestEnemies)
-                            {
-                                updateControls(item);
-                            }
-                            continue;
-                        }
-
-                        EnemyTextEntries.Clear();
                         foreach (var item in _processHacker.NearestEnemies)
                         {
-                            EnemyTextEntries.Add(item);
+                            updateControls(item);
                         }
+                        syncEnemyList(_processHacker.NearestEnemies);
                     }
                     catch (Exception ex)
                     {
@@ -321,8 +312,61 @@ namespace WPFFrontend
                 } catch (Exception ex)
                 {
                     Logger.Error($"{nameof(updateControls)} error!", ex);
-                }                
-            }));            
+                }
+            }));
+        }
+
+        /// <summary>
+        /// Updates EnemyTextEntries (the nearby-enemies ListView's items) to match
+        /// nearestEnemies, by BGEntity.tag - updating existing rows' Name/CurrentHP in place
+        /// rather than replacing the collection wholesale. This has to run on the UI thread since
+        /// EnemyListRow's property setters raise INotifyPropertyChanged.PropertyChanged, which
+        /// WPF's binding system expects to happen on the thread that owns the bound elements
+        /// (unlike collection Add/Remove, which BindingOperations.EnableCollectionSynchronization
+        /// already lets happen off-thread).
+        ///
+        /// Updating in place instead of the previous Clear()+re-Add() every tick keeps each row's
+        /// ListViewItem/HpRollText instance alive across ticks, which is what lets HpRollText's
+        /// roll-down animation see an actual old-to-new HP transition instead of a freshly
+        /// re-templated row with no memory of the previous value.
+        /// </summary>
+        private void syncEnemyList(List<BGEntity> nearestEnemies)
+        {
+            this.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    var seenTags = new HashSet<int>();
+                    foreach (var entity in nearestEnemies)
+                    {
+                        seenTags.Add(entity.tag);
+                        var row = EnemyTextEntries.FirstOrDefault(r => r.Tag == entity.tag);
+                        if (row == null)
+                        {
+                            EnemyTextEntries.Add(new EnemyListRow(entity.tag, entity.Name2, entity.CurrentHP));
+                        }
+                        else
+                        {
+                            // These setters no-op when the value hasn't actually changed, so this
+                            // is cheap even though it runs every tick for every visible row.
+                            row.Name = entity.Name2;
+                            row.CurrentHP = entity.CurrentHP;
+                        }
+                    }
+
+                    // Remove rows for enemies that left the nearest-enemies set (died, moved out
+                    // of view, etc.) - snapshot via ToList() since we're removing from the live
+                    // collection while iterating.
+                    foreach (var row in EnemyTextEntries.Where(r => !seenTags.Contains(r.Tag)).ToList())
+                    {
+                        EnemyTextEntries.Remove(row);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"{nameof(syncEnemyList)} error!", ex);
+                }
+            }));
         }
 
         private void MinMaxBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
@@ -428,7 +472,13 @@ namespace WPFFrontend
         {
             var list = (sender as ListView);
             if (list.SelectedIndex == -1) return;
-            var content = (BGEntity)ListView.SelectedItem;
+            var row = (EnemyListRow)ListView.SelectedItem;
+            if (row == null) return;
+
+            // The ListView only carries the lightweight EnemyListRow view-model (name/HP for
+            // display) - look the full, current BGEntity back up by tag for changeEnemyControlStateByEntity,
+            // the same way MouseHook_MouseEvent already does for its own right-click hit test.
+            var content = _processHacker.entityList.FirstOrDefault(x => x.tag == row.Tag);
             if (content == null) return;
 
             //var bounds = ph.getScreenDimensions();
