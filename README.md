@@ -3,7 +3,8 @@ An overlay program for Baldurs Gate 1-2 EE and Icewind Dale:EE showing nearest e
 
 ## Demos
 
-[![IMAGE ALT TEXT](http://img.youtube.com/vi/3C8xLqw2dHU/0.jpg)](https://youtu.be/3C8xLqw2dHU "My humble demonstration")
+[![IMAGE_ALT_TEXT](http://img.youtube.com/vi/dqm3qja_ARE/0.jpg)](https://youtu.be/dqm3qja_ARE "Radar Overlay 2.5 Major Update")
+
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/ceSuvPXkQXA/0.jpg)](https://www.youtube.com/watch?v=ceSuvPXkQXA "Kangaxx fight using Radar by @coredumped")
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/APyk8AeeoO4/0.jpg)](https://www.youtube.com/watch?v=APyk8AeeoO4 "Demogorgon fight using Radar by @coredumped")
 
