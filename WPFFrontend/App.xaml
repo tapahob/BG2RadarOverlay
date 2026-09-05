@@ -39,6 +39,25 @@
                 <Setter Property="FontSize" Value="16" />
             </Style>
 
+            <!-- RollingLabel is a TextBlock (not a Label), so it doesn't pick up the implicit
+                 Label style above automatically - these two mirror it (and Attributes) for use
+                 on RollingLabel elements in EnemyControl. -->
+            <Style TargetType="{x:Type local:RollingLabel}" x:Key="RollingLabelDefault">
+                <Setter Property="FontSize" Value="{DynamicResource FontSize2}" />
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily2}" />
+                <Setter Property="FontWeight" Value="Bold" />
+            </Style>
+
+            <Style TargetType="{x:Type local:RollingLabel}" BasedOn="{StaticResource RollingLabelDefault}" x:Key="RollingLabelAttributes">
+                <Setter Property="FontSize" Value="16" />
+                <!-- RollingLabel is a bare TextBlock, which has no built-in padding the way
+                     Label does - Padding (not Margin) on both sides matches Label's own default
+                     padding, so every gap in the STR/DEX/CON/INT/WIS/CHA row (including the one
+                     next to STR, which is still a plain Label) ends up the same width instead of
+                     one side contributing padding and the other not. -->
+                <Setter Property="Padding" Value="5,0,5,0" />
+            </Style>
+
             <Style TargetType="{x:Type Label}" BasedOn="{StaticResource {x:Type Label}}" x:Key="Bold">
                 <Setter Property="FontWeight" Value="Bold" />
                 <Setter Property="FontFamily" Value="{DynamicResource FontFamily1}" />

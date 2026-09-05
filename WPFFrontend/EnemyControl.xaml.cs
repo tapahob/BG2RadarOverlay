@@ -79,21 +79,40 @@ namespace WPFFrontend
                     BitmapSizeOptions.FromWidthAndHeight(icon.Width, icon.Height));
                     var item = new StackPanel() { Orientation = Orientation.Horizontal };
                     item.Children.Add(new Image() { MaxHeight = 24, Source = newIcon });
-                    item.Children.Add(new Label() {  Content = this.BGEntity.Reader.OnHitEffectsStrings[0] });
+                    item.Children.Add(weaponLabel(this.BGEntity.Reader.OnHitEffectsStrings[0]));
                     this.itemEffectsListView.Items.Add(item);
                     // Only add a second row when there's actually more content - an empty Label
                     // still takes up its own height, which left an unbalanced gap under the
                     // weapon name/icon row whenever OnHitEffectsStrings had just the one entry.
                     if (this.BGEntity.Reader.OnHitEffectsStrings.Count > 1)
-                        this.itemEffectsListView.Items.Add(new Label() { Padding = new Thickness(0, 0, 0, -10), Content = string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings.Skip(1))});
+                    {
+                        var extra = weaponLabel(string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings.Skip(1)));
+                        extra.Padding = new Thickness(0, 0, 0, -10);
+                        this.itemEffectsListView.Items.Add(extra);
+                    }
                 }
                 else
                 {
-                    this.itemEffectsListView.Items.Add(new Label() { Content = string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings) });
+                    this.itemEffectsListView.Items.Add(weaponLabel(string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings)));
                 }
                 this.cachedWeaponName = bgEntity.Reader.EquippedWeaponName;
                 this.itemEffectsListView.Visibility = Visibility.Visible;
             }
+        }
+
+        /// <summary>
+        /// A Label for the Weapon section using FontFamily2/FontSize2 explicitly (matching the
+        /// default Label style it'd get anyway, but pinned here so it stays in lockstep with
+        /// Pockets' own explicit choice rather than relying on the implicit style). SetResourceReference
+        /// (not a one-time value read) so it keeps tracking a live font change from Options, the
+        /// same way DynamicResource would in XAML.
+        /// </summary>
+        private Label weaponLabel(string content)
+        {
+            var label = new Label { Content = content };
+            label.SetResourceReference(Control.FontFamilyProperty, "FontFamily2");
+            label.SetResourceReference(Control.FontSizeProperty, "FontSize2");
+            return label;
         }
 
         private void EnemyControl_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -137,39 +156,58 @@ namespace WPFFrontend
             string L(string key) => RadarLocalization.Get(key);
             string F(string key, object value) => string.Format(L(key), value);
 
+            // Rolls the number down (see RollingLabel) over one second when it decreases, the
+            // same way MainWindow's enemy list already does for HP, instead of jumping straight
+            // to the new value.
+            void R(RollingLabel label, string key, int value)
+            {
+                label.Format = L(key);
+                label.Value  = value;
+            }
+
+            // Multiclass level is a composite string (e.g. "9/9/12"), not one number - can't
+            // roll-down animate that, so it stays a plain Label.
             this.Level.Content     = F("Str_Level", item.DerivedStatsTemp.Level);
             this.Race.Content      = F("Str_Race", item.Race);
 
-            this.STR.Content       = F("Str_STR", item.DerivedStatsTemp.STRString);
-            this.DEX.Content       = F("Str_DEX", item.DerivedStatsTemp.DEX);
-            this.CON.Content       = F("Str_CON", item.DerivedStatsTemp.CON);
-            this.INT.Content       = F("Str_INT", item.DerivedStatsTemp.INT);
-            this.WIS.Content       = F("Str_WIS", item.DerivedStatsTemp.WIS);
-            this.CHA.Content       = F("Str_CHA", item.DerivedStatsTemp.CHA);
+            // Only the base score animates - the "/exceptional" percentile (e.g. 18/76), when
+            // present, is baked into the format string as a literal suffix, like Health's max HP.
+            var strSuffix = item.DerivedStatsTemp.STRExceptional > 0 ? "/" + item.DerivedStatsTemp.STRExceptional : "";
+            this.STR.Format = string.Format(L("Str_STR"), "{0}" + strSuffix);
+            this.STR.Value  = item.DerivedStatsTemp.STR;
+            R(this.DEX, "Str_DEX", item.DerivedStatsTemp.DEX);
+            R(this.CON, "Str_CON", item.DerivedStatsTemp.CON);
+            R(this.INT, "Str_INT", item.DerivedStatsTemp.INT);
+            R(this.WIS, "Str_WIS", item.DerivedStatsTemp.WIS);
+            R(this.CHA, "Str_CHA", item.DerivedStatsTemp.CHA);
 
-            this.Health.Content        = F("Str_Health", item.HPString);
-            this.APR.Content           = F("Str_Attacks", item.Attacks);
-            this.AC.Content             = F("Str_ArmorClass", item.DerivedStatsTemp.ArmorClass);
-            this.THAC0.Content          = F("Str_THAC0", item.THAC0);
-            this.XP.Content             = F("Str_Experience", item.Reader.XPGained);
-            this.Alignment.Content      = F("Str_Alignment", item.Reader.ShortAlignment);
-            this.SaveDeath.Content      = F("Str_SaveDeath", item.DerivedStatsTemp.SaveVsDeath);
-            this.SaveWands.Content      = F("Str_SaveWands", item.DerivedStatsTemp.SaveVsWands);
-            this.SavePolymorph.Content  = F("Str_SavePoly", item.DerivedStatsTemp.SaveVsPoly);
-            this.SaveBreath.Content     = F("Str_SaveBreath", item.DerivedStatsTemp.SaveVsBreath);
-            this.SaveSpells.Content     = F("Str_SaveSpells", item.DerivedStatsTemp.SaveVsSpell);
+            // Only current HP animates - max HP is baked into the format string as literal text.
+            this.Health.Format = string.Format(L("Str_Health"), "{0}/" + item.DerivedStatsTemp.MaxHP);
+            this.Health.Value  = item.CurrentHP;
+            // No "{0}" in these Format values (Attacks/ShortAlignment aren't plain numbers), so
+            // RollingLabel's string.Format just renders them as-is and Value is irrelevant.
+            this.APR.Format              = F("Str_Attacks", item.Attacks);
+            R(this.AC, "Str_ArmorClass", item.DerivedStatsTemp.ArmorClass);
+            R(this.THAC0, "Str_THAC0", item.THAC0);
+            R(this.XP, "Str_Experience", item.Reader.XPGained);
+            this.Alignment.Format       = F("Str_Alignment", item.Reader.ShortAlignment);
+            R(this.SaveDeath, "Str_SaveDeath", item.DerivedStatsTemp.SaveVsDeath);
+            R(this.SaveWands, "Str_SaveWands", item.DerivedStatsTemp.SaveVsWands);
+            R(this.SavePolymorph, "Str_SavePoly", item.DerivedStatsTemp.SaveVsPoly);
+            R(this.SaveBreath, "Str_SaveBreath", item.DerivedStatsTemp.SaveVsBreath);
+            R(this.SaveSpells, "Str_SaveSpells", item.DerivedStatsTemp.SaveVsSpell);
 
-            this.ResFire.Content        = F("Str_ResFire", item.DerivedStatsTemp.ResistFire);
-            this.ResCold.Content        = F("Str_ResCold", item.DerivedStatsTemp.ResistCold);
-            this.ResElectro.Content     = F("Str_ResElectricity", item.DerivedStatsTemp.ResistElectricity);
-            this.ResAcid.Content        = F("Str_ResAcid", item.DerivedStatsTemp.ResistAcid);
-            this.ResMagic.Content       = F("Str_ResMagic", item.DerivedStatsTemp.ResistMagic);
-            this.ResMagicDamage.Content = F("Str_ResMagicDamage", item.DerivedStatsTemp.ResistMagicDamage);
-            this.ResPoison.Content      = F("Str_ResPoison", item.DerivedStatsTemp.ResistPoison);
-            this.ResSlashing.Content    = F("Str_ResSlashing", item.DerivedStatsTemp.ResistSlashing);
-            this.ResCrushing.Content    = F("Str_ResCrushing", item.DerivedStatsTemp.ResistCrushing);
-            this.ResPiercing.Content    = F("Str_ResPiercing", item.DerivedStatsTemp.ResistPiercing);
-            this.ResMissile.Content     = F("Str_ResMissile", item.DerivedStatsTemp.ResistMissile);
+            R(this.ResFire, "Str_ResFire", item.DerivedStatsTemp.ResistFire);
+            R(this.ResCold, "Str_ResCold", item.DerivedStatsTemp.ResistCold);
+            R(this.ResElectro, "Str_ResElectricity", item.DerivedStatsTemp.ResistElectricity);
+            R(this.ResAcid, "Str_ResAcid", item.DerivedStatsTemp.ResistAcid);
+            R(this.ResMagic, "Str_ResMagic", item.DerivedStatsTemp.ResistMagic);
+            R(this.ResMagicDamage, "Str_ResMagicDamage", item.DerivedStatsTemp.ResistMagicDamage);
+            R(this.ResPoison, "Str_ResPoison", item.DerivedStatsTemp.ResistPoison);
+            R(this.ResSlashing, "Str_ResSlashing", item.DerivedStatsTemp.ResistSlashing);
+            R(this.ResCrushing, "Str_ResCrushing", item.DerivedStatsTemp.ResistCrushing);
+            R(this.ResPiercing, "Str_ResPiercing", item.DerivedStatsTemp.ResistPiercing);
+            R(this.ResMissile, "Str_ResMissile", item.DerivedStatsTemp.ResistMissile);
 
             this.PocketsHeader.Content  = L("Str_Pockets");
         }

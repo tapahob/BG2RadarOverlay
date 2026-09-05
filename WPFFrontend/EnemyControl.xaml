@@ -58,42 +58,56 @@
         </Border>
 
         <Border Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="4" BorderBrush="Black" BorderThickness="0" Margin="1">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Label Style="{StaticResource Attributes}" x:Name="STR" d:Content="18/00" HorizontalAlignment="Center"/>
-                <Label Style="{StaticResource Attributes}" x:Name="DEX" d:Content="25" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="CON" d:Content="25" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="INT" d:Content="25" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="WIS" d:Content="25" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <Label Style="{StaticResource Attributes}" x:Name="CHA" d:Content="25" HorizontalAlignment="Center" ClipToBounds="True"/>
+            <!-- VerticalAlignment="Center" so this row's fixed 30px height doesn't leave a
+                 bigger gap below the text than above it (the default Top alignment would let
+                 any extra row height pile up entirely under the text instead of split evenly). -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- Only the base STR score animates - the "/exceptional" percentile (18/xx) is
+                     baked into the Format string as a literal suffix, like Health's max HP. -->
+                <wpffrontend:RollingLabel Style="{StaticResource RollingLabelAttributes}" x:Name="STR" HorizontalAlignment="Center"/>
+                <wpffrontend:RollingLabel Style="{StaticResource RollingLabelAttributes}" x:Name="DEX" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <wpffrontend:RollingLabel Style="{StaticResource RollingLabelAttributes}" x:Name="CON" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <wpffrontend:RollingLabel Style="{StaticResource RollingLabelAttributes}" x:Name="INT" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <wpffrontend:RollingLabel Style="{StaticResource RollingLabelAttributes}" x:Name="WIS" HorizontalAlignment="Center" ClipToBounds="True"/>
+                <wpffrontend:RollingLabel Style="{StaticResource RollingLabelAttributes}" x:Name="CHA" HorizontalAlignment="Center" ClipToBounds="True"/>
             </StackPanel>
         </Border>
 
         <Border Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="2" BorderBrush="Black" BorderThickness="1" Margin="1"/>
-        <StackPanel Grid.Row="3" Grid.Column="1" Margin="5,5,5,5">
-            <Label x:Name="Health" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="APR" d:Content="3" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="AC" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="THAC0" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="XP" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True" Panel.ZIndex="1"/>
-            <Label x:Name="Alignment" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SaveDeath" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SaveWands" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SavePolymorph" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SaveBreath" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
-            <Label x:Name="SaveSpells" d:Content="25" HorizontalAlignment="Left" ClipToBounds="True"/>
+        <!-- Margin="4,0,0,4" on every row below (left/bottom, no top/right) by analogy with the
+             per-spell Margin="0,0,8,2" in the "Immune to spells" section - offset lives on each
+             row itself rather than on the StackPanel as a whole. -->
+        <StackPanel Grid.Row="3" Grid.Column="1" Margin="1,5,1,1">
+            <wpffrontend:RollingLabel x:Name="Health" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <!-- No number to roll (Attacks can be fractional, e.g. "3/2") - RollingLabel.Format
+                 is just the fully-resolved text with no "{0}" in it, which string.Format leaves
+                 untouched, so this is only here for consistent styling/spacing with its
+                 neighbors, not for the animation itself. -->
+            <wpffrontend:RollingLabel x:Name="APR" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="AC" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="THAC0" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="XP" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" Panel.ZIndex="1"/>
+            <!-- Same reasoning as APR above - Alignment is a string (e.g. "Lawful good"), not a
+                 number, so this is purely for consistent styling with its RollingLabel neighbors. -->
+            <wpffrontend:RollingLabel x:Name="Alignment" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="SaveDeath" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="SaveWands" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="SavePolymorph" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="SaveBreath" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="SaveSpells" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
         </StackPanel>
-        <StackPanel Grid.Row="3" Grid.Column="2" Margin="5,5,5,5">
-            <Label x:Name="ResFire" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResCold" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResElectro" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResAcid" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResMagic" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResMagicDamage" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResPoison" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResSlashing" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResCrushing" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResPiercing" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
-            <Label x:Name="ResMissile" d:Content="25" HorizontalAlignment="Left"  ClipToBounds="True"/>
+        <StackPanel Grid.Row="3" Grid.Column="2" Margin="1,5,1,1">
+            <wpffrontend:RollingLabel x:Name="ResFire" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResCold" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResElectro" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResAcid" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResMagic" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResMagicDamage" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResPoison" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResSlashing" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResCrushing" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResPiercing" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
+            <wpffrontend:RollingLabel x:Name="ResMissile" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True"/>
         </StackPanel>
         <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False" HorizontalContentAlignment="Stretch" Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
             <ListView.Resources>
@@ -168,14 +182,13 @@
                                 <Image Source="{Binding Icon, Converter={StaticResource BitmapToImageSourceConverter}}"
                                        Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
                                        Width="24" Height="24" Margin="0,0,3,0"/>
-                                <!-- Same font as the rest of the control's Label text (default Label
-                                     style: FontFamily2/FontSize2/Bold) rather than Protections'
-                                     smaller FontSize1, so Pockets reads consistently with STR/DEX/etc. -->
-                                <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" FontWeight="Bold" Foreground="Black" TextWrapping="Wrap"/>
+                                <!-- FontFamily2/FontSize2 instead of Protections' own
+                                     FontFamily1/FontSize1. -->
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" Foreground="Black" TextWrapping="Wrap"/>
                                 <!-- "x{Count}" for 2+ of the same item, nothing for a single one. -->
-                                <TextBlock Text="{Binding Count, Converter={StaticResource PocketCountToSuffixConverter}}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" FontWeight="Bold" Foreground="Black"/>
+                                <TextBlock Text="{Binding Count, Converter={StaticResource PocketCountToSuffixConverter}}" Style="{StaticResource Protections}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" Foreground="Black"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding FlagsText}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" FontWeight="Bold" Foreground="Black" TextWrapping="Wrap" Margin="27,0,0,0"
+                            <TextBlock Text="{Binding FlagsText}" Style="{StaticResource Protections}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" Foreground="Black" TextWrapping="Wrap" Margin="27,0,0,0"
                                        Visibility="{Binding FlagsText, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
                         </StackPanel>
                     </DataTemplate>
