@@ -76,6 +76,9 @@ namespace BGOverlay
             {
                 if (this.Reader == null || this.CLASS != this.Reader.Class)
                 {
+                    if (RadarLocalization.TryGet($"Class_{this.CLASS}", out var localizedClass1))
+                        return localizedClass1;
+
                     return this.CLASS.ToString()[0] + this.CLASS.ToString().ToLower().Substring(1).Replace('_', ' ');
                 }
                 if (this.Reader.KitInformation != CREReader.KIT.NONE
@@ -86,6 +89,9 @@ namespace BGOverlay
 
                     return this.Reader.KitInformation.ToString().Replace('_', ' ');
                 }
+                if (RadarLocalization.TryGet($"Class_{this.Reader.Class}", out var localizedClass2))
+                    return localizedClass2;
+
                 return this.Reader.Class.ToString()[0] + this.Reader.Class.ToString().ToLower().Substring(1).Replace('_', ' ');
             }
         }
