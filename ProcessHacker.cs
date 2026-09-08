@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -38,12 +39,15 @@ namespace BGOverlay
         private readonly HashSet<int> seenIndexes = new HashSet<int>();
 
         // Set from the UI thread (InvalidateEntityCache), consumed only at the top of MainLoop()
-        // on its own dedicated thread - entityPool and ResourceManager.CREReaderCache are both
-        // only ever touched from there (CREReaderCache is also read off this thread, from
-        // BGEntity's constructor - see the "[CRE filename]" debug suffix), so routing the actual
-        // Clear() through this flag avoids mutating either dictionary concurrently with
-        // MainLoop()'s own reads/writes of it.
+        // on its own dedicated thread - entityPool is only ever touched from there, so routing
+        // the actual Clear() through this flag avoids mutating it concurrently with MainLoop()'s
+        // own reads/writes of it.
         private volatile bool cacheInvalidationRequested;
+
+        // Same rationale as cacheInvalidationRequested, scoped to a single slot: queued from
+        // the UI thread (InvalidateEntity) when an EnemyControl is opened for that entity, and
+        // only dequeued/applied to entityPool at the top of MainLoop() on its own thread.
+        private readonly ConcurrentQueue<int> pendingEntityInvalidations = new ConcurrentQueue<int>();
 
         private const int SlotSize       = 16;
         private const int ScanChunkSlots = 4096; // 64KB/chunk - far fewer syscalls than one-per-slot, small enough to stay a plain gen0 allocation.
@@ -53,8 +57,12 @@ namespace BGOverlay
             if (cacheInvalidationRequested)
             {
                 entityPool.Clear();
-                ResourceManager.CREReaderCache.Clear();
                 cacheInvalidationRequested = false;
+            }
+
+            while (pendingEntityInvalidations.TryDequeue(out var invalidatedIndex))
+            {
+                entityPool.Remove(invalidatedIndex);
             }
 
             entityListTemp.Clear();
@@ -239,20 +247,34 @@ namespace BGOverlay
         }
 
         /// <summary>
-        /// Requests that every pooled BGEntity template AND every cached CREReader (see
-        /// ResourceManager.CREReaderCache) be dropped, so the next tick reconstructs each one
-        /// from scratch instead of reusing the cached copy. Needed after a config change whose
-        /// effect is only computed once - either at BGEntity construction time
-        /// (Configuration.DebugMode's "[CRE filename]" name suffix) or at CREReader construction
-        /// time (CREReader.Pockets' localized flag words, e.g. Stealable/Droppable, which are
-        /// baked in using whatever RadarLocalization.Strings held at that moment) - without this,
-        /// an already-cached creature/CRE would keep showing the old value until it left and
-        /// re-entered the cache on its own. Safe to call from any thread - the actual Clear()
+        /// Requests that every pooled BGEntity template be dropped, so the next tick
+        /// reconstructs each one from scratch instead of reusing the cached copy. Needed
+        /// after a config change whose effect is only computed at BGEntity construction time
+        /// (Configuration.DebugMode's "[CRE filename]" name suffix) - without this, an
+        /// already-pooled creature would keep showing the old value until it left and
+        /// re-entered the pool on its own. Safe to call from any thread - the actual Clear()
         /// happens on MainLoop()'s own thread (see cacheInvalidationRequested).
+        ///
+        /// Does NOT drop ResourceManager.CREReaderCache - CREReader data is parsed straight
+        /// from the CRE file's bytes and doesn't depend on anything that changes at runtime,
+        /// so a cached CREReader never goes stale.
         /// </summary>
         public void InvalidateEntityCache()
         {
             cacheInvalidationRequested = true;
+        }
+
+        /// <summary>
+        /// Drops the pooled template for a single slot so the next tick rebuilds that one
+        /// entity from scratch via the full <see cref="BGEntity"/> constructor instead of
+        /// <see cref="BGEntity.RefreshedCopy"/>'s cheap volatile-fields-only refresh - used
+        /// when the player opens that entity's EnemyControl, so it shows freshly-resolved
+        /// data (e.g. CreResourceFilename) rather than whatever was cached from the tick it
+        /// first entered the pool. Safe to call from any thread - see pendingEntityInvalidations.
+        /// </summary>
+        public void InvalidateEntity(int index)
+        {
+            pendingEntityInvalidations.Enqueue(index);
         }
     }
 }

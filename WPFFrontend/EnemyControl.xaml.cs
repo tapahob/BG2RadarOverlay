@@ -220,6 +220,10 @@ namespace WPFFrontend
                 if (item.Type != 49)
                     return;
                 this.BGEntity.LoadCREResource();
+                if (this.BGEntity.Reader != null)
+                {
+                    //this.BGEntity.CreResourceFilename = this.BGEntity.Reader.ShortName;
+                }
                 this.BGEntity.loadTimedEffects();
                 this.BGEntity.LoadDerivedStats();
                 this.fetchWeaponEffects(item);
@@ -259,9 +263,7 @@ namespace WPFFrontend
                     this.BGEntity.SpellProtection.ForEach(x =>
                     {
                         int rounds = ((int)x.Item3 - (int)this.BGEntity.GameTime) / 15 / 6;
-                        var timeString = rounds > 10 ? $"{(float)rounds / 10}" : $"{rounds}";
-
-                        float durationFloat = rounds > 10 ? (float)rounds / 10 : rounds;
+                        float durationFloat = (float)rounds / 10;
 
                         bool isPresent = buffs.ContainsKey(x.Item1);
                         if (isPresent)

@@ -38,7 +38,8 @@ namespace BGOverlay
         public byte Name2Len { get; private set; }
         public string Name2 { get; private set; }
         public string Name1 { get; private set; }
-        public string CreResourceFilename { get; private set; }
+        public string CreResourceFilename { get; set; }
+        public string cleanResourceFilename { get; set; }
         public short CurrentHP { get; private set; }
         public CDerivedStats DerivedStats { get; private set; }
         public CDerivedStats DerivedStatsTemp { get; private set; }
@@ -484,7 +485,17 @@ namespace BGOverlay
                 if (X < 0 || Y < 0)
                     return;
 
-                this.CreResourceFilename = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x540 }), 8).Trim('*') + ".CRE";
+                var rawCreResRef = WinAPIBindings.ReadResRef(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x540 }));
+                // The struct offset for this field is reverse-engineered and can be a byte
+                // or two off, silently dropping leading characters with no garbage left
+                // behind to detect. Resolving against the authoritative CRE list parsed
+                // from the KEY/BIFF index (populated at startup, independent of what's
+                // already been lazily cached) recovers the real, complete name instead of
+                // leaving callers to work around a truncated one via EndsWith.
+                var resolvedCreName = rawCreResRef.Length > 0
+                    ? ResourceManager.Instance.CREResourceEntries.FirstOrDefault(x => x.FullName.EndsWith($"{rawCreResRef.ToUpper()}.CRE"))?.FullName
+                    : null;
+                this.CreResourceFilename = resolvedCreName ?? (rawCreResRef + ".CRE");
 
                 IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
                 this.EnemyAlly      = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
@@ -514,9 +525,8 @@ namespace BGOverlay
                 this.Loaded                = true;
 
                 if (Configuration.DebugMode)
-                {
-                    var processedCreName = ResourceManager.Instance.CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(CreResourceFilename.ToUpper())) ?? CreResourceFilename;
-                    this.Name2 += $" [{processedCreName}]";
+                {                    
+                   this.Name2 += $" [{this.CreResourceFilename}]";
                 }
             }
             catch (Exception ex)

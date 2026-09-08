@@ -13,6 +13,7 @@ namespace BGOverlay
     {
         public static string gameDirectory = Configuration.GameFolder;
         private ResourceManager resourceManager;
+        public string filename;
 
         public CREReader()
         {
@@ -29,7 +30,7 @@ namespace BGOverlay
             try
             {
                 this.resourceManager    = resourceManager;
-                var filename            = creFilename;
+                this.filename           = creFilename;
                 var overrideCreFilename = $"{gameDirectory}\\override\\{creFilename}";
                 if (File.Exists(overrideCreFilename))
                 {
@@ -255,6 +256,7 @@ namespace BGOverlay
                         }
                     }
                 }
+                this.filename = creFilename.Split("\\".ToCharArray()).Last(); ;
             } catch (Exception ex)
             {
                 Logger.Error($"CREReader init error: {creFilename}", ex);

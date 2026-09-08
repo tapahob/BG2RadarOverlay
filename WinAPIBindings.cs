@@ -168,6 +168,52 @@ namespace WinApiBindings
             return buffer;
         }
 
+        // IE resource references (CRE/ITM/... filenames) are always [A-Za-z0-9_], never
+        // longer than 8 characters, and null- or asterisk-padded. The reverse-engineered
+        // field address can be a byte or two off in either direction (observed: the read
+        // starting one byte late and silently swallowing the real first letter, with no
+        // leftover garbage to signal it). Reading a small window around the nominal
+        // address and keeping the longest run of valid resref characters in it recovers
+        // the full name regardless of which direction the address is off by.
+        public static string ReadResRef(IntPtr ptr, int maxLength = 8)
+        {
+            IntPtr hProc = Configuration.hProc;
+            const int prePadding = 3;
+            const int postPadding = 3;
+            var buffer = new byte[prePadding + maxLength + postPadding];
+            ReadProcessMemory(hProc, ptr - prePadding, buffer, buffer.Length, out _);
+
+            int bestStart = -1, bestLength = 0;
+            int i = 0;
+            while (i < buffer.Length)
+            {
+                if (!IsResRefChar(buffer[i]))
+                {
+                    i++;
+                    continue;
+                }
+                int runStart = i;
+                while (i < buffer.Length && IsResRefChar(buffer[i]) && (i - runStart) < maxLength)
+                    i++;
+                int runLength = i - runStart;
+                if (runLength > bestLength)
+                {
+                    bestLength = runLength;
+                    bestStart = runStart;
+                }
+            }
+
+            return bestStart >= 0 ? Encoding.ASCII.GetString(buffer, bestStart, bestLength) : "";
+        }
+
+        private static bool IsResRefChar(byte b)
+        {
+            return (b >= (byte)'A' && b <= (byte)'Z')
+                || (b >= (byte)'a' && b <= (byte)'z')
+                || (b >= (byte)'0' && b <= (byte)'9')
+                || b == (byte)'_';
+        }
+
         public static string ReadString(IntPtr ptr, int strLength = 16)
         {
             IntPtr hProc = Configuration.hProc;

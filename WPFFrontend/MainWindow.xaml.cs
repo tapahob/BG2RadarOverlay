@@ -660,6 +660,11 @@ namespace WPFFrontend
                 EnemyControl enemyControl;
                 if (!_currentEnemyControls.TryGetValue(bgEntity.tag, out enemyControl))
                 {
+                    // Force a full rebuild of this entity on the next tick rather than
+                    // showing whatever got cached the moment it first entered the pool -
+                    // stale CreResourceFilename/Reader data would otherwise stick around
+                    // for as long as the creature keeps occupying the same slot.
+                    _processHacker.InvalidateEntity(bgEntity.tag);
                     enemyControl = new EnemyControl(bgEntity, this);
                     _currentEnemyControls[bgEntity.tag] = enemyControl;
                     MainCanvas.Children.Add(enemyControl);

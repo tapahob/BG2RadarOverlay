@@ -20,7 +20,7 @@ namespace WPFFrontend
             get { return 0; } 
             set 
             {
-                var str = value.ToString();
+                var str = value.ToString("0.0");
                 if (value == float.MaxValue || value < 0) 
                     str = "∞";
                 this.Label1.Content = str; this.Label2.Content = str; 
