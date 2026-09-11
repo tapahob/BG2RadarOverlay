@@ -1,0 +1,15 @@
+[Unit]
+Description=BG2 Radar Overlay - Twitch relay
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/twitch-relay
+ExecStart=/opt/dotnet/dotnet /opt/twitch-relay/TwitchRelay.dll
+Restart=always
+RestartSec=5
+User=www-data
+Environment=ASPNETCORE_URLS=http://localhost:5080
+Environment=ASPNETCORE_ENVIRONMENT=Production
+
+[Install]
+WantedBy=multi-user.target

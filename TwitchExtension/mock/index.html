@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BG2 Radar Overlay - Extension Mock</title>
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #18181b;
+    color: #efeff1;
+    margin: 0;
+    padding: 24px;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.hint { color: #adadb8; font-size: 13px; margin: 0 0 16px; }
+  a.configLink { color: #a970ff; }
+
+  #stage {
+    position: relative;
+    width: 854px;
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, #2a1f14, #1a120a);
+    border: 1px solid #3a3a3d;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  #stage .fakeVideoLabel {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  #stage iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+</style>
+</head>
+<body>
+  <h1>Extension mock preview</h1>
+  <p class="hint">
+    Simulates the on-video icon exactly as it'll render on Twitch (no Twitch account/extension
+    registration needed). Configure it first via <a class="configLink" href="../config.html?mock=1" target="_blank">config.html</a>
+    (opens in a new tab, uses the same relay URL + stream key as the app's Twitch Integration
+    tab), then reload this page.
+  </p>
+  <div id="stage">
+    <div class="fakeVideoLabel">simulated video player</div>
+    <iframe src="../video_overlay.html?mock=1" title="Extension overlay"></iframe>
+  </div>
+</body>
+</html>

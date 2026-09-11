@@ -1,0 +1,7 @@
+# Template - replace <your-domain> with the actual domain before deploying. Deliberately not
+# committed with a real domain name filled in: this repo may be public, and the domain here
+# fronts other infrastructure (see TwitchRelay VPS notes in CLAUDE.md) that shouldn't be tied to
+# this project in version control.
+<your-domain>:8443 {
+	reverse_proxy localhost:5080
+}

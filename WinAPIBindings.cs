@@ -298,6 +298,35 @@ namespace WinApiBindings
           int dwSize,
           out IntPtr lpNumberOfBytesWritten);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualQueryEx(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, IntPtr dwLength);
+
+        // Natural field alignment here already reproduces the native x64 layout (the two
+        // __alignment DWORDs fall out of aligning the IntPtr fields), so no explicit padding
+        // members are needed - the overlay only ever runs as x64, same as the game.
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MEMORY_BASIC_INFORMATION
+        {
+            public IntPtr BaseAddress;
+            public IntPtr AllocationBase;
+            public uint AllocationProtect;
+            public IntPtr RegionSize;
+            public uint State;
+            public uint Protect;
+            public uint Type;
+        }
+
+        // An exact PAGE_READWRITE comparison also rules out guarded/no-access pages, since
+        // PAGE_GUARD is OR'd into Protect rather than replacing it.
+        public const uint MEM_COMMIT     = 0x1000;
+        public const uint MEM_PRIVATE    = 0x20000;
+        public const uint PAGE_READWRITE = 0x04;
+
+        public static bool WriteBytes(IntPtr ptr, byte[] buffer)
+        {
+            return WriteProcessMemory(Configuration.hProc, ptr, buffer, buffer.Length, out _);
+        }
+
         [DllImport("kernel32.dll")]
         static extern bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 

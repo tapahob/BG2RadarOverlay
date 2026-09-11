@@ -65,6 +65,8 @@ namespace BGOverlay
                 entityPool.Remove(invalidatedIndex);
             }
 
+            TwitchRelayClient.Instance.UpdateConfig(Configuration.TwitchIntegrationEnabled, Configuration.TwitchRelayUrl, Configuration.TwitchStreamKey, Configuration.TwitchControlKey);
+
             entityListTemp.Clear();
             allEntities.Clear();
             seenIndexes.Clear();
@@ -189,6 +191,16 @@ namespace BGOverlay
             }
             this.NearestEnemies = entityListTemp.Where(y => clip(y)).ToList();
             TextEntries         = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()));
+
+            // allEntities (not entityListTemp/NearestEnemies) - those are already filtered by
+            // the HidePartyMembers/HideNeutrals/HideAllies radar display options, which have
+            // nothing to do with what gets sent to the relay.
+            if (Configuration.TwitchIntegrationEnabled)
+            {
+                var partyMembers = allEntities.Where(x => x.EnemyAlly == 2).ToList();
+                TwitchRelayClient.Instance.PushPartySnapshot(partyMembers);
+            }
+
             Thread.Sleep(Configuration.RefreshTimeMS);
         }
 

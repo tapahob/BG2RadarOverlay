@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BG2 Radar Overlay - Configuration</title>
+<script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #0e0e10;
+    color: #efeff1;
+    margin: 0;
+    padding: 24px;
+  }
+  h1 { font-size: 18px; margin: 0 0 16px; }
+  label { display: block; font-size: 13px; margin: 16px 0 4px; color: #adadb8; }
+  input {
+    width: 100%;
+    max-width: 420px;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid #3a3a3d;
+    background: #18181b;
+    color: #efeff1;
+    font-size: 14px;
+  }
+  button {
+    margin-top: 20px;
+    padding: 8px 20px;
+    border-radius: 4px;
+    border: none;
+    background: #9147ff;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover { background: #772ce8; }
+  #status { margin-top: 12px; font-size: 13px; color: #00c78c; min-height: 16px; }
+  .hint { font-size: 12px; color: #adadb8; margin-top: 4px; }
+</style>
+</head>
+<body>
+  <h1>BG2 Radar Overlay</h1>
+
+  <label for="relayUrl">Relay Server URL</label>
+  <input id="relayUrl" type="text" placeholder="https://your-relay-domain:8443" autocomplete="off">
+  <div class="hint">The same URL you set as "Relay Server URL" on the Twitch Integration tab in the overlay app.</div>
+
+  <label for="streamKey">Stream Key</label>
+  <input id="streamKey" type="text" placeholder="paste your generated stream key" autocomplete="off">
+  <div class="hint">The same key you generated on the Twitch Integration tab. Anyone with this key can read your party's live status - treat it like a password.</div>
+
+  <button id="save">Save</button>
+  <div id="status"></div>
+
+<script>
+  var saved = null;
+
+  Twitch.ext.onAuthorized(function () {
+    // onChanged fires immediately with whatever is already stored, so this also covers
+    // the initial load - no separate "read current config" call needed.
+  });
+
+  function applyContent(rawContent) {
+    if (!rawContent) return;
+    try {
+      saved = JSON.parse(rawContent);
+      document.getElementById('relayUrl').value = saved.relayUrl || '';
+      document.getElementById('streamKey').value = saved.streamKey || '';
+    } catch (e) {
+      // Malformed/legacy content - leave the form blank rather than fail to load.
+    }
+  }
+
+  // Local/mock testing (mock/index.html links here with ?mock=1): the real
+  // twitch-ext.min.js loads fine even outside an actual Twitch iframe (it's just a public
+  // script), so Twitch.ext.configuration existing is NOT a reliable signal - Twitch.ext.configuration.set()
+  // would silently go nowhere outside Twitch's real postMessage bridge. Read/write
+  // localStorage directly instead, under the same key video_overlay.html's mock fallback
+  // reads from, whenever this explicit flag is set.
+  var isMock = new URLSearchParams(location.search).get('mock') === '1';
+  if (!isMock) {
+    Twitch.ext.configuration.onChanged(function () {
+      var cfg = Twitch.ext.configuration.broadcaster;
+      applyContent(cfg && cfg.content);
+    });
+  } else {
+    applyContent(localStorage.getItem('bg2ext_mock_config'));
+  }
+
+  document.getElementById('save').addEventListener('click', function () {
+    var relayUrl = document.getElementById('relayUrl').value.trim().replace(/\/+$/, '');
+    var streamKey = document.getElementById('streamKey').value.trim();
+    var statusEl = document.getElementById('status');
+
+    if (!relayUrl || !streamKey) {
+      statusEl.style.color = '#eb0400';
+      statusEl.textContent = 'Both fields are required.';
+      return;
+    }
+
+    var payload = JSON.stringify({ relayUrl: relayUrl, streamKey: streamKey });
+    if (isMock) {
+      localStorage.setItem('bg2ext_mock_config', payload);
+    } else {
+      Twitch.ext.configuration.set('broadcaster', '1', payload);
+    }
+    statusEl.style.color = '#00c78c';
+    statusEl.textContent = 'Saved.';
+  });
+</script>
+</body>
+</html>

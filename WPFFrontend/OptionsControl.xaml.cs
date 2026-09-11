@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using Button = System.Windows.Controls.Button;
 using UserControl = System.Windows.Controls.UserControl;
 
@@ -50,15 +51,45 @@ namespace WPFFrontend
             this.UseShiftClick.Click        += updateConfig;
             this.DebugMode.Click            += updateConfig;
             this.DebugMode.Click            += (s, e) => DebugModeChanged?.Invoke();
+            this.TwitchIntegrationEnabled.Click += updateConfig;
+            this.TwitchRelayUrl.TextChanged += updateConfig;
             this.MouseUp                    += OptionsControl_MouseUp;
             this.CloseBtn.MouseUp           += Label_MouseDown;
             var app                          = System.Windows.Application.Current;
             this.Font1.Content               = $"{Configuration.Font1}, {Configuration.FontSize1}";
             this.Font2.Content               = $"{Configuration.Font2}, {Configuration.FontSize2}";
-            this.Font3.Content               = Configuration.BigBuffIcons 
+            this.Font3.Content               = Configuration.BigBuffIcons
                 ? $"{Configuration.Font3}, {Configuration.FontSize3Big}"
                 : $"{Configuration.Font3}, {Configuration.FontSize3Small}";
             initLocale();
+            initTwitchStatusPolling();
+        }
+
+        /// <summary>
+        /// TwitchRelayClient's connection loop runs on its own background task (see
+        /// ProcessHacker.MainLoop -> TwitchRelayClient.UpdateConfig), so the status label can't
+        /// just be set once - it polls TwitchRelayClient.Instance.Status on the UI thread every
+        /// second for as long as this control exists (created once and kept alive for the whole
+        /// app lifetime, same as OptionsControl itself), instead of wiring a cross-thread event.
+        /// </summary>
+        private void initTwitchStatusPolling()
+        {
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            timer.Tick += (s, e) => updateTwitchStatusLabel();
+            timer.Start();
+            updateTwitchStatusLabel();
+        }
+
+        private void updateTwitchStatusLabel()
+        {
+            var key = TwitchRelayClient.Instance.Status switch
+            {
+                TwitchRelayStatus.Connecting => "Str_TwitchStatusConnecting",
+                TwitchRelayStatus.Connected  => "Str_TwitchStatusConnected",
+                TwitchRelayStatus.Error      => "Str_TwitchStatusError",
+                _                            => "Str_TwitchStatusDisabled",
+            };
+            this.TwitchStatus.Content = RadarLocalization.Get(key);
         }
 
         private void initLocale()
@@ -125,10 +156,42 @@ namespace WPFFrontend
             Configuration.UseShiftClick       = (bool)this.UseShiftClick.IsChecked;
             Configuration.DebugMode           = (bool)this.DebugMode.IsChecked;
             Configuration.Locale              = this.Locale.SelectedValue.ToString();
+            Configuration.TwitchIntegrationEnabled = (bool)this.TwitchIntegrationEnabled.IsChecked;
+            Configuration.TwitchRelayUrl       = this.TwitchRelayUrl.Text;
+            Configuration.TwitchStreamKey      = this.TwitchStreamKey.Text;
 
-            this.Font3.Content = Configuration.BigBuffIcons 
+            this.Font3.Content = Configuration.BigBuffIcons
                 ? $"{Configuration.Font3}, {Configuration.FontSize3Big}"
                 : $"{Configuration.Font3}, {Configuration.FontSize3Small}";
+        }
+
+        /// <summary>
+        /// Manual trigger for the EEex spawn bridge, so the game-side half can be exercised
+        /// before (and independently of) anything Twitch-facing being wired up.
+        /// </summary>
+        private void TestSummon_Click(object sender, RoutedEventArgs e)
+        {
+            var ok = GameSpawnBridge.Instance.TrySpawn(this.SummonResRef.Text.Trim(), out var error);
+            this.SummonResult.Foreground = ok
+                ? System.Windows.Media.Brushes.DarkGreen
+                : System.Windows.Media.Brushes.DarkRed;
+            this.SummonResult.Text = ok
+                ? RadarLocalization.Get("Str_TwitchSummonSent")
+                : error;
+        }
+
+        private void GenerateStreamKey_Click(object sender, RoutedEventArgs e)
+        {
+            // Lowercase hex only (no dashes) - Configuration.getProperty() lowercases every
+            // persisted value on load, so anything with uppercase characters would get mangled
+            // by a config.cfg round-trip.
+            //
+            // The control key is regenerated alongside it but never shown or shared: the stream
+            // key goes into the Twitch Extension config (and so reaches viewers' browsers),
+            // while this one authorizes summons coming back down.
+            this.TwitchStreamKey.Text = Guid.NewGuid().ToString("N");
+            Configuration.TwitchControlKey = Guid.NewGuid().ToString("N");
+            updateConfig(null, null);
         }
 
         public void Init()
@@ -141,6 +204,9 @@ namespace WPFFrontend
             this.BigBuffIcons.IsChecked         = Configuration.BigBuffIcons;
             this.UseShiftClick.IsChecked        = Configuration.UseShiftClick;
             this.DebugMode.IsChecked            = Configuration.DebugMode;
+            this.TwitchIntegrationEnabled.IsChecked = Configuration.TwitchIntegrationEnabled;
+            this.TwitchRelayUrl.Text            = Configuration.TwitchRelayUrl;
+            this.TwitchStreamKey.Text           = Configuration.TwitchStreamKey;
         }
 
         public void Show()

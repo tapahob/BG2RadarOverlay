@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BG2 Radar Overlay</title>
+<script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+<style>
+  /* The whole iframe covers the video; only the icon/panel themselves should catch
+     clicks, everything else must stay click-through so viewers can still interact
+     with the video/player controls underneath. */
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    pointer-events: none;
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    color: #efeff1;
+  }
+
+  #icon {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(20, 16, 12, 0.85);
+    border: 2px solid #c9a24b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+  }
+  #icon:hover { background: rgba(40, 32, 20, 0.95); }
+
+  #panel {
+    position: absolute;
+    right: 16px;
+    bottom: 64px;
+    width: 240px;
+    max-height: 320px;
+    overflow-y: auto;
+    background: rgba(20, 16, 12, 0.92);
+    border: 2px solid #c9a24b;
+    border-radius: 8px;
+    padding: 10px;
+    pointer-events: auto;
+    display: none;
+  }
+  #panel.open { display: block; }
+
+  #panel h2 {
+    font-size: 13px;
+    margin: 0 0 8px;
+    color: #c9a24b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .member {
+    padding: 6px 0;
+    border-top: 1px solid rgba(201, 162, 75, 0.25);
+  }
+  .member:first-of-type { border-top: none; }
+  .member .name { font-weight: bold; font-size: 13px; }
+  .member .meta { font-size: 11px; color: #d0c6a8; }
+  .member .hp { font-size: 11px; color: #9be89b; }
+
+  #empty, #offline {
+    font-size: 12px;
+    color: #d0c6a8;
+    text-align: center;
+    padding: 8px 0;
+  }
+</style>
+</head>
+<body>
+  <div id="icon" title="Party status">&#9876;&#65039;</div>
+  <div id="panel">
+    <h2>Party</h2>
+    <div id="content"><div id="offline">Waiting for stream data&hellip;</div></div>
+  </div>
+
+<script>
+  var relayUrl = null;
+  var streamKey = null;
+  var pollTimer = null;
+
+  var iconEl = document.getElementById('icon');
+  var panelEl = document.getElementById('panel');
+  var contentEl = document.getElementById('content');
+
+  iconEl.addEventListener('click', function () {
+    panelEl.classList.toggle('open');
+  });
+
+  function applyConfig(rawContent) {
+    if (!rawContent) return;
+    try {
+      var parsed = JSON.parse(rawContent);
+      relayUrl = parsed.relayUrl;
+      streamKey = parsed.streamKey;
+      startPolling();
+    } catch (e) {
+      // Not configured yet (or content is malformed) - stay in the "waiting for stream
+      // data" state instead of throwing.
+    }
+  }
+
+  // mock/index.html loads this file as `video_overlay.html?mock=1`. The real
+  // twitch-ext.min.js loads fine even outside an actual Twitch iframe (it's just a public
+  // script) and Twitch.ext.configuration.onChanged still exists as a function - it just
+  // never fires outside Twitch's real postMessage bridge - so that alone isn't a reliable
+  // "are we really in Twitch" signal. Use the explicit flag instead.
+  var isMock = new URLSearchParams(location.search).get('mock') === '1';
+  if (!isMock && window.Twitch && Twitch.ext && Twitch.ext.configuration) {
+    Twitch.ext.configuration.onChanged(function () {
+      var cfg = Twitch.ext.configuration.broadcaster;
+      applyConfig(cfg && cfg.content);
+    });
+  } else {
+    applyConfig(localStorage.getItem('bg2ext_mock_config'));
+    window.addEventListener('storage', function (e) {
+      if (e.key === 'bg2ext_mock_config') applyConfig(e.newValue);
+    });
+  }
+
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    fetchStatus();
+    pollTimer = setInterval(fetchStatus, 5000);
+  }
+
+  function fetchStatus() {
+    if (!relayUrl || !streamKey) return;
+    fetch(relayUrl + '/api/character/' + encodeURIComponent(streamKey))
+      .then(function (res) {
+        if (!res.ok) throw new Error('not live');
+        return res.json();
+      })
+      .then(renderParty)
+      .catch(function () {
+        contentEl.innerHTML = '<div id="offline">Streamer is offline or hasn\'t opened the game yet.</div>';
+      });
+  }
+
+  function renderParty(data) {
+    var party = (data && data.party) || [];
+    if (party.length === 0) {
+      contentEl.innerHTML = '<div id="empty">No party data yet.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < party.length; i++) {
+      var m = party[i];
+      html += '<div class="member">'
+        + '<div class="name">' + escapeHtml(m.name || '?') + '</div>'
+        + '<div class="meta">' + escapeHtml(m.race || '') + ' ' + escapeHtml(m['class'] || '') + '</div>'
+        + '<div class="hp">HP: ' + (m.currentHp != null ? m.currentHp : '?') + '</div>'
+        + '</div>';
+    }
+    contentEl.innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+</script>
+</body>
+</html>

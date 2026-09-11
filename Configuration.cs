@@ -31,6 +31,19 @@ namespace BGOverlay
         public static string FontSize2 { get; set; }
         public static string FontSize3Big { get; set; }
         public static string FontSize3Small { get; set; }
+        public static bool TwitchIntegrationEnabled { get; set; }
+        public static string TwitchRelayUrl { get; set; }
+        // getProperty() below lowercases every persisted value on load, so these can't hold a
+        // mixed-case secret - OptionsControl's "Generate" button produces them via
+        // Guid.ToString("N") (lowercase hex already) specifically so a config reload can't
+        // corrupt them.
+        //
+        // Two separate keys on purpose: the stream key is pasted into the Twitch Extension's
+        // broadcaster config, which Twitch serves to every viewer's browser, so it's
+        // effectively public and may only grant read access. The control key authorizes
+        // commands coming back down (summons) and must never leave the overlay and relay.
+        public static string TwitchStreamKey { get; set; }
+        public static string TwitchControlKey { get; set; }
 
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
         public static string Version => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -57,7 +70,21 @@ namespace BGOverlay
             EnemyListXOffset    = 0;
             RadarIconXOffset    = 0;
             DebugMode           = false;
+            TwitchIntegrationEnabled = false;
+            TwitchRelayUrl      = "ws://localhost:5080";
+            TwitchStreamKey     = "";
+            TwitchControlKey    = "";
             loadConfig();
+
+            // Every install needs a control key, even on configs written before this existed or
+            // where the user never pressed Generate - without one the relay has no way to
+            // address commands at this overlay, and it would fail silently.
+            if (string.IsNullOrEmpty(TwitchControlKey))
+            {
+                TwitchControlKey = Guid.NewGuid().ToString("N");
+                SaveConfig();
+            }
+
             detectLocale();
         }
 
@@ -93,6 +120,10 @@ namespace BGOverlay
                 $"EnemyListXOffset={EnemyListXOffset}",
                 $"RadarIconXOffset={RadarIconXOffset}",
                 $"DebugMode={DebugMode}",
+                $"TwitchIntegrationEnabled={TwitchIntegrationEnabled}",
+                $"TwitchRelayUrl={TwitchRelayUrl}",
+                $"TwitchStreamKey={TwitchStreamKey}",
+                $"TwitchControlKey={TwitchControlKey}",
             });
         }
 
@@ -160,6 +191,10 @@ namespace BGOverlay
                 EnemyListXOffset    = int.Parse(getProperty("EnemyListXOffset", "0"));
                 RadarIconXOffset    = int.Parse(getProperty("RadarIconXOffset", "0"));
                 DebugMode           = getProperty("DebugMode", "false").Equals("true");
+                TwitchIntegrationEnabled = getProperty("TwitchIntegrationEnabled", "false").Equals("true");
+                TwitchRelayUrl      = getProperty("TwitchRelayUrl", "ws://localhost:5080");
+                TwitchStreamKey     = getProperty("TwitchStreamKey", "");
+                TwitchControlKey    = getProperty("TwitchControlKey", "");
                 if (version != Configuration.Version)
                 {
                     Logger.Debug("Outdated config version found - overriding it");

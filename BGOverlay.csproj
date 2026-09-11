@@ -57,6 +57,8 @@
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Net.WebSockets" />
+    <Reference Include="System.Net.WebSockets.Client" />
     <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
@@ -77,6 +79,7 @@
     <Compile Include="Readers\BIFFReader.cs" />
     <Compile Include="NativeStructs\CDerivedStats.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="GameSpawnBridge.cs" />
     <Compile Include="GlobalMouseHook.cs" />
     <Compile Include="Readers\ITMReader.cs" />
     <Compile Include="Readers\CREReader.cs" />
@@ -100,6 +103,7 @@
     <Compile Include="SpellIconEntry.cs" />
     <Compile Include="Readers\SPLReader.cs" />
     <Compile Include="Readers\TLKReader.cs" />
+    <Compile Include="TwitchRelayClient.cs" />
     <Compile Include="WinAPIBindings.cs" />
   </ItemGroup>
   <ItemGroup>
