@@ -1,4 +1,4 @@
-# BG Radar Overlay - тексты интерфейса (русский / ru_RU)
+﻿# BG Radar Overlay - тексты интерфейса (русский / ru_RU)
 # Одна строка "Ключ=Значение". Строки с # и пустые строки игнорируются.
 # Плейсхолдеры {0} подставляются значениями во время выполнения - сохраняйте их
 # в переводе, порядок/позицию можно менять, если того требует язык.
@@ -464,11 +464,22 @@ Str_TwitchStatusDisabled=Отключено
 Str_TwitchStatusConnecting=Подключение...
 Str_TwitchStatusConnected=Подключено
 Str_TwitchStatusError=Ошибка
-Str_TwitchSummonSection=Призыв (тест)
-Str_TwitchSummonHint=Требуется EEex и файл M_BG2RDR.lua в папке override, а также загруженная игра.
-Str_TwitchSummonResRef=ResRef существа:
-Str_TwitchSummonButton=Призвать
-Str_TwitchSummonSent=Запрос на призыв отправлен.
+Str_TwitchSummonButton=Тест призыва
+Str_TwitchPacksSection=Наборы для призыва
+Str_TwitchPacksHint=Кого призывает зритель, в зависимости от уровня главного героя. Требуется EEex и файл M_BG2RDR.lua в папке override.
+Str_TwitchPackLevels=Уровни:
+Str_TwitchPackTo=до
+Str_TwitchPackCreatures=Существа (по одному "RESREF количество" в строке):
+Str_TwitchPackSave=Сохранить набор
+Str_TwitchPackDelete=Удалить
+Str_TwitchPackNew=Новый
+Str_TwitchPackSaved=Набор сохранён.
+Str_TwitchPackSavedWithErrors=Набор сохранён, но эти строки пропущены: {0}
+Str_TwitchPackDeleted=Набор удалён.
+Str_TwitchPackBadRange=Укажите корректный диапазон уровней (от - не меньше 1 и не больше чем до).
+Str_TwitchPackNoCreatures=Добавьте хотя бы одно существо, например "GIBBER 3".
+Str_TwitchPackQueued=В очереди: {0}
+Str_TwitchSummonStalled=Ожидание, пока игра примет призыв (в очереди: {0}) - игра на паузе?
 Str_CharacterListFiltering=Фильтр списка персонажей
 Str_HidePartyMembers=Скрыть членов группы
 Str_HideNeutrals=Скрыть нейтральных

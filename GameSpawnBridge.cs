@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using WinApiBindings;
@@ -31,9 +32,37 @@ namespace BGOverlay
         private const int OffsetSelf    = 0x0C;
         private const int OffsetFlag    = 0x10;
         private const int OffsetResRef  = 0x14;
+        private const int OffsetAmount  = 0x24;
         private const int ResRefSize    = 16;
-        private const uint LayoutVersion = 2;
+        private const uint LayoutVersion = 3;
         private const uint FlagPending   = 1;
+
+        /// <summary>
+        /// Mirrors MAX_AMOUNT in M_BG2RDR.lua. Clamped on both sides so neither a typo here nor
+        /// a stale mod file can lock the game up spawning thousands of creatures.
+        /// </summary>
+        public const int MaxAmount = 20;
+
+        private const int MaxQueued = 32;
+
+        // ~3s at the default 300ms tick: long enough not to fire on the normal one-tick gap
+        // between writing a request and the game picking it up.
+        private const int StalledTicksBeforeWarning = 10;
+
+        private int stalledTicks;
+
+        /// <summary>
+        /// True while a request has been written but the game hasn't consumed it for a while -
+        /// in practice, the game is paused. Surfaced in the options UI so a summon that goes
+        /// nowhere doesn't look like a broken bridge.
+        /// </summary>
+        public bool IsStalled => stalledTicks >= StalledTicksBeforeWarning;
+
+        /// <summary>How many entries are still waiting to be handed to the game.</summary>
+        public int QueueLength
+        {
+            get { lock (gate) { return pending.Count; } }
+        }
 
         private static byte[] magicBytes(uint first, uint second)
         {
@@ -46,9 +75,78 @@ namespace BGOverlay
         private const int ScanChunkBytes = 1 << 20;
 
         private readonly object gate = new object();
+        private readonly Queue<SpawnEntry> pending = new Queue<SpawnEntry>();
         private IntPtr mailbox = IntPtr.Zero;
 
         private GameSpawnBridge() { }
+
+        /// <summary>
+        /// Queues entries to be spawned. The mailbox only holds one request at a time - the Lua
+        /// side consumes it on its next tick - so a multi-creature pack can't be written in one
+        /// go; <see cref="Pump"/> feeds them in as the game takes them.
+        /// </summary>
+        public void Enqueue(IEnumerable<SpawnEntry> entries)
+        {
+            lock (gate)
+            {
+                foreach (var entry in entries)
+                {
+                    // Bounded so a burst of redemptions can't build a backlog that keeps
+                    // spawning long after the viewers who triggered it have moved on.
+                    if (pending.Count >= MaxQueued)
+                        break;
+                    pending.Enqueue(entry);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Hands the next queued entry to the game if it's ready for one. Called every
+        /// ProcessHacker tick; a no-op when there's nothing queued.
+        /// </summary>
+        public void Pump()
+        {
+            SpawnEntry next;
+            lock (gate)
+            {
+                if (pending.Count == 0)
+                    return;
+                next = pending.Peek();
+            }
+
+            if (TrySpawn(next.ResRef, next.Amount, out var error))
+            {
+                lock (gate)
+                {
+                    if (pending.Count > 0)
+                        pending.Dequeue();
+                }
+                stalledTicks = 0;
+                return;
+            }
+
+            // "Still pending" just means the game hasn't picked the last one up yet - keep the
+            // entry and retry next tick. Anything else (no game, bad ResRef) won't fix itself,
+            // so drop it rather than retrying forever.
+            if (!error.StartsWith("The previous summon", StringComparison.Ordinal))
+            {
+                lock (gate)
+                {
+                    if (pending.Count > 0)
+                        pending.Dequeue();
+                }
+                stalledTicks = 0;
+                Logger.Info($"Dropped queued summon '{next.ResRef}' x{next.Amount}: {error}");
+                return;
+            }
+
+            // The game not consuming requests is overwhelmingly "the game is paused", since the
+            // Lua side polls from an AI hook. Retrying in silence made that indistinguishable
+            // from the bridge being broken, so say so once instead of never.
+            stalledTicks++;
+            if (stalledTicks == StalledTicksBeforeWarning)
+                Logger.Info($"Summon queue stalled on '{next.ResRef}' - the game hasn't consumed the request. Is it paused?");
+        }
 
         /// <summary>
         /// Posts a spawn request. Returns false (with a reason) rather than throwing, since
@@ -57,11 +155,22 @@ namespace BGOverlay
         /// </summary>
         public bool TrySpawn(string resref, out string error)
         {
+            return TrySpawn(resref, 1, out error);
+        }
+
+        public bool TrySpawn(string resref, int amount, out string error)
+        {
             lock (gate)
             {
                 if (!isValidResRef(resref))
                 {
                     error = "Invalid creature ResRef (expected 1-8 characters, A-Z 0-9 _).";
+                    return false;
+                }
+
+                if (amount < 1 || amount > MaxAmount)
+                {
+                    error = $"Invalid amount (expected 1-{MaxAmount}).";
                     return false;
                 }
 
@@ -84,6 +193,12 @@ namespace BGOverlay
                 if (!WinAPIBindings.WriteBytes(mailbox + OffsetResRef, payload))
                 {
                     error = "Could not write the summon request into the game.";
+                    return false;
+                }
+
+                if (!WinAPIBindings.WriteBytes(mailbox + OffsetAmount, BitConverter.GetBytes((uint)amount)))
+                {
+                    error = "Could not write the summon amount into the game.";
                     return false;
                 }
 

@@ -1,5 +1,6 @@
 ﻿using BGOverlay;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -90,6 +91,12 @@ namespace WPFFrontend
                 _                            => "Str_TwitchStatusDisabled",
             };
             this.TwitchStatus.Content = RadarLocalization.Get(key);
+
+            // A queue that isn't draining means the game isn't consuming requests - almost
+            // always because it's paused. Without this the summon just appears to do nothing.
+            var queued = GameSpawnBridge.Instance.QueueLength;
+            if (queued > 0 && GameSpawnBridge.Instance.IsStalled)
+                showSummonResult(false, string.Format(RadarLocalization.Get("Str_TwitchSummonStalled"), queued));
         }
 
         private void initLocale()
@@ -165,19 +172,157 @@ namespace WPFFrontend
                 : $"{Configuration.Font3}, {Configuration.FontSize3Small}";
         }
 
+        private List<SpawnPack> spawnPacks = new List<SpawnPack>();
+
         /// <summary>
-        /// Manual trigger for the EEex spawn bridge, so the game-side half can be exercised
-        /// before (and independently of) anything Twitch-facing being wired up.
+        /// Queues the pack matching the protagonist's current level - the same path a viewer
+        /// redemption takes - so the whole chain can be exercised before anything Twitch-facing
+        /// is wired up.
+        /// </summary>
+        /// <summary>
+        /// Queues the pack currently selected in the list, so a pack can be tried out directly
+        /// while authoring it. Note this deliberately bypasses level matching - a real viewer
+        /// summon still resolves the pack from the protagonist's level (see
+        /// TwitchRelayClient.handleCommand).
         /// </summary>
         private void TestSummon_Click(object sender, RoutedEventArgs e)
         {
-            var ok = GameSpawnBridge.Instance.TrySpawn(this.SummonResRef.Text.Trim(), out var error);
+            var pack = selectedPack();
+            if (pack == null)
+                return;
+
+            GameSpawnBridge.Instance.Enqueue(pack.Entries);
+            showSummonResult(true, string.Format(RadarLocalization.Get("Str_TwitchPackQueued"), pack.ToString()));
+        }
+
+        private SpawnPack selectedPack()
+        {
+            var index = this.PackList.SelectedIndex;
+            return index >= 0 && index < spawnPacks.Count ? spawnPacks[index] : null;
+        }
+
+        /// <summary>
+        /// Save/Delete/Test all act on the selected pack, so they stay disabled until there is
+        /// one. New creates and selects a pack rather than just clearing the selection -
+        /// otherwise a disabled Save would leave no way to ever add one.
+        /// </summary>
+        private void updatePackButtons()
+        {
+            var hasSelection = selectedPack() != null;
+            this.PackSave.IsEnabled   = hasSelection;
+            this.PackDelete.IsEnabled = hasSelection;
+            this.TestSummon.IsEnabled = hasSelection;
+        }
+
+        private void showSummonResult(bool ok, string text)
+        {
             this.SummonResult.Foreground = ok
                 ? System.Windows.Media.Brushes.DarkGreen
                 : System.Windows.Media.Brushes.DarkRed;
-            this.SummonResult.Text = ok
-                ? RadarLocalization.Get("Str_TwitchSummonSent")
-                : error;
+            this.SummonResult.Text = text;
+        }
+
+        /// <summary>
+        /// Rebuilds the list, restoring the given selection - clearing Items resets
+        /// SelectedIndex, which would otherwise drop the selection (and disable the buttons)
+        /// every time a pack is saved.
+        /// </summary>
+        private void refreshPackList(int selectIndex = -1)
+        {
+            this.PackList.Items.Clear();
+            foreach (var pack in spawnPacks)
+                this.PackList.Items.Add(pack.ToString());
+
+            if (selectIndex >= 0 && selectIndex < this.PackList.Items.Count)
+                this.PackList.SelectedIndex = selectIndex;
+
+            updatePackButtons();
+        }
+
+        private void PackList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            updatePackButtons();
+
+            var pack = selectedPack();
+            if (pack == null)
+                return;
+
+            this.PackLevelFrom.Text = pack.LevelFrom.ToString();
+            this.PackLevelTo.Text   = pack.LevelTo.ToString();
+            this.PackEntries.Text   = SpawnPack.ToEntryLines(pack.Entries);
+        }
+
+        /// <summary>
+        /// Saves the editor contents over the selected pack. Packs are matched to a level band
+        /// at summon time, so overlapping bands are allowed - the narrowest match wins.
+        /// </summary>
+        private void PackSave_Click(object sender, RoutedEventArgs e)
+        {
+            var index = this.PackList.SelectedIndex;
+            if (index < 0 || index >= spawnPacks.Count)
+                return;
+
+            if (!int.TryParse(this.PackLevelFrom.Text.Trim(), out var from) ||
+                !int.TryParse(this.PackLevelTo.Text.Trim(), out var to) ||
+                from < 1 || to < from)
+            {
+                showSummonResult(false, RadarLocalization.Get("Str_TwitchPackBadRange"));
+                return;
+            }
+
+            var entries = SpawnPack.ParseEntryLines(this.PackEntries.Text, out var rejected);
+            if (entries.Count == 0)
+            {
+                showSummonResult(false, RadarLocalization.Get("Str_TwitchPackNoCreatures"));
+                return;
+            }
+
+            spawnPacks[index] = new SpawnPack { LevelFrom = from, LevelTo = to, Entries = entries };
+
+            persistPacks();
+            refreshPackList(index);
+
+            // Surfaced rather than silently dropped, so a typo'd ResRef doesn't vanish without
+            // the user noticing it never made it into the pack.
+            showSummonResult(rejected.Count == 0,
+                rejected.Count == 0
+                    ? RadarLocalization.Get("Str_TwitchPackSaved")
+                    : string.Format(RadarLocalization.Get("Str_TwitchPackSavedWithErrors"), string.Join(", ", rejected)));
+        }
+
+        private void PackDelete_Click(object sender, RoutedEventArgs e)
+        {
+            var index = this.PackList.SelectedIndex;
+            if (index < 0 || index >= spawnPacks.Count)
+                return;
+
+            spawnPacks.RemoveAt(index);
+            persistPacks();
+
+            // Keep a neighbour selected so the buttons don't go dead after every delete.
+            refreshPackList(Math.Min(index, spawnPacks.Count - 1));
+            showSummonResult(true, RadarLocalization.Get("Str_TwitchPackDeleted"));
+        }
+
+        /// <summary>
+        /// Adds an empty pack and selects it. It only reaches config.cfg once it has creatures -
+        /// SpawnPack.Serialize skips empty packs - so abandoning a new pack costs nothing.
+        /// </summary>
+        private void PackNew_Click(object sender, RoutedEventArgs e)
+        {
+            spawnPacks.Add(new SpawnPack { LevelFrom = 1, LevelTo = 1 });
+            refreshPackList(spawnPacks.Count - 1);
+
+            this.PackLevelFrom.Text = "1";
+            this.PackLevelTo.Text   = "1";
+            this.PackEntries.Text   = "";
+            this.PackEntries.Focus();
+        }
+
+        private void persistPacks()
+        {
+            Configuration.SpawnPacks = SpawnPack.Serialize(spawnPacks);
+            Configuration.SaveConfig();
         }
 
         private void GenerateStreamKey_Click(object sender, RoutedEventArgs e)
@@ -207,6 +352,9 @@ namespace WPFFrontend
             this.TwitchIntegrationEnabled.IsChecked = Configuration.TwitchIntegrationEnabled;
             this.TwitchRelayUrl.Text            = Configuration.TwitchRelayUrl;
             this.TwitchStreamKey.Text           = Configuration.TwitchStreamKey;
+
+            spawnPacks = SpawnPack.Deserialize(Configuration.SpawnPacks);
+            refreshPackList();
         }
 
         public void Show()

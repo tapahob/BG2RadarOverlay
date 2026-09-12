@@ -196,20 +196,65 @@ namespace BGOverlay
             }
         }
 
-        private static void handleCommand(string message)
+        /// <summary>
+        /// The protagonist's class level, refreshed each ProcessHacker tick. Used to pick which
+        /// spawn pack a viewer summon draws from, so a level 1 party gets gibberlings rather
+        /// than something that would wipe them.
+        /// </summary>
+        public int ProtagonistLevel { get; set; }
+
+        private void handleCommand(string message)
         {
             if (extractString(message, "type") != "summon")
                 return;
 
             var resref = extractString(message, "resref");
-            if (string.IsNullOrEmpty(resref))
-                return;
 
-            // Deliberately best-effort: a refused summon (no game loaded, EEex missing, a
-            // request still pending) is an expected state, not something to retry or surface -
-            // the viewer's redemption is already spent either way.
-            if (!GameSpawnBridge.Instance.TrySpawn(resref, out var error))
-                Logger.Info($"Summon '{resref}' not performed: {error}");
+            // An explicit ResRef overrides the packs; without one the summon is resolved
+            // against the streamer's level-banded packs.
+            if (!string.IsNullOrEmpty(resref))
+            {
+                var amount = extractInt(message, "amount", 1);
+                GameSpawnBridge.Instance.Enqueue(new[] { new SpawnEntry { ResRef = resref, Amount = amount } });
+                return;
+            }
+
+            var packs = SpawnPack.Deserialize(Configuration.SpawnPacks);
+            var pack = SpawnPack.ForLevel(packs, ProtagonistLevel);
+            if (pack == null)
+            {
+                Logger.Info($"Summon ignored: no spawn pack covers level {ProtagonistLevel}.");
+                return;
+            }
+
+            Logger.Info($"Summoning pack for level {ProtagonistLevel}: {pack}");
+            GameSpawnBridge.Instance.Enqueue(pack.Entries);
+        }
+
+        private static int extractInt(string json, string field, int fallback)
+        {
+            var marker = "\"" + field + "\"";
+            var at = json.IndexOf(marker, StringComparison.Ordinal);
+            if (at < 0)
+                return fallback;
+
+            at = json.IndexOf(':', at + marker.Length);
+            if (at < 0)
+                return fallback;
+
+            var digits = new StringBuilder();
+            for (int i = at + 1; i < json.Length; i++)
+            {
+                var c = json[i];
+                if (char.IsDigit(c))
+                    digits.Append(c);
+                else if (digits.Length > 0)
+                    break;
+                else if (c != ' ' && c != '"')
+                    break;
+            }
+
+            return digits.Length > 0 && int.TryParse(digits.ToString(), out var value) ? value : fallback;
         }
 
         /// <summary>

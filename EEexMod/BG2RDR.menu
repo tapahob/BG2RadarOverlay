@@ -1,0 +1,24 @@
+-- BG2 Radar Overlay - spawn bridge tick
+--
+-- The engine evaluates a label's "enabled" expression every frame, so this is the standard
+-- EEex trick for getting a per-frame Lua callback (B3Timer.menu, shipped with EEex, does the
+-- same thing). It matters here because the UI keeps rendering while the game is PAUSED,
+-- whereas the AI hooks the bridge used before only fire on script trigger events - meaning a
+-- viewer's summon did nothing until something happened to run a script.
+--
+-- The label never actually shows: BG2RDR_Tick() returns false, so it stays disabled and
+-- non-interactive. The full-screen area matches B3Timer's approach and does not swallow input.
+--
+-- Install: copy this file into the game's override folder, next to M_BG2RDR.lua.
+
+menu
+{
+	name "BG2RDR_Menu"
+	ignoreesc
+
+	label
+	{
+		area 0 0 2147483647 2147483647
+		enabled "BG2RDR_Tick()"
+	}
+}

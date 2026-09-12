@@ -199,6 +199,15 @@ namespace BGOverlay
             {
                 var partyMembers = allEntities.Where(x => x.EnemyAlly == 2).ToList();
                 TwitchRelayClient.Instance.PushPartySnapshot(partyMembers);
+
+                // First party member by slot index - conventionally the protagonist in BG. Read
+                // fresh rather than via LoadDerivedStats(), which would mutate an entity the UI
+                // thread may be reading at the same time.
+                var leader = partyMembers.FirstOrDefault();
+                if (leader != null)
+                    TwitchRelayClient.Instance.ProtagonistLevel = leader.ReadClassLevel();
+
+                GameSpawnBridge.Instance.Pump();
             }
 
             Thread.Sleep(Configuration.RefreshTimeMS);

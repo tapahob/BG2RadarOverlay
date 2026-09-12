@@ -1,4 +1,4 @@
-# BG Radar Overlay - UI text (English / en_US)
+﻿# BG Radar Overlay - UI text (English / en_US)
 # One "Key=Value" line per string. Lines starting with # and blank lines are ignored.
 # {0} placeholders are filled in with the corresponding value at runtime - keep them
 # in translations, but they may be moved/reordered if the target language needs it.
@@ -470,11 +470,22 @@ Str_TwitchStatusDisabled=Disabled
 Str_TwitchStatusConnecting=Connecting...
 Str_TwitchStatusConnected=Connected
 Str_TwitchStatusError=Error
-Str_TwitchSummonSection=Summon (test)
-Str_TwitchSummonHint=Requires EEex plus M_BG2RDR.lua in the game's override folder, and a loaded game.
-Str_TwitchSummonResRef=Creature ResRef:
-Str_TwitchSummonButton=Summon
-Str_TwitchSummonSent=Summon request sent.
+Str_TwitchSummonButton=Test summon
+Str_TwitchPacksSection=Summon packs
+Str_TwitchPacksHint=What a viewer summon spawns, by main character level. Requires EEex plus M_BG2RDR.lua in the game's override folder.
+Str_TwitchPackLevels=Levels:
+Str_TwitchPackTo=to
+Str_TwitchPackCreatures=Creatures (one "RESREF amount" per line):
+Str_TwitchPackSave=Save pack
+Str_TwitchPackDelete=Delete
+Str_TwitchPackNew=New
+Str_TwitchPackSaved=Pack saved.
+Str_TwitchPackSavedWithErrors=Pack saved, but these lines were ignored: {0}
+Str_TwitchPackDeleted=Pack deleted.
+Str_TwitchPackBadRange=Enter a valid level range (from must be 1 or more, and not above to).
+Str_TwitchPackNoCreatures=Add at least one creature, e.g. "GIBBER 3".
+Str_TwitchPackQueued=Queued: {0}
+Str_TwitchSummonStalled=Waiting for the game to take the summon ({0} queued) - is the game paused?
 Str_CharacterListFiltering=Character List Filtering
 Str_HidePartyMembers=Hide Party Members
 Str_HideNeutrals=Hide Neutrals

@@ -624,6 +624,30 @@ namespace BGOverlay
             }
         }
 
+        /// <summary>
+        /// Reads this creature's class level straight from memory, returning it instead of
+        /// storing it. LoadDerivedStats() would be the obvious way to get at this, but that
+        /// mutates the entity, and this is called from the relay client's thread while the UI
+        /// thread may be reading the same instance - see the copy-constructor's note about why
+        /// these objects are never mutated after being handed out.
+        ///
+        /// Multiclass characters get the highest of their class levels, as the best single
+        /// stand-in for "how dangerous a fight should be".
+        /// </summary>
+        public int ReadClassLevel()
+        {
+            try
+            {
+                var stats = new CDerivedStats(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x1DC8 }));
+                return Math.Max(stats.Level1, Math.Max(stats.Level2, stats.Level3));
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Could not read class level!", ex);
+                return 0;
+            }
+        }
+
         public void LoadCREResource()
         {
             this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());

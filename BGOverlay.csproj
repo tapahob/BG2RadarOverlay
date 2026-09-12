@@ -80,6 +80,7 @@
     <Compile Include="NativeStructs\CDerivedStats.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="GameSpawnBridge.cs" />
+    <Compile Include="SpawnPack.cs" />
     <Compile Include="GlobalMouseHook.cs" />
     <Compile Include="Readers\ITMReader.cs" />
     <Compile Include="Readers\CREReader.cs" />

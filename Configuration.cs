@@ -45,6 +45,12 @@ namespace BGOverlay
         public static string TwitchStreamKey { get; set; }
         public static string TwitchControlKey { get; set; }
 
+        /// <summary>
+        /// Level-banded creature packs a viewer summon draws from - see <see cref="SpawnPack"/>
+        /// for the encoding. Stored as one flat string because config.cfg is key=value only.
+        /// </summary>
+        public static string SpawnPacks { get; set; }
+
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
         public static string Version => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
@@ -74,6 +80,7 @@ namespace BGOverlay
             TwitchRelayUrl      = "ws://localhost:5080";
             TwitchStreamKey     = "";
             TwitchControlKey    = "";
+            SpawnPacks          = "";
             loadConfig();
 
             // Every install needs a control key, even on configs written before this existed or
@@ -124,6 +131,7 @@ namespace BGOverlay
                 $"TwitchRelayUrl={TwitchRelayUrl}",
                 $"TwitchStreamKey={TwitchStreamKey}",
                 $"TwitchControlKey={TwitchControlKey}",
+                $"SpawnPacks={SpawnPacks}",
             });
         }
 
@@ -195,6 +203,7 @@ namespace BGOverlay
                 TwitchRelayUrl      = getProperty("TwitchRelayUrl", "ws://localhost:5080");
                 TwitchStreamKey     = getProperty("TwitchStreamKey", "");
                 TwitchControlKey    = getProperty("TwitchControlKey", "");
+                SpawnPacks          = getProperty("SpawnPacks", "");
                 if (version != Configuration.Version)
                 {
                     Logger.Debug("Outdated config version found - overriding it");
