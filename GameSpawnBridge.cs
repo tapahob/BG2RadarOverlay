@@ -11,7 +11,7 @@ namespace BGOverlay
     /// EEexMod/M_BG2RDR.lua allocates inside the game process - the overlay half of the
     /// Twitch summon feature. See that Lua file for the struct layout and the reasoning.
     ///
-    /// This deliberately never calls into the engine. It writes 20 bytes into a buffer the
+    /// This deliberately never calls into the engine. It writes a few dozen bytes into a buffer the
     /// game's own Lua owns and polls; everything that actually touches game state runs on the
     /// game's thread, in Lua. Requires EEex plus that mod installed - without them there is no
     /// mailbox to find and every request fails with a readable error.
@@ -33,9 +33,19 @@ namespace BGOverlay
         private const int OffsetFlag    = 0x10;
         private const int OffsetResRef  = 0x14;
         private const int OffsetAmount  = 0x24;
+        private const int OffsetMessage = 0x28;
         private const int ResRefSize    = 16;
-        private const uint LayoutVersion = 3;
+        private const int MessageSize   = 96;
+        private const uint LayoutVersion = 4;
         private const uint FlagPending   = 1;
+
+        /// <summary>
+        /// Longest viewer message that reaches the game, in characters. One byte short of the
+        /// mailbox field so there is always room for the terminating null the Lua side reads up
+        /// to. The extension caps its input at 80, but that is presentation - a message arriving
+        /// over the relay is whatever someone chose to POST, so it gets cut here too.
+        /// </summary>
+        public const int MaxMessageLength = MessageSize - 1;
 
         /// <summary>
         /// Mirrors MAX_AMOUNT in M_BG2RDR.lua. Clamped on both sides so neither a typo here nor
@@ -75,8 +85,20 @@ namespace BGOverlay
         private const int ScanChunkBytes = 1 << 20;
 
         private readonly object gate = new object();
-        private readonly Queue<SpawnEntry> pending = new Queue<SpawnEntry>();
+        private readonly Queue<QueuedSpawn> pending = new Queue<QueuedSpawn>();
         private IntPtr mailbox = IntPtr.Zero;
+
+        /// <summary>
+        /// A queued entry plus the viewer message that should accompany it. The message lives
+        /// here rather than on <see cref="SpawnEntry"/> because it belongs to the request, not to
+        /// the creature: a pack of three entries is one viewer saying one thing, so only the
+        /// first entry carries the text and the rest spawn silently.
+        /// </summary>
+        private struct QueuedSpawn
+        {
+            public SpawnEntry Entry;
+            public string Message;
+        }
 
         private GameSpawnBridge() { }
 
@@ -87,6 +109,16 @@ namespace BGOverlay
         /// </summary>
         public void Enqueue(IEnumerable<SpawnEntry> entries)
         {
+            Enqueue(entries, null);
+        }
+
+        /// <param name="message">
+        /// Optional viewer text, displayed in the game's message log alongside the first entry.
+        /// </param>
+        public void Enqueue(IEnumerable<SpawnEntry> entries, string message)
+        {
+            var text = SanitizeMessage(message);
+
             lock (gate)
             {
                 foreach (var entry in entries)
@@ -95,9 +127,50 @@ namespace BGOverlay
                     // spawning long after the viewers who triggered it have moved on.
                     if (pending.Count >= MaxQueued)
                         break;
-                    pending.Enqueue(entry);
+                    pending.Enqueue(new QueuedSpawn { Entry = entry, Message = text });
+                    text = null;
                 }
             }
+        }
+
+        /// <summary>
+        /// Reduces viewer text to what can safely be handed to the game: printable ASCII, single
+        /// spaces, length-capped. Anything a viewer types arrives here as-is, so this is the
+        /// enforcement point - the extension's own trimming is cosmetic and the relay can be
+        /// POSTed to directly. Non-ASCII is dropped rather than transliterated because the engine
+        /// renders its message log from a single-byte codepage.
+        /// </summary>
+        public static string SanitizeMessage(string message)
+        {
+            if (string.IsNullOrEmpty(message))
+                return null;
+
+            var sb = new StringBuilder(MaxMessageLength);
+            var lastWasSpace = true;
+
+            foreach (var c in message)
+            {
+                var isSpace = c == ' ' || c == '\t' || c == '\r' || c == '\n';
+                if (isSpace)
+                {
+                    if (!lastWasSpace && sb.Length < MaxMessageLength)
+                        sb.Append(' ');
+                    lastWasSpace = true;
+                    continue;
+                }
+
+                if (c < 32 || c > 126)
+                    continue;
+
+                if (sb.Length >= MaxMessageLength)
+                    break;
+
+                sb.Append(c);
+                lastWasSpace = false;
+            }
+
+            var result = sb.ToString().TrimEnd();
+            return result.Length == 0 ? null : result;
         }
 
         /// <summary>
@@ -106,7 +179,7 @@ namespace BGOverlay
         /// </summary>
         public void Pump()
         {
-            SpawnEntry next;
+            QueuedSpawn next;
             lock (gate)
             {
                 if (pending.Count == 0)
@@ -114,7 +187,7 @@ namespace BGOverlay
                 next = pending.Peek();
             }
 
-            if (TrySpawn(next.ResRef, next.Amount, out var error))
+            if (TrySpawn(next.Entry.ResRef, next.Entry.Amount, next.Message, out var error))
             {
                 lock (gate)
                 {
@@ -136,7 +209,7 @@ namespace BGOverlay
                         pending.Dequeue();
                 }
                 stalledTicks = 0;
-                Logger.Info($"Dropped queued summon '{next.ResRef}' x{next.Amount}: {error}");
+                Logger.Info($"Dropped queued summon '{next.Entry.ResRef}' x{next.Entry.Amount}: {error}");
                 return;
             }
 
@@ -145,7 +218,7 @@ namespace BGOverlay
             // from the bridge being broken, so say so once instead of never.
             stalledTicks++;
             if (stalledTicks == StalledTicksBeforeWarning)
-                Logger.Info($"Summon queue stalled on '{next.ResRef}' - the game hasn't consumed the request. Is it paused?");
+                Logger.Info($"Summon queue stalled on '{next.Entry.ResRef}' - the game hasn't consumed the request. Is it paused?");
         }
 
         /// <summary>
@@ -155,10 +228,15 @@ namespace BGOverlay
         /// </summary>
         public bool TrySpawn(string resref, out string error)
         {
-            return TrySpawn(resref, 1, out error);
+            return TrySpawn(resref, 1, null, out error);
         }
 
         public bool TrySpawn(string resref, int amount, out string error)
+        {
+            return TrySpawn(resref, amount, null, out error);
+        }
+
+        public bool TrySpawn(string resref, int amount, string message, out string error)
         {
             lock (gate)
             {
@@ -199,6 +277,20 @@ namespace BGOverlay
                 if (!WinAPIBindings.WriteBytes(mailbox + OffsetAmount, BitConverter.GetBytes((uint)amount)))
                 {
                     error = "Could not write the summon amount into the game.";
+                    return false;
+                }
+
+                // Written in full every time, not just when there's a message: the field would
+                // otherwise still hold the previous viewer's text, and the next silent summon
+                // would print it again.
+                var messageBytes = new byte[MessageSize];
+                var text = SanitizeMessage(message);
+                if (!string.IsNullOrEmpty(text))
+                    Encoding.ASCII.GetBytes(text, 0, text.Length, messageBytes, 0);
+
+                if (!WinAPIBindings.WriteBytes(mailbox + OffsetMessage, messageBytes))
+                {
+                    error = "Could not write the summon message into the game.";
                     return false;
                 }
 

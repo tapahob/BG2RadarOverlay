@@ -27,20 +27,38 @@ namespace BGOverlay
     /// Packs are persisted into the flat key=value config.cfg as a single line, since that file
     /// has no support for nesting:
     ///
-    ///     SpawnPacks=1-3|gibber:3,xvart:2;4-6|ogre:1
+    ///     SpawnPacks=gibberlings|1-3|gibber:3,xvart:2;ogres|4-6|ogre:1
     ///
     /// Lowercase throughout, because Configuration.getProperty() lowercases every value it
     /// reads back; ResRefs are upper-cased again before being sent to the game.
     /// </summary>
     public sealed class SpawnPack
     {
+        /// <summary>
+        /// What viewers see on the pack's tile in the Twitch extension. Optional - an unnamed
+        /// pack falls back to its level band - but it is what a viewer is choosing between, so
+        /// the editor nudges towards setting one.
+        /// </summary>
+        public string Name { get; set; } = "";
+
         public int LevelFrom { get; set; }
         public int LevelTo { get; set; }
         public List<SpawnEntry> Entries { get; set; } = new List<SpawnEntry>();
 
+        /// <summary>
+        /// Longest pack name kept. Names are shown on a small tile inside a 280px panel, and
+        /// they round-trip through a flat config line, so there is no use for a long one.
+        /// </summary>
+        public const int MaxNameLength = 24;
+
         public bool Matches(int level)
         {
             return level >= LevelFrom && level <= LevelTo;
+        }
+
+        public string DisplayName
+        {
+            get { return string.IsNullOrWhiteSpace(Name) ? $"Lv {LevelFrom}-{LevelTo}" : Name; }
         }
 
         public override string ToString()
@@ -48,16 +66,59 @@ namespace BGOverlay
             var entries = Entries.Count > 0
                 ? string.Join(", ", Entries.Select(e => e.ToString()).ToArray())
                 : "(empty)";
-            return $"Lv {LevelFrom}-{LevelTo}: {entries}";
+            // DisplayName already reads "Lv 1-3" when the pack is unnamed, so don't repeat it.
+            var label = string.IsNullOrWhiteSpace(Name)
+                ? DisplayName
+                : $"{Name} [Lv {LevelFrom}-{LevelTo}]";
+            return $"{label}: {entries}";
         }
 
         public static string Serialize(IEnumerable<SpawnPack> packs)
         {
             var parts = packs
                 .Where(p => p.Entries.Count > 0)
-                .Select(p => $"{p.LevelFrom}-{p.LevelTo}|" +
+                .Select(p => $"{SanitizeName(p.Name)}|{p.LevelFrom}-{p.LevelTo}|" +
                              string.Join(",", p.Entries.Select(e => $"{e.ResRef.ToLowerInvariant()}:{e.Amount}").ToArray()));
             return string.Join(";", parts.ToArray());
+        }
+
+        /// <summary>
+        /// Strips everything the flat config format or the pack encoding would choke on. The
+        /// separators (; | , :) and '=' must go, and so must anything outside plain ASCII - the
+        /// name travels to viewers' browsers and back through a hand-rolled JSON reader, and
+        /// nothing here is worth a charset bug.
+        /// </summary>
+        public static string SanitizeName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return "";
+
+            var sb = new StringBuilder(MaxNameLength);
+            var lastWasSpace = true;
+
+            foreach (var c in name)
+            {
+                if (c == ' ' || c == '\t')
+                {
+                    if (!lastWasSpace && sb.Length < MaxNameLength)
+                        sb.Append(' ');
+                    lastWasSpace = true;
+                    continue;
+                }
+
+                var ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+                      || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '\'';
+                if (!ok)
+                    continue;
+
+                if (sb.Length >= MaxNameLength)
+                    break;
+
+                sb.Append(c);
+                lastWasSpace = false;
+            }
+
+            return sb.ToString().Trim();
         }
 
         /// <summary>
@@ -75,11 +136,18 @@ namespace BGOverlay
                 if (string.IsNullOrWhiteSpace(packText))
                     continue;
 
+                // Two shapes are accepted: "from-to|entries" and "name|from-to|entries". The
+                // first is what shipped before packs had names, and configs written by it are
+                // still out there - a rename must not cost the streamer their packs.
                 var halves = packText.Split('|');
-                if (halves.Length != 2)
+                if (halves.Length != 2 && halves.Length != 3)
                     continue;
 
-                var range = halves[0].Split('-');
+                var name = halves.Length == 3 ? SanitizeName(halves[0]) : "";
+                var rangeText = halves[halves.Length - 2];
+                var entriesText = halves[halves.Length - 1];
+
+                var range = rangeText.Split('-');
                 if (range.Length != 2)
                     continue;
 
@@ -88,9 +156,9 @@ namespace BGOverlay
                 if (!int.TryParse(range[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var to))
                     continue;
 
-                var pack = new SpawnPack { LevelFrom = from, LevelTo = to };
+                var pack = new SpawnPack { Name = name, LevelFrom = from, LevelTo = to };
 
-                foreach (var entryText in halves[1].Split(','))
+                foreach (var entryText in entriesText.Split(','))
                 {
                     if (string.IsNullOrWhiteSpace(entryText))
                         continue;
@@ -114,6 +182,66 @@ namespace BGOverlay
             }
 
             return packs;
+        }
+
+        /// <summary>
+        /// Stable per-pack ids, index-aligned with <paramref name="packs"/>. This is what a
+        /// viewer's summon names, so it has to be derived the same way on the publishing side
+        /// and the resolving side - hence one function used by both, rather than an id stored
+        /// per pack that a config edit could desynchronise.
+        ///
+        /// Ids come from the name so they survive reordering, which a list index would not: a
+        /// viewer picking the third tile must not summon something else because the streamer
+        /// deleted a pack in between. Duplicate names are suffixed rather than rejected - the
+        /// editor doesn't stop a streamer reusing one, and two tiles sharing an id would make
+        /// one of them unreachable.
+        /// </summary>
+        public static List<string> AssignIds(IReadOnlyList<SpawnPack> packs)
+        {
+            var ids = new List<string>(packs.Count);
+            var used = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var pack in packs)
+            {
+                var baseId = slugify(pack.DisplayName);
+                var id = baseId;
+                var suffix = 2;
+                while (used.Contains(id))
+                    id = $"{baseId}-{suffix++}";
+
+                used.Add(id);
+                ids.Add(id);
+            }
+
+            return ids;
+        }
+
+        private static string slugify(string text)
+        {
+            var sb = new StringBuilder(32);
+            var lastWasDash = true;
+
+            foreach (var c in text.ToLowerInvariant())
+            {
+                var isAlnum = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9');
+                if (isAlnum)
+                {
+                    if (sb.Length >= 32)
+                        break;
+                    sb.Append(c);
+                    lastWasDash = false;
+                    continue;
+                }
+
+                if (!lastWasDash && sb.Length < 32)
+                {
+                    sb.Append('-');
+                    lastWasDash = true;
+                }
+            }
+
+            var slug = sb.ToString().Trim('-');
+            return slug.Length == 0 ? "pack" : slug;
         }
 
         /// <summary>

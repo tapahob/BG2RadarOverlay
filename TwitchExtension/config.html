@@ -51,6 +51,20 @@
   <input id="streamKey" type="text" placeholder="paste your generated stream key" autocomplete="off">
   <div class="hint">The same key you generated on the Twitch Integration tab. Anyone with this key can read your party's live status - treat it like a password.</div>
 
+  <!-- Hidden unless ?mock=1. The control key authorizes summons in the streamer's game, so it
+       must never be written into the real broadcaster configuration - Twitch serves that to
+       every viewer's browser. It exists here only so the local mock can stand in for the
+       channel-point redemption that will eventually send commands server-side. -->
+  <div id="mockOnly" style="display: none">
+    <label for="controlKey">Control Key <span style="color:#eb0400">(local mock only)</span></label>
+    <input id="controlKey" type="text" placeholder="from the Twitch Integration tab" autocomplete="off">
+    <div class="hint">
+      Lets this mock actually summon, instead of only previewing the request. It is a secret that
+      authorizes spawning creatures in the streamer's game - it is stored in this browser only and
+      is never sent to Twitch. Leave it empty to keep the mock in preview mode.
+    </div>
+  </div>
+
   <button id="save">Save</button>
   <div id="status"></div>
 
@@ -68,6 +82,7 @@
       saved = JSON.parse(rawContent);
       document.getElementById('relayUrl').value = saved.relayUrl || '';
       document.getElementById('streamKey').value = saved.streamKey || '';
+      document.getElementById('controlKey').value = saved.controlKey || '';
     } catch (e) {
       // Malformed/legacy content - leave the form blank rather than fail to load.
     }
@@ -80,6 +95,7 @@
   // localStorage directly instead, under the same key video_overlay.html's mock fallback
   // reads from, whenever this explicit flag is set.
   var isMock = new URLSearchParams(location.search).get('mock') === '1';
+  if (isMock) document.getElementById('mockOnly').style.display = 'block';
   if (!isMock) {
     Twitch.ext.configuration.onChanged(function () {
       var cfg = Twitch.ext.configuration.broadcaster;
@@ -100,11 +116,18 @@
       return;
     }
 
-    var payload = JSON.stringify({ relayUrl: relayUrl, streamKey: streamKey });
+    // Built separately per branch rather than filtered out of one shared object: the control
+    // key going into the Twitch configuration would hand every viewer the ability to spawn
+    // creatures in the streamer's game, so there must be no code path where it can end up there.
     if (isMock) {
-      localStorage.setItem('bg2ext_mock_config', payload);
+      localStorage.setItem('bg2ext_mock_config', JSON.stringify({
+        relayUrl: relayUrl,
+        streamKey: streamKey,
+        controlKey: document.getElementById('controlKey').value.trim()
+      }));
     } else {
-      Twitch.ext.configuration.set('broadcaster', '1', payload);
+      Twitch.ext.configuration.set('broadcaster', '1',
+        JSON.stringify({ relayUrl: relayUrl, streamKey: streamKey }));
     }
     statusEl.style.color = '#00c78c';
     statusEl.textContent = 'Saved.';

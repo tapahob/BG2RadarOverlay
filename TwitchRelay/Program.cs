@@ -22,8 +22,14 @@ builder.Services.AddCors(options =>
 {
     // The read endpoint is polled by a browser-hosted viewer frontend from an origin this
     // relay can't predict, and it only returns what the streamer is already broadcasting -
-    // same trust model as the stream itself. GET only: the command endpoint must never be
-    // reachable cross-origin from a browser.
+    // same trust model as the stream itself.
+    //
+    // GET only, so no page can read a command endpoint's response. Note what that does NOT do:
+    // CORS never stops a cross-origin POST from being *delivered* - any page can send one as a
+    // simple text/plain request and the endpoint still runs, it just can't see the reply. The
+    // only thing protecting the game is the control key being secret, which is why it never goes
+    // into the extension configuration Twitch serves to viewers. (The local mock does POST this
+    // way on purpose, with a key the streamer pasted in themselves.)
     options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().WithMethods("GET"));
 });
 
@@ -154,10 +160,139 @@ app.MapPost("/api/command/{controlKey}", async (string controlKey, HttpContext c
     if (string.IsNullOrWhiteSpace(body))
         return Results.BadRequest();
 
-    return writer.TryWrite(body) ? Results.Ok() : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    // Rebuilt rather than forwarded verbatim. The `message` field carries whatever a viewer
+    // typed, and it ends up in the streamer's game, so this is the point where it stops being
+    // arbitrary: unknown fields are dropped, and the text is cut to a shape the downstream
+    // hand-rolled parser and the engine's message log can both take.
+    if (!tryNormalizeCommand(body, out var command))
+        return Results.BadRequest();
+
+    return writer.TryWrite(command) ? Results.Ok() : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 });
 
 app.Run();
+
+// Kept in step with GameSpawnBridge.MaxMessageLength on the overlay side, which cuts again at
+// the mailbox. Both ends clamp: this relay is the only thing between a viewer and the game, but
+// a stale or third-party relay must not be able to overrun the buffer either.
+const int maxMessageLength = 95;
+
+// A viewer can only tick as many tiles as the streamer has packs, so this is a backstop against
+// a forged command rather than a limit anyone should meet.
+const int maxPacksPerSummon = 8;
+
+static bool tryNormalizeCommand(string body, out string command)
+{
+    command = "";
+    try
+    {
+        using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+            return false;
+
+        if (!root.TryGetProperty("type", out var typeElement)
+            || typeElement.ValueKind != JsonValueKind.String
+            || typeElement.GetString() != "summon")
+            return false;
+
+        string? resref = null;
+        if (root.TryGetProperty("resref", out var resrefElement)
+            && resrefElement.ValueKind == JsonValueKind.String)
+        {
+            var candidate = resrefElement.GetString() ?? "";
+            if (candidate.Length is > 0 and <= 8 && candidate.All(c => char.IsLetterOrDigit(c) || c == '_'))
+                resref = candidate;
+        }
+
+        var amount = 1;
+        if (root.TryGetProperty("amount", out var amountElement)
+            && amountElement.ValueKind == JsonValueKind.Number
+            && amountElement.TryGetInt32(out var parsedAmount))
+        {
+            amount = Math.Clamp(parsedAmount, 1, 20);
+        }
+
+        // Ids of the packs the viewer picked, in the order sent. Capped: the overlay spawns
+        // every pack named here, so an unbounded list is an unbounded spawn.
+        var packs = new List<string>();
+        if (root.TryGetProperty("packs", out var packsElement)
+            && packsElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in packsElement.EnumerateArray())
+            {
+                if (packs.Count >= maxPacksPerSummon)
+                    break;
+                if (item.ValueKind != JsonValueKind.String)
+                    continue;
+
+                var id = item.GetString() ?? "";
+                if (id.Length is > 0 and <= 32
+                    && id.All(c => char.IsAsciiLetterOrDigit(c) || c == '-')
+                    && !packs.Contains(id))
+                {
+                    packs.Add(id);
+                }
+            }
+        }
+
+        var message = "";
+        if (root.TryGetProperty("message", out var messageElement)
+            && messageElement.ValueKind == JsonValueKind.String)
+        {
+            message = sanitizeMessage(messageElement.GetString() ?? "");
+        }
+
+        var payload = new Dictionary<string, object> { ["type"] = "summon" };
+        if (resref is not null)
+        {
+            payload["resref"] = resref;
+            payload["amount"] = amount;
+        }
+        if (packs.Count > 0)
+            payload["packs"] = packs;
+        if (message.Length > 0)
+            payload["message"] = message;
+
+        command = JsonSerializer.Serialize(payload);
+        return true;
+    }
+    catch (JsonException)
+    {
+        return false;
+    }
+}
+
+// Printable ASCII only, whitespace collapsed, length-capped. Quotes and backslashes go too:
+// the overlay reads this back with a hand-rolled string scanner rather than a JSON parser, and
+// text that can close its own field there could make one command look like another.
+static string sanitizeMessage(string raw)
+{
+    var builder = new StringBuilder(maxMessageLength);
+    var lastWasSpace = true;
+
+    foreach (var c in raw)
+    {
+        if (c is ' ' or '\t' or '\r' or '\n')
+        {
+            if (!lastWasSpace && builder.Length < maxMessageLength)
+                builder.Append(' ');
+            lastWasSpace = true;
+            continue;
+        }
+
+        if (c < 32 || c > 126 || c is '"' or '\\')
+            continue;
+
+        if (builder.Length >= maxMessageLength)
+            break;
+
+        builder.Append(c);
+        lastWasSpace = false;
+    }
+
+    return builder.ToString().TrimEnd();
+}
 
 static bool tryReadControlKey(string json, out string controlKey)
 {

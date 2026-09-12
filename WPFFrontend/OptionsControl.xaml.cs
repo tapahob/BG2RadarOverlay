@@ -191,7 +191,11 @@ namespace WPFFrontend
             if (pack == null)
                 return;
 
-            GameSpawnBridge.Instance.Enqueue(pack.Entries);
+            // Sent with a sample message so the test exercises the viewer-text path too. Plain
+            // ASCII and deliberately not localised: GameSpawnBridge drops anything outside
+            // printable ASCII, since the engine's message log renders from a single-byte
+            // codepage, so a translated string would show up in game as an empty line.
+            GameSpawnBridge.Instance.Enqueue(pack.Entries, "Test summon from the radar overlay");
             showSummonResult(true, string.Format(RadarLocalization.Get("Str_TwitchPackQueued"), pack.ToString()));
         }
 
@@ -247,6 +251,7 @@ namespace WPFFrontend
             if (pack == null)
                 return;
 
+            this.PackName.Text      = pack.Name ?? "";
             this.PackLevelFrom.Text = pack.LevelFrom.ToString();
             this.PackLevelTo.Text   = pack.LevelTo.ToString();
             this.PackEntries.Text   = SpawnPack.ToEntryLines(pack.Entries);
@@ -277,7 +282,13 @@ namespace WPFFrontend
                 return;
             }
 
-            spawnPacks[index] = new SpawnPack { LevelFrom = from, LevelTo = to, Entries = entries };
+            // Sanitised rather than validated: the name carries the pack's identity for viewers,
+            // and rejecting a save because someone typed a colon would be a worse trade than
+            // quietly dropping the character. The editor shows what was kept straight after.
+            var name = SpawnPack.SanitizeName(this.PackName.Text);
+            this.PackName.Text = name;
+
+            spawnPacks[index] = new SpawnPack { Name = name, LevelFrom = from, LevelTo = to, Entries = entries };
 
             persistPacks();
             refreshPackList(index);
@@ -313,10 +324,11 @@ namespace WPFFrontend
             spawnPacks.Add(new SpawnPack { LevelFrom = 1, LevelTo = 1 });
             refreshPackList(spawnPacks.Count - 1);
 
+            this.PackName.Text      = "";
             this.PackLevelFrom.Text = "1";
             this.PackLevelTo.Text   = "1";
             this.PackEntries.Text   = "";
-            this.PackEntries.Focus();
+            this.PackName.Focus();
         }
 
         private void persistPacks()
@@ -331,11 +343,13 @@ namespace WPFFrontend
             // persisted value on load, so anything with uppercase characters would get mangled
             // by a config.cfg round-trip.
             //
-            // The control key is regenerated alongside it but never shown or shared: the stream
-            // key goes into the Twitch Extension config (and so reaches viewers' browsers),
-            // while this one authorizes summons coming back down.
+            // The control key is regenerated alongside it. The stream key goes into the Twitch
+            // Extension config (and so reaches viewers' browsers), while this one authorizes
+            // summons coming back down - it is shown here for the streamer to paste into the
+            // local extension mock, and must go nowhere else.
             this.TwitchStreamKey.Text = Guid.NewGuid().ToString("N");
             Configuration.TwitchControlKey = Guid.NewGuid().ToString("N");
+            this.TwitchControlKey.Text = Configuration.TwitchControlKey;
             updateConfig(null, null);
         }
 
@@ -352,6 +366,7 @@ namespace WPFFrontend
             this.TwitchIntegrationEnabled.IsChecked = Configuration.TwitchIntegrationEnabled;
             this.TwitchRelayUrl.Text            = Configuration.TwitchRelayUrl;
             this.TwitchStreamKey.Text           = Configuration.TwitchStreamKey;
+            this.TwitchControlKey.Text          = Configuration.TwitchControlKey;
 
             spawnPacks = SpawnPack.Deserialize(Configuration.SpawnPacks);
             refreshPackList();

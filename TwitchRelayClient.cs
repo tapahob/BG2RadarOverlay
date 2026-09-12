@@ -99,8 +99,27 @@ namespace BGOverlay
                 return;
 
             lastSendUtc = DateTime.UtcNow;
-            pendingPayload = buildPayload(party);
+            pendingPayload = buildPayload(party, CurrentPacks());
             sendSignal.Release();
+        }
+
+        private string cachedPackSource;
+        private List<SpawnPack> cachedPacks = new List<SpawnPack>();
+
+        /// <summary>
+        /// The streamer's packs as configured right now. Cached on the raw config string so the
+        /// snapshot, which is rebuilt every couple of seconds, doesn't re-parse it every time,
+        /// while an edit in the options tab still shows up on viewers' tiles immediately.
+        /// </summary>
+        public List<SpawnPack> CurrentPacks()
+        {
+            var source = Configuration.SpawnPacks ?? "";
+            if (!string.Equals(source, cachedPackSource, StringComparison.Ordinal))
+            {
+                cachedPacks = SpawnPack.Deserialize(source);
+                cachedPackSource = source;
+            }
+            return cachedPacks;
         }
 
         private async Task runAsync(string relayUrl, string streamKey, string controlKey, CancellationToken token)
@@ -210,16 +229,34 @@ namespace BGOverlay
 
             var resref = extractString(message, "resref");
 
+            // Whatever a viewer typed in the extension. Passed on as-is: GameSpawnBridge is the
+            // one place that sanitises it, so there is a single choke point between viewer text
+            // and the game rather than one per caller.
+            var viewerText = extractString(message, "message");
+
             // An explicit ResRef overrides the packs; without one the summon is resolved
             // against the streamer's level-banded packs.
             if (!string.IsNullOrEmpty(resref))
             {
                 var amount = extractInt(message, "amount", 1);
-                GameSpawnBridge.Instance.Enqueue(new[] { new SpawnEntry { ResRef = resref, Amount = amount } });
+                GameSpawnBridge.Instance.Enqueue(new[] { new SpawnEntry { ResRef = resref, Amount = amount } }, viewerText);
                 return;
             }
 
-            var packs = SpawnPack.Deserialize(Configuration.SpawnPacks);
+            var packs = CurrentPacks();
+
+            // Viewers pick tiles by id, and may pick several - everything they chose spawns, in
+            // the order they appear in the streamer's list rather than the order they arrived,
+            // so a summon reads the same way each time.
+            var requestedIds = extractStringArray(message, "packs");
+            if (requestedIds.Count > 0)
+            {
+                enqueueById(packs, requestedIds, viewerText);
+                return;
+            }
+
+            // No pack named: fall back to resolving one from the protagonist's level. This is
+            // what a channel-point reward that predates the pack tiles still sends.
             var pack = SpawnPack.ForLevel(packs, ProtagonistLevel);
             if (pack == null)
             {
@@ -228,7 +265,41 @@ namespace BGOverlay
             }
 
             Logger.Info($"Summoning pack for level {ProtagonistLevel}: {pack}");
-            GameSpawnBridge.Instance.Enqueue(pack.Entries);
+            GameSpawnBridge.Instance.Enqueue(pack.Entries, viewerText);
+        }
+
+        private void enqueueById(IReadOnlyList<SpawnPack> packs, List<string> requestedIds, string viewerText)
+        {
+            var ids = SpawnPack.AssignIds(packs);
+            var entries = new List<SpawnEntry>();
+            var summoned = new List<string>();
+
+            for (int i = 0; i < packs.Count; i++)
+            {
+                if (!requestedIds.Contains(ids[i]))
+                    continue;
+
+                // Re-checked here, not trusted from the command: the pack list this id came from
+                // is served to every viewer's browser, so "the extension greyed that tile out"
+                // is not something the game side can rely on.
+                if (!packs[i].Matches(ProtagonistLevel))
+                {
+                    Logger.Info($"Summon skipped pack '{ids[i]}': level {ProtagonistLevel} is outside {packs[i].LevelFrom}-{packs[i].LevelTo}.");
+                    continue;
+                }
+
+                entries.AddRange(packs[i].Entries);
+                summoned.Add(ids[i]);
+            }
+
+            if (entries.Count == 0)
+            {
+                Logger.Info($"Summon ignored: none of [{string.Join(", ", requestedIds.ToArray())}] matched an available pack at level {ProtagonistLevel}.");
+                return;
+            }
+
+            Logger.Info($"Summoning packs [{string.Join(", ", summoned.ToArray())}] at level {ProtagonistLevel}.");
+            GameSpawnBridge.Instance.Enqueue(entries, viewerText);
         }
 
         private static int extractInt(string json, string field, int fallback)
@@ -296,7 +367,62 @@ namespace BGOverlay
             return null;
         }
 
-        private static string buildPayload(IReadOnlyList<BGEntity> party)
+        /// <summary>
+        /// Pulls a flat array of strings out of the command JSON - "packs":["a","b"]. Same
+        /// reasoning as <see cref="extractString"/>: net48 with no JSON library referenced, and
+        /// a command shape small enough that a scanner beats a dependency. Stops at the closing
+        /// bracket, so a later field can't extend the array.
+        /// </summary>
+        private static List<string> extractStringArray(string json, string field)
+        {
+            var values = new List<string>();
+            if (string.IsNullOrEmpty(json))
+                return values;
+
+            var marker = "\"" + field + "\"";
+            var at = json.IndexOf(marker, StringComparison.Ordinal);
+            if (at < 0)
+                return values;
+
+            at = json.IndexOf('[', at + marker.Length);
+            if (at < 0)
+                return values;
+
+            var current = new StringBuilder();
+            var inString = false;
+
+            for (int i = at + 1; i < json.Length; i++)
+            {
+                var c = json[i];
+
+                if (inString)
+                {
+                    if (c == '\\' && i + 1 < json.Length)
+                    {
+                        current.Append(json[++i]);
+                        continue;
+                    }
+                    if (c == '"')
+                    {
+                        values.Add(current.ToString());
+                        current.Length = 0;
+                        inString = false;
+                        continue;
+                    }
+                    current.Append(c);
+                    continue;
+                }
+
+                if (c == '"')
+                    inString = true;
+                else if (c == ']')
+                    break;
+            }
+
+            return values;
+        }
+
+        private string buildPayload(IReadOnlyList<BGEntity> party, IReadOnlyList<SpawnPack> packs)
         {
             var sb = new StringBuilder();
             sb.Append("{\"party\":[");
@@ -313,7 +439,38 @@ namespace BGOverlay
                 sb.Append("\"currentHp\":").Append(member.CurrentHP);
                 sb.Append('}');
             }
-            sb.Append("]}");
+            sb.Append(']');
+
+            // The pack list travels with the party snapshot rather than on an endpoint of its
+            // own: viewers already poll this every few seconds, and the tiles they are offered
+            // should change with the party they are looking at.
+            //
+            // "available" is the level band, evaluated here. It is advisory - the tile is shown
+            // greyed out rather than hidden, so a viewer can see what a pack unlocks at - and
+            // the band is checked again when the summon comes back, since this payload is public
+            // and nothing stops a forged command naming an unavailable pack.
+            var level = ProtagonistLevel;
+            var ids = SpawnPack.AssignIds(packs);
+
+            sb.Append(",\"level\":").Append(level);
+            sb.Append(",\"packs\":[");
+            for (int i = 0; i < packs.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(',');
+
+                var pack = packs[i];
+                sb.Append('{');
+                sb.Append("\"id\":\"").Append(jsonEscape(ids[i])).Append("\",");
+                sb.Append("\"name\":\"").Append(jsonEscape(pack.DisplayName)).Append("\",");
+                sb.Append("\"from\":").Append(pack.LevelFrom).Append(',');
+                sb.Append("\"to\":").Append(pack.LevelTo).Append(',');
+                sb.Append("\"available\":").Append(pack.Matches(level) ? "true" : "false");
+                sb.Append('}');
+            }
+            sb.Append(']');
+
+            sb.Append('}');
             return sb.ToString();
         }
 

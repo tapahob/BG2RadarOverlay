@@ -21,7 +21,7 @@
 -- own Lua files, and without them this file errors out on load.
 -------------------------------------------------------------------------------
 
--- Mailbox layout (0x28 bytes):
+-- Mailbox layout (0x88 bytes):
 --   0x00  u32       MAGIC0
 --   0x04  u32       MAGIC1
 --   0x08  u32       layout version
@@ -29,6 +29,7 @@
 --   0x10  u32       request flag: 0 = idle, 1 = spawn pending
 --   0x14  char[16]  creature ResRef, null-terminated
 --   0x24  u32       how many of it to spawn
+--   0x28  char[96]  viewer message, null-terminated (empty = show nothing)
 --
 -- The magic is deliberately a pair of numbers rather than a string. An earlier
 -- version used an ASCII magic, which backfired badly: the literal lived in this
@@ -39,14 +40,15 @@
 -- happens to match both magics still won't contain its own address.
 local MAGIC0      = 0x9E3779B9
 local MAGIC1      = 0x7F4A7C15
-local VERSION     = 3
-local SIZE        = 0x28
+local VERSION     = 4
+local SIZE        = 0x88
 local OFF_MAGIC1  = 0x04
 local OFF_VERSION = 0x08
 local OFF_SELF    = 0x0C
 local OFF_FLAG    = 0x10
 local OFF_RESREF  = 0x14
 local OFF_AMOUNT  = 0x24
+local OFF_MESSAGE = 0x28
 
 -- A typo on the overlay side shouldn't be able to lock up the game spawning thousands of
 -- creatures, so the count is clamped here as well as validated over there.
@@ -130,8 +132,9 @@ local function poll()
         return
     end
 
-    local resref = EEex_ReadString(address + OFF_RESREF)
-    local amount = EEex_Read32(address + OFF_AMOUNT)
+    local resref  = EEex_ReadString(address + OFF_RESREF)
+    local amount  = EEex_Read32(address + OFF_AMOUNT)
+    local message = EEex_ReadString(address + OFF_MESSAGE)
 
     -- Clear the flag *before* spawning. If CreateCreature throws (bad ResRef,
     -- no area loaded, ...) the mailbox has to end up idle anyway, otherwise one
@@ -139,6 +142,12 @@ local function poll()
     EEex_Write32(address + OFF_FLAG, 0)
 
     EEex_FunctionLog(string.format("consuming request '%s' x%d", resref, amount))
+
+    -- Prefixed, and always by us rather than by the sender: it marks the line as coming from
+    -- a viewer, so nobody can type something that passes for the game's own feedback.
+    if message ~= "" then
+        Infinity_DisplayString("[Twitch] " .. message)
+    end
 
     if resref ~= "" then
         spawn(resref, amount)

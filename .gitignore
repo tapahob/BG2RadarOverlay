@@ -338,3 +338,5 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+# TwitchRelay publish output (see CLAUDE.md - staged here before being copied to the VPS)
+publish_relay/
