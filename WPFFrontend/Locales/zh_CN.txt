@@ -637,7 +637,7 @@ Kit_INVOKER=塑能师
 Kit_NECROMANCER=死灵师
 Kit_TRANSMUTER=转化师
 Kit_MAGE=法师
-Kit_FERALAN=野性者
+Kit_FERALAN=弓箭手
 Kit_STALKER=潜行者
 Kit_BEASTMASTER=驯兽师
 Kit_ASSASIN=刺客
@@ -661,7 +661,7 @@ Kit_DRAGON_DISCIPLE=龙脉术士
 Kit_DARK_MOON=暗月武僧
 Kit_SUN_SOUL=日魂武僧
 Kit_GRIZZLY_BEAR=大灰熊
-Kit_OHTYR=欧提尔
+Kit_OHTYR=提尔牧师
 
 # Class enum (Readers/CREReader.CLASS) - shown in the "Class" line of
 # EnemyControl when the creature has no kit (specialization).
