@@ -493,7 +493,7 @@ namespace BGOverlay
                 // already been lazily cached) recovers the real, complete name instead of
                 // leaving callers to work around a truncated one via EndsWith.
                 var resolvedCreName = rawCreResRef.Length > 0
-                    ? ResourceManager.Instance.CREResourceEntries.FirstOrDefault(x => x.FullName.EndsWith($"{rawCreResRef.ToUpper()}.CRE"))?.FullName
+                    ? ResourceManager.Instance.CREResourceEntries.Where(x => x.FullName.EndsWith($"{rawCreResRef.ToUpper()}.CRE")).OrderBy(x=>x.FullName.Length)?.FirstOrDefault()?.FullName
                     : null;
                 this.CreResourceFilename = resolvedCreName ?? (rawCreResRef + ".CRE");
 

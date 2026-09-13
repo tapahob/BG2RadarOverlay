@@ -21,6 +21,8 @@ namespace WPFFrontend
         private Dictionary<String, BuffControl> buffs = new Dictionary<string, BuffControl>();
         private string cachedWeaponName;
 
+        private BitmapImage emptyBuffIcon = new BitmapImage(new Uri($"icons/not_found.png", UriKind.Relative));
+
         public EnemyControl(BGEntity bgEntity, MainWindow mainWindow)
         {
             InitializeComponent();
@@ -282,7 +284,7 @@ namespace WPFFrontend
                         }
                         else
                         {
-                            newIcon = new BitmapImage(new Uri($"icons/not_found.png", UriKind.Relative));
+                            newIcon = emptyBuffIcon;
                         }
 
                         var buffControl = new BuffControl()

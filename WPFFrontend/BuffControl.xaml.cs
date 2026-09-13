@@ -1,4 +1,5 @@
 ﻿using BGOverlay;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -20,7 +21,7 @@ namespace WPFFrontend
             get { return 0; } 
             set 
             {
-                var str = value.ToString("0.0");
+                var str = value.ToString("0.0", new CultureInfo("en-US"));
                 if (value == float.MaxValue || value < 0) 
                     str = "∞";
                 this.Label1.Content = str; this.Label2.Content = str; 
