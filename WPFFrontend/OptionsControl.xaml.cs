@@ -254,6 +254,7 @@ namespace WPFFrontend
             this.PackName.Text      = pack.Name ?? "";
             this.PackLevelFrom.Text = pack.LevelFrom.ToString();
             this.PackLevelTo.Text   = pack.LevelTo.ToString();
+            this.PackCost.Text      = pack.Cost.ToString();
             this.PackEntries.Text   = SpawnPack.ToEntryLines(pack.Entries);
         }
 
@@ -275,6 +276,16 @@ namespace WPFFrontend
                 return;
             }
 
+            // Blank reads as free rather than as an error - a streamer who doesn't care about
+            // prices shouldn't have to type a zero into every pack.
+            var costText = this.PackCost.Text.Trim();
+            var cost = 0;
+            if (costText.Length > 0 && (!int.TryParse(costText, out cost) || cost < 0))
+            {
+                showSummonResult(false, RadarLocalization.Get("Str_TwitchPackBadCost"));
+                return;
+            }
+
             var entries = SpawnPack.ParseEntryLines(this.PackEntries.Text, out var rejected);
             if (entries.Count == 0)
             {
@@ -288,7 +299,14 @@ namespace WPFFrontend
             var name = SpawnPack.SanitizeName(this.PackName.Text);
             this.PackName.Text = name;
 
-            spawnPacks[index] = new SpawnPack { Name = name, LevelFrom = from, LevelTo = to, Entries = entries };
+            spawnPacks[index] = new SpawnPack
+            {
+                Name = name,
+                LevelFrom = from,
+                LevelTo = to,
+                Cost = cost,
+                Entries = entries
+            };
 
             persistPacks();
             refreshPackList(index);
@@ -327,6 +345,7 @@ namespace WPFFrontend
             this.PackName.Text      = "";
             this.PackLevelFrom.Text = "1";
             this.PackLevelTo.Text   = "1";
+            this.PackCost.Text      = "0";
             this.PackEntries.Text   = "";
             this.PackName.Focus();
         }
@@ -369,7 +388,11 @@ namespace WPFFrontend
             this.TwitchControlKey.Text          = Configuration.TwitchControlKey;
 
             spawnPacks = SpawnPack.Deserialize(Configuration.SpawnPacks);
-            refreshPackList();
+
+            // Select the first pack rather than opening on an empty selection: with none
+            // selected, Save/Delete/Test summon all sit disabled and the editor fields are
+            // blank, which reads as "the packs are gone" rather than "pick one".
+            refreshPackList(spawnPacks.Count > 0 ? 0 : -1);
         }
 
         public void Show()

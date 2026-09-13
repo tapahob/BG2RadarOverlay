@@ -28,15 +28,21 @@
     border-radius: 50%;
     background: rgba(20, 16, 12, 0.85);
     border: 2px solid #c9a24b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
     cursor: pointer;
     pointer-events: auto;
     user-select: none;
+    overflow: hidden;
   }
-  #icon:hover { background: rgba(40, 32, 20, 0.95); }
+
+  /* The artwork is square and fills the circle, so the hover cue has to be on the image
+     itself - a background colour behind it would never show. */
+  #icon img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  #icon:hover img { filter: brightness(1.3); }
 
   #panel {
     position: absolute;
@@ -50,14 +56,35 @@
     padding: 10px;
     pointer-events: auto;
     display: none;
+    flex-direction: column;
   }
-  #panel.open { display: block; }
+  #panel.open { display: flex; }
 
-  /* Only the party list scrolls. If the whole panel did, a six-strong party would push the
-     summon controls below the fold and a viewer would have to scroll to find them. */
-  #content {
-    max-height: 120px;
+  /* min-height:0 is what actually makes this scroll: a flex item defaults to min-height:auto,
+     which refuses to shrink below its content and would push the controls out of the panel
+     instead of overflowing here. */
+  #scrollArea {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  #scrollArea::-webkit-scrollbar { width: 6px; }
+  #scrollArea::-webkit-scrollbar-track { background: transparent; }
+  #scrollArea::-webkit-scrollbar-thumb {
+    background: rgba(201, 162, 75, 0.45);
+    border-radius: 3px;
+  }
+  #scrollArea::-webkit-scrollbar-thumb:hover { background: rgba(201, 162, 75, 0.7); }
+
+  /* Pinned below the scroll area - the message box and Summon button must always be reachable
+     without scrolling, however long the lists above get. */
+  #actions {
+    flex: 0 0 auto;
+    padding-top: 10px;
+    margin-top: 10px;
+    border-top: 1px solid rgba(201, 162, 75, 0.35);
   }
 
   #panel h2 {
@@ -90,6 +117,73 @@
     margin-top: 12px;
     padding-top: 10px;
     border-top: 1px solid rgba(201, 162, 75, 0.35);
+  }
+
+  #summonHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  #summonHeader h2 { margin: 0; }
+  #balance {
+    font-size: 11px;
+    color: #f0d488;
+    font-weight: bold;
+  }
+
+  #shareIdentity {
+    font-size: 11px;
+    color: #d0c6a8;
+    background: rgba(60, 48, 30, 0.6);
+    border: 1px solid rgba(201, 162, 75, 0.45);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+  #shareIdentityBtn {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 5px;
+    border: 1px solid #c9a24b;
+    border-radius: 4px;
+    background: rgba(120, 95, 55, 0.85);
+    color: #ffeec4;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  #buyTokens {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(201, 162, 75, 0.35);
+  }
+  #buyTokensNeed {
+    font-size: 11px;
+    color: #e8a0a0;
+    margin-bottom: 6px;
+  }
+  #bitsProducts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bitsProduct {
+    flex: 1 1 auto;
+    padding: 6px 8px;
+    border: 1px solid #c9a24b;
+    border-radius: 4px;
+    background: rgba(120, 95, 55, 0.85);
+    color: #ffeec4;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .bitsProduct:hover { background: rgba(150, 120, 70, 0.95); }
+  #pointsInstructions {
+    font-size: 11px;
+    color: #d0c6a8;
+    margin-top: 6px;
   }
 
   /* Wraps rather than shrinking: the streamer decides how many packs exist, and four 60px
@@ -134,6 +228,20 @@
     font-size: 9px;
     color: #a99d80;
   }
+  .pack .cost {
+    font-size: 9px;
+    color: #f0d488;
+    font-weight: bold;
+  }
+
+  #total {
+    font-size: 11px;
+    color: #f0d488;
+    font-weight: bold;
+    text-align: right;
+    margin-top: 8px;
+    min-height: 13px;
+  }
 
   /* Out-of-band packs are shown, not hidden: a viewer seeing "Lv 8-12" greyed out learns what
      the streamer has set up and what levelling unlocks. */
@@ -149,7 +257,8 @@
     padding: 4px 0;
   }
 
-  #messageRow { margin-top: 10px; }
+  /* No top margin: #actions already supplies the gap below its separator. */
+  #messageRow { margin-top: 0; }
 
   #message {
     width: 100%;
@@ -197,15 +306,43 @@
 </style>
 </head>
 <body>
-  <div id="icon" title="Party status">&#9876;&#65039;</div>
+  <!-- Bundled next to this file rather than linked out of the repo's icons/ folder: only the
+       TwitchExtension/ directory is uploaded to Twitch, so a path outside it would 404 there. -->
+  <div id="icon" title="Party status"><img src="icon.png" alt="Party status"></div>
   <div id="panel">
-    <h2>Party</h2>
-    <div id="content"><div id="offline">Waiting for stream data&hellip;</div></div>
+    <!-- Everything that can grow without bound - a six-strong party, however many packs the
+         streamer defined - scrolls. The controls below stay put, so the Summon button never
+         drifts off the bottom of the panel and out of reach. -->
+    <div id="scrollArea">
+      <h2>Party</h2>
+      <div id="content"><div id="offline">Waiting for stream data&hellip;</div></div>
 
-    <div id="summon">
-      <h2>Summon</h2>
-      <div id="packs"></div>
+      <div id="summon">
+        <div id="summonHeader">
+          <h2>Summon</h2>
+          <div id="balance"></div>
+        </div>
 
+        <!-- Shown instead of the packs until the viewer shares identity - tokens are tracked
+             per Twitch account, and there's no way to track or spend a balance for someone who
+             hasn't. -->
+        <div id="shareIdentity" hidden>
+          Share your identity to buy and spend summon tokens.
+          <button id="shareIdentityBtn">Share Identity</button>
+        </div>
+
+        <div id="packs"></div>
+
+        <!-- Only appears once packs are picked and the balance doesn't cover them yet. -->
+        <div id="buyTokens" hidden>
+          <div id="buyTokensNeed"></div>
+          <div id="bitsProducts"></div>
+          <div id="pointsInstructions"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="actions">
       <div id="messageRow">
         <input id="message" type="text" maxlength="80" autocomplete="off"
                placeholder="Say something to the streamer&hellip;">
@@ -215,284 +352,12 @@
         </div>
       </div>
 
+      <div id="total"></div>
       <button id="send" disabled>Pick a pack</button>
       <div id="sendResult"></div>
     </div>
   </div>
 
-<script>
-  var relayUrl = null;
-  var streamKey = null;
-  var controlKey = null;
-  var pollTimer = null;
-
-  var iconEl = document.getElementById('icon');
-  var panelEl = document.getElementById('panel');
-  var contentEl = document.getElementById('content');
-
-  iconEl.addEventListener('click', function () {
-    panelEl.classList.toggle('open');
-  });
-
-  function applyConfig(rawContent) {
-    if (!rawContent) return;
-    try {
-      var parsed = JSON.parse(rawContent);
-      relayUrl = parsed.relayUrl;
-      streamKey = parsed.streamKey;
-      // Only ever present in the local mock's localStorage - see config.html. A real viewer's
-      // configuration cannot carry this, so the Summon button stays a preview for them.
-      controlKey = parsed.controlKey || null;
-      startPolling();
-    } catch (e) {
-      // Not configured yet (or content is malformed) - stay in the "waiting for stream
-      // data" state instead of throwing.
-    }
-  }
-
-  // mock/index.html loads this file as `video_overlay.html?mock=1`. The real
-  // twitch-ext.min.js loads fine even outside an actual Twitch iframe (it's just a public
-  // script) and Twitch.ext.configuration.onChanged still exists as a function - it just
-  // never fires outside Twitch's real postMessage bridge - so that alone isn't a reliable
-  // "are we really in Twitch" signal. Use the explicit flag instead.
-  var isMock = new URLSearchParams(location.search).get('mock') === '1';
-  if (!isMock && window.Twitch && Twitch.ext && Twitch.ext.configuration) {
-    Twitch.ext.configuration.onChanged(function () {
-      var cfg = Twitch.ext.configuration.broadcaster;
-      applyConfig(cfg && cfg.content);
-    });
-  } else {
-    applyConfig(localStorage.getItem('bg2ext_mock_config'));
-    window.addEventListener('storage', function (e) {
-      if (e.key === 'bg2ext_mock_config') applyConfig(e.newValue);
-    });
-  }
-
-  function startPolling() {
-    if (pollTimer) clearInterval(pollTimer);
-    fetchStatus();
-    pollTimer = setInterval(fetchStatus, 5000);
-  }
-
-  function fetchStatus() {
-    if (!relayUrl || !streamKey) return;
-    fetch(relayUrl + '/api/character/' + encodeURIComponent(streamKey))
-      .then(function (res) {
-        if (!res.ok) throw new Error('not live');
-        return res.json();
-      })
-      .then(renderSnapshot)
-      .catch(function () {
-        contentEl.innerHTML = '<div id="offline">Streamer is offline or hasn\'t opened the game yet.</div>';
-        renderPacks([]);
-      });
-  }
-
-  function renderSnapshot(data) {
-    renderParty(data);
-    renderPacks((data && data.packs) || []);
-  }
-
-  function renderParty(data) {
-    var party = (data && data.party) || [];
-    if (party.length === 0) {
-      contentEl.innerHTML = '<div id="empty">No party data yet.</div>';
-      return;
-    }
-    var html = '';
-    for (var i = 0; i < party.length; i++) {
-      var m = party[i];
-      html += '<div class="member">'
-        + '<div class="name">' + escapeHtml(m.name || '?') + '</div>'
-        + '<div class="meta">' + escapeHtml(m.race || '') + ' ' + escapeHtml(m['class'] || '') + '</div>'
-        + '<div class="hp">HP: ' + (m.currentHp != null ? m.currentHp : '?') + '</div>'
-        + '</div>';
-    }
-    contentEl.innerHTML = html;
-  }
-
-  // ---- Summon section ----
-  //
-  // The tiles are the streamer's own packs, straight out of the snapshot the overlay pushes -
-  // not a list hardcoded here. What a pack contains stays on the overlay side; a viewer only
-  // ever names an id, so nothing about the streamer's creature list has to be trusted from the
-  // browser.
-  var packs = [];
-  var selected = {};
-
-  var packsEl = document.getElementById('packs');
-  var messageEl = document.getElementById('message');
-  var counterEl = document.getElementById('counter');
-  var sendEl = document.getElementById('send');
-  var sendResultEl = document.getElementById('sendResult');
-
-  // Rebuilding the tiles on every 5s poll would fight the viewer for their own selection
-  // (and restart the CSS hover state mid-click), so redraw only when the list actually
-  // changed - which includes a pack becoming available as the party levels.
-  var renderedSignature = null;
-
-  function signatureOf(list) {
-    var parts = [];
-    for (var i = 0; i < list.length; i++) {
-      var p = list[i];
-      parts.push(p.id + '|' + p.name + '|' + p.from + '-' + p.to + '|' + (p.available ? 1 : 0));
-    }
-    return parts.join(';');
-  }
-
-  // No per-pack artwork exists - the streamer types a name, not an icon - so the tile shows
-  // initials. Deterministic, and it keeps the square tile shape the layout is built around.
-  function initialsOf(name) {
-    var words = String(name || '').split(/\s+/);
-    var out = '';
-    for (var i = 0; i < words.length && out.length < 2; i++) {
-      if (words[i].length > 0) out += words[i].charAt(0).toUpperCase();
-    }
-    return out || '?';
-  }
-
-  function renderPacks(list) {
-    var signature = signatureOf(list);
-    if (signature === renderedSignature) return;
-    renderedSignature = signature;
-    packs = list;
-
-    // Drop selections for packs that no longer exist or have gone out of band, so the Summon
-    // button can't be sending an id the streamer deleted while the panel sat open.
-    var stillValid = {};
-    for (var i = 0; i < list.length; i++) {
-      if (list[i].available && selected[list[i].id]) stillValid[list[i].id] = true;
-    }
-    selected = stillValid;
-
-    packsEl.innerHTML = '';
-
-    if (list.length === 0) {
-      var empty = document.createElement('div');
-      empty.id = 'packsEmpty';
-      empty.textContent = 'No summon packs set up yet.';
-      packsEl.appendChild(empty);
-      updateSendState();
-      return;
-    }
-
-    for (var j = 0; j < list.length; j++) {
-      (function (pack) {
-        var el = document.createElement('div');
-        el.className = 'pack' + (pack.available ? '' : ' unavailable');
-        el.setAttribute('data-pack', pack.id);
-        el.title = pack.available
-          ? pack.name
-          : pack.name + ' - unlocks at level ' + pack.from;
-        el.innerHTML = '<div class="glyph">' + escapeHtml(initialsOf(pack.name)) + '</div>'
-                     + '<div class="caption">' + escapeHtml(pack.name) + '</div>'
-                     + '<div class="band">Lv ' + pack.from + '-' + pack.to + '</div>';
-        if (pack.available) {
-          el.addEventListener('click', function () { togglePack(pack.id); });
-        }
-        packsEl.appendChild(el);
-      })(list[j]);
-    }
-
-    applySelectionClasses();
-    updateSendState();
-  }
-
-  function togglePack(id) {
-    if (selected[id]) delete selected[id];
-    else selected[id] = true;
-    applySelectionClasses();
-    updateSendState();
-  }
-
-  function applySelectionClasses() {
-    var tiles = packsEl.getElementsByClassName('pack');
-    for (var i = 0; i < tiles.length; i++) {
-      var tile = tiles[i];
-      var id = tile.getAttribute('data-pack');
-      var base = tile.className.indexOf('unavailable') >= 0 ? 'pack unavailable' : 'pack';
-      tile.className = selected[id] ? base + ' selected' : base;
-    }
-  }
-
-  function selectedIds() {
-    var ids = [];
-    for (var i = 0; i < packs.length; i++) {
-      if (selected[packs[i].id]) ids.push(packs[i].id);
-    }
-    return ids;
-  }
-
-  function updateSendState() {
-    var count = selectedIds().length;
-    sendEl.disabled = count === 0;
-    sendEl.textContent = count === 0
-      ? 'Pick a pack'
-      : (count === 1 ? 'Summon' : 'Summon ' + count + ' packs');
-  }
-
-  messageEl.addEventListener('input', function () {
-    counterEl.textContent = messageEl.value.length + '/80';
-  });
-
-  sendEl.addEventListener('click', function () {
-    var ids = selectedIds();
-    if (ids.length === 0) return;
-
-    // Trimmed and stripped of control characters here only so the mock shows what would be
-    // sent. This is presentation, not enforcement: the relay re-validates the text (printable
-    // ASCII, no quotes, 95 chars) before it can reach the game, and the overlay cuts it again
-    // at the mailbox.
-    var message = '';
-    for (var i = 0; i < messageEl.value.length; i++) {
-      var code = messageEl.value.charCodeAt(i);
-      if (code >= 32 && code !== 127) message += messageEl.value.charAt(i);
-    }
-    message = message.trim();
-
-    // The shape the relay's POST /api/command/{controlKey} accepts. Every id picked goes in and
-    // every one of them spawns.
-    var command = { type: 'summon', packs: ids };
-    if (message) command.message = message;
-
-    if (!controlKey) {
-      // What a real viewer gets. Summoning is authorized by the control key, which they must
-      // never hold; for them the request is raised server-side by a channel-point redemption
-      // arriving over EventSub, not from this page.
-      sendResultEl.textContent = 'Would POST ' + JSON.stringify(command)
-        + ' - the real trigger is a channel-point redemption.';
-      return;
-    }
-
-    sendResultEl.textContent = 'Sending' + String.fromCharCode(8230);
-
-    // Deliberately a CORS "simple request": text/plain with no custom headers, so the browser
-    // sends it straight out instead of preflighting it against a relay policy that allows GET
-    // only. The response is opaque to us, hence no status to report - the relay's own log and
-    // the overlay are where a rejected command shows up.
-    fetch(relayUrl + '/api/command/' + encodeURIComponent(controlKey), {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(command)
-    }).then(function () {
-      sendResultEl.textContent = 'Sent: ' + JSON.stringify(command);
-      messageEl.value = '';
-      counterEl.textContent = '0/80';
-    }).catch(function (err) {
-      sendResultEl.textContent = 'Could not reach the relay: ' + err;
-    });
-  });
-
-  // Draw the empty state up front; the first successful poll replaces it with the streamer's
-  // real packs.
-  renderPacks([]);
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-</script>
+<script src="video_overlay.js"></script>
 </body>
 </html>

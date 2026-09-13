@@ -40,3 +40,48 @@ deployed on a separate Ubuntu VPS, not on this machine.
   `TwitchRelay/deploy/twitch-relay.service` (`sudo systemctl status/restart twitch-relay`). It
   listens on `localhost:5080`; Caddy fronts it on port 8443 with a real certificate, so the public
   base URL is `https://<host>:8443` - that is what the overlay and the extension config use.
+- Per-viewer/per-restart data (OAuth tokens, the EventSub webhook secret, token balances) is
+  written under `<app dir>/data/` - a plain-file store, not a database. Back it up before wiping
+  the deploy directory, or viewers lose whatever token balance they'd bought.
+
+## Summon tokens: Channel Points / Bits economy
+
+A viewer buys "summon tokens" (with Bits and/or Channel Points, whichever price the streamer set
+in `config.html`) and spends them on packs from the extension panel - one combined request
+however many packs are picked, since neither Bits nor Channel Points can charge a viewer-computed
+total in a single native transaction. `SpawnPack.Cost` (Twitch Integration tab, per pack) is a
+token count, not raw Bits or points.
+
+Three *different* Twitch credentials are involved - easy to mix up in the Dev Console, since two
+of them are both just called "Secret":
+
+- **Extension Secret** (Dev Console -> Extensions -> Manage -> Secret) - base64-encoded, signs
+  every JWT the extension deals with (`onAuthorized`, Bits `transactionReceipt`). -> relay env var
+  `TWITCH_EXTENSION_SECRET`. Required for both the Bits and the token-spend paths.
+- **Extension client id/secret** (same Manage page, a *different* field - for the
+  `client_credentials` OAuth grant) - lets the relay read what `config.html` saved (token prices,
+  reward name) via Helix `GET /helix/extensions/configurations`, authenticated as the extension
+  itself rather than as the broadcaster. -> `TWITCH_EXTENSION_CLIENT_ID` /
+  `TWITCH_EXTENSION_CLIENT_SECRET`. Also needs `TWITCH_BROADCASTER_LOGIN` (her channel's login
+  name, e.g. `yuna_maxwell`) to resolve her numeric broadcaster id.
+- **A separate OAuth "Application"** (Dev Console -> register a new *Application*, not another
+  Extension) - only needed for Channel Points, to create the EventSub subscription that reports
+  redemptions. -> `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` / `TWITCH_OAUTH_REDIRECT_URI` (set
+  to `https://<host>:8443/oauth/callback`). One-time setup: visit `/oauth/authorize` in a browser
+  logged in as the broadcaster, approve, done - the relay persists the resulting tokens and
+  refreshes them itself.
+
+Bits needs no broadcaster authorization at all - only the Extension Secret above, since a purchase
+is verified from a signed receipt the extension frontend already holds, not looked up separately.
+
+Setting up each currency in the Dev Console:
+- **Bits**: Monetization tab -> enable Bits -> add at least one Product (any price, 1-10,000
+  Bits) - the viewer picks a listed product, the relay works out tokens from
+  `product cost / bitsPerToken`.
+- **Channel Points**: create exactly one Custom Reward whose title matches what's typed into
+  config.html's "Token Reward Name" field (case-insensitive) - that's the only reward the relay
+  treats as a token purchase; every other reward on the channel is ignored.
+
+None of this needs a code change to add/rename packs or change prices - config.html's saved values
+and the streamer's live pack list are both read fresh (config.html on a ~60s cache, packs from the
+overlay's own snapshot), not baked into the relay's deployment.

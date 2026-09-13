@@ -27,7 +27,7 @@ namespace BGOverlay
     /// Packs are persisted into the flat key=value config.cfg as a single line, since that file
     /// has no support for nesting:
     ///
-    ///     SpawnPacks=gibberlings|1-3|gibber:3,xvart:2;ogres|4-6|ogre:1
+    ///     SpawnPacks=gibberlings|1-3|120|gibber:3,xvart:2;ogres|4-6|400|ogre:1
     ///
     /// Lowercase throughout, because Configuration.getProperty() lowercases every value it
     /// reads back; ResRefs are upper-cased again before being sent to the game.
@@ -43,6 +43,15 @@ namespace BGOverlay
 
         public int LevelFrom { get; set; }
         public int LevelTo { get; set; }
+
+        /// <summary>
+        /// What a viewer pays to summon this pack. Shown on the pack's tile, and summed across
+        /// everything they have picked. Nothing here charges anyone - the overlay has no way to
+        /// know what a viewer's balance is - so this is the price the streamer advertises and
+        /// will configure the actual Twitch reward with; 0 means free.
+        /// </summary>
+        public int Cost { get; set; }
+
         public List<SpawnEntry> Entries { get; set; } = new List<SpawnEntry>();
 
         /// <summary>
@@ -67,9 +76,11 @@ namespace BGOverlay
                 ? string.Join(", ", Entries.Select(e => e.ToString()).ToArray())
                 : "(empty)";
             // DisplayName already reads "Lv 1-3" when the pack is unnamed, so don't repeat it.
-            var label = string.IsNullOrWhiteSpace(Name)
-                ? DisplayName
-                : $"{Name} [Lv {LevelFrom}-{LevelTo}]";
+            var details = string.IsNullOrWhiteSpace(Name) ? "" : $"Lv {LevelFrom}-{LevelTo}";
+            if (Cost > 0)
+                details = details.Length > 0 ? $"{details}, {Cost} pts" : $"{Cost} pts";
+
+            var label = details.Length > 0 ? $"{DisplayName} [{details}]" : DisplayName;
             return $"{label}: {entries}";
         }
 
@@ -77,7 +88,7 @@ namespace BGOverlay
         {
             var parts = packs
                 .Where(p => p.Entries.Count > 0)
-                .Select(p => $"{SanitizeName(p.Name)}|{p.LevelFrom}-{p.LevelTo}|" +
+                .Select(p => $"{SanitizeName(p.Name)}|{p.LevelFrom}-{p.LevelTo}|{p.Cost}|" +
                              string.Join(",", p.Entries.Select(e => $"{e.ResRef.ToLowerInvariant()}:{e.Amount}").ToArray()));
             return string.Join(";", parts.ToArray());
         }
@@ -136,16 +147,23 @@ namespace BGOverlay
                 if (string.IsNullOrWhiteSpace(packText))
                     continue;
 
-                // Two shapes are accepted: "from-to|entries" and "name|from-to|entries". The
-                // first is what shipped before packs had names, and configs written by it are
-                // still out there - a rename must not cost the streamer their packs.
+                // Three shapes are accepted, told apart by field count, because each older one
+                // is still sitting in someone's config.cfg and a format change must not cost
+                // them their packs:
+                //   from-to|entries                 - before packs had names
+                //   name|from-to|entries            - before packs had a cost
+                //   name|from-to|cost|entries       - current
                 var halves = packText.Split('|');
-                if (halves.Length != 2 && halves.Length != 3)
+                if (halves.Length < 2 || halves.Length > 4)
                     continue;
 
-                var name = halves.Length == 3 ? SanitizeName(halves[0]) : "";
-                var rangeText = halves[halves.Length - 2];
+                var name = halves.Length >= 3 ? SanitizeName(halves[0]) : "";
+                var rangeText = halves.Length == 2 ? halves[0] : halves[1];
                 var entriesText = halves[halves.Length - 1];
+
+                var cost = 0;
+                if (halves.Length == 4)
+                    int.TryParse(halves[2].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out cost);
 
                 var range = rangeText.Split('-');
                 if (range.Length != 2)
@@ -156,7 +174,13 @@ namespace BGOverlay
                 if (!int.TryParse(range[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var to))
                     continue;
 
-                var pack = new SpawnPack { Name = name, LevelFrom = from, LevelTo = to };
+                var pack = new SpawnPack
+                {
+                    Name = name,
+                    LevelFrom = from,
+                    LevelTo = to,
+                    Cost = cost < 0 ? 0 : cost
+                };
 
                 foreach (var entryText in entriesText.Split(','))
                 {

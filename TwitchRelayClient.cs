@@ -122,9 +122,27 @@ namespace BGOverlay
             return cachedPacks;
         }
 
+        /// <summary>
+        /// The same "Relay Server URL" gets typed into two places that need opposite schemes for
+        /// the same host: this WebSocket client (ws/wss) and the Twitch extension's fetch() calls
+        /// (http/https) - see video_overlay.js's own normalizeToHttpScheme. Rather than expect a
+        /// streamer to remember which of the two identically-labelled fields wants which prefix,
+        /// both sides now accept either and translate. ClientWebSocket.ConnectAsync throws
+        /// "Only Websocket schemes are allowed: ws, wss" for anything else, which is exactly the
+        /// silent-looking "Error" status a wrong scheme used to produce here.
+        /// </summary>
+        private static string normalizeToWebSocketScheme(string relayUrl)
+        {
+            if (relayUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return "wss://" + relayUrl.Substring("https://".Length);
+            if (relayUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                return "ws://" + relayUrl.Substring("http://".Length);
+            return relayUrl;
+        }
+
         private async Task runAsync(string relayUrl, string streamKey, string controlKey, CancellationToken token)
         {
-            var uri = new Uri($"{relayUrl.TrimEnd('/')}/ws/ingest/{streamKey}");
+            var uri = new Uri($"{normalizeToWebSocketScheme(relayUrl).TrimEnd('/')}/ws/ingest/{streamKey}");
             while (!token.IsCancellationRequested)
             {
                 try
@@ -465,6 +483,7 @@ namespace BGOverlay
                 sb.Append("\"name\":\"").Append(jsonEscape(pack.DisplayName)).Append("\",");
                 sb.Append("\"from\":").Append(pack.LevelFrom).Append(',');
                 sb.Append("\"to\":").Append(pack.LevelTo).Append(',');
+                sb.Append("\"cost\":").Append(pack.Cost).Append(',');
                 sb.Append("\"available\":").Append(pack.Matches(level) ? "true" : "false");
                 sb.Append('}');
             }

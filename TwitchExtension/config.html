@@ -35,7 +35,8 @@
     font-size: 14px;
     cursor: pointer;
   }
-  button:hover { background: #772ce8; }
+  button:hover:enabled { background: #772ce8; }
+  button:disabled { opacity: 0.5; cursor: default; }
   #status { margin-top: 12px; font-size: 13px; color: #00c78c; min-height: 16px; }
   .hint { font-size: 12px; color: #adadb8; margin-top: 4px; }
 </style>
@@ -45,11 +46,40 @@
 
   <label for="relayUrl">Relay Server URL</label>
   <input id="relayUrl" type="text" placeholder="https://your-relay-domain:8443" autocomplete="off">
-  <div class="hint">The same URL you set as "Relay Server URL" on the Twitch Integration tab in the overlay app.</div>
+  <div class="hint">The same host and port as "Relay Server URL" on the Twitch Integration tab in the overlay app - either prefix works here (https:// or wss://), this page only ever uses it over https.</div>
 
   <label for="streamKey">Stream Key</label>
   <input id="streamKey" type="text" placeholder="paste your generated stream key" autocomplete="off">
   <div class="hint">The same key you generated on the Twitch Integration tab. Anyone with this key can read your party's live status - treat it like a password.</div>
+
+  <label for="bitsPerToken">Bits per Summon Token</label>
+  <input id="bitsPerToken" type="number" min="0" step="1" placeholder="0 = Bits disabled" autocomplete="off">
+  <div class="hint">
+    Viewers buy tokens with Bits right inside the summon panel, no Twitch rewards panel needed.
+    Register at least one Bits Product on the Monetization tab first (any price works - this is
+    just the exchange rate). Leave at 0 to turn Bits off.
+  </div>
+
+  <label for="pointsPerToken">Channel Points per Summon Token</label>
+  <input id="pointsPerToken" type="number" min="0" step="1" placeholder="0 = Channel Points disabled" autocomplete="off">
+  <div class="hint">
+    Viewers redeem a Custom Reward on Twitch's own rewards panel to buy tokens; the reward's point
+    cost divided by this number is how many tokens they get. Leave at 0 to turn Channel Points off.
+  </div>
+
+  <label for="rewardName">Token Reward Name</label>
+  <input id="rewardName" type="text" maxlength="45" placeholder="exact title of your Custom Reward" autocomplete="off">
+  <div class="hint">
+    Must exactly match the title of the one Custom Reward on your channel that sells tokens - the
+    relay tells "buy tokens" apart from every other reward you have by name. Only matters if
+    Channel Points per token above is not 0.
+  </div>
+
+  <div class="hint" style="margin-top: -4px;">
+    However a viewer buys them, tokens are spent on packs from right inside the summon panel - one
+    purchase however many packs they pick. Each pack's own summon cost (set on the Twitch
+    Integration tab) is in tokens, not Bits or points directly.
+  </div>
 
   <!-- Hidden unless ?mock=1. The control key authorizes summons in the streamer's game, so it
        must never be written into the real broadcaster configuration - Twitch serves that to
@@ -65,73 +95,9 @@
     </div>
   </div>
 
-  <button id="save">Save</button>
+  <button id="save" disabled>Loading&hellip;</button>
   <div id="status"></div>
 
-<script>
-  var saved = null;
-
-  Twitch.ext.onAuthorized(function () {
-    // onChanged fires immediately with whatever is already stored, so this also covers
-    // the initial load - no separate "read current config" call needed.
-  });
-
-  function applyContent(rawContent) {
-    if (!rawContent) return;
-    try {
-      saved = JSON.parse(rawContent);
-      document.getElementById('relayUrl').value = saved.relayUrl || '';
-      document.getElementById('streamKey').value = saved.streamKey || '';
-      document.getElementById('controlKey').value = saved.controlKey || '';
-    } catch (e) {
-      // Malformed/legacy content - leave the form blank rather than fail to load.
-    }
-  }
-
-  // Local/mock testing (mock/index.html links here with ?mock=1): the real
-  // twitch-ext.min.js loads fine even outside an actual Twitch iframe (it's just a public
-  // script), so Twitch.ext.configuration existing is NOT a reliable signal - Twitch.ext.configuration.set()
-  // would silently go nowhere outside Twitch's real postMessage bridge. Read/write
-  // localStorage directly instead, under the same key video_overlay.html's mock fallback
-  // reads from, whenever this explicit flag is set.
-  var isMock = new URLSearchParams(location.search).get('mock') === '1';
-  if (isMock) document.getElementById('mockOnly').style.display = 'block';
-  if (!isMock) {
-    Twitch.ext.configuration.onChanged(function () {
-      var cfg = Twitch.ext.configuration.broadcaster;
-      applyContent(cfg && cfg.content);
-    });
-  } else {
-    applyContent(localStorage.getItem('bg2ext_mock_config'));
-  }
-
-  document.getElementById('save').addEventListener('click', function () {
-    var relayUrl = document.getElementById('relayUrl').value.trim().replace(/\/+$/, '');
-    var streamKey = document.getElementById('streamKey').value.trim();
-    var statusEl = document.getElementById('status');
-
-    if (!relayUrl || !streamKey) {
-      statusEl.style.color = '#eb0400';
-      statusEl.textContent = 'Both fields are required.';
-      return;
-    }
-
-    // Built separately per branch rather than filtered out of one shared object: the control
-    // key going into the Twitch configuration would hand every viewer the ability to spawn
-    // creatures in the streamer's game, so there must be no code path where it can end up there.
-    if (isMock) {
-      localStorage.setItem('bg2ext_mock_config', JSON.stringify({
-        relayUrl: relayUrl,
-        streamKey: streamKey,
-        controlKey: document.getElementById('controlKey').value.trim()
-      }));
-    } else {
-      Twitch.ext.configuration.set('broadcaster', '1',
-        JSON.stringify({ relayUrl: relayUrl, streamKey: streamKey }));
-    }
-    statusEl.style.color = '#00c78c';
-    statusEl.textContent = 'Saved.';
-  });
-</script>
+<script src="config.js"></script>
 </body>
 </html>
