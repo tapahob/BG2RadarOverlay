@@ -128,6 +128,10 @@
 
                     <CheckBox x:Name="TwitchIntegrationEnabled" Content="{DynamicResource Str_TwitchEnable}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Margin="0,10,0,0"/>
 
+                    <!-- Everything below only matters once integration is on - disabled as a
+                         group whenever the checkbox above is unchecked, re-enabled the instant
+                         it's checked again (see updateTwitchControlsEnabled in the code-behind). -->
+                    <StackPanel x:Name="TwitchControlsPanel">
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Label Content="{DynamicResource Str_TwitchRelayUrl}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
                         <TextBox x:Name="TwitchRelayUrl" Width="220" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
@@ -145,7 +149,9 @@
                         <Button x:Name="GenerateStreamKey" Content="{DynamicResource Str_TwitchGenerateKey}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="GenerateStreamKey_Click" Margin="5,0,0,0"/>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <!-- Authorizes spawning creatures in-game - shown only in Debug Mode so it
+                         isn't casually visible/streamable (see updateControlKeyVisibility). -->
+                    <StackPanel x:Name="TwitchControlKeyRow" Orientation="Horizontal" Margin="0,10,0,0">
                         <Label Content="{DynamicResource Str_TwitchControlKey}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
                         <TextBox x:Name="TwitchControlKey" Width="180" IsReadOnly="True" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
                     </StackPanel>
@@ -188,6 +194,7 @@
                         <Button x:Name="TestSummon" IsEnabled="False" Content="{DynamicResource Str_TwitchSummonButton}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="TestSummon_Click" Margin="5,0,0,0"/>
                     </StackPanel>
                     <TextBlock x:Name="SummonResult" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,6,0,0"/>
+                    </StackPanel>
 
                     <Button x:Name="SaveTwitch" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,20,0,0" HorizontalAlignment="Left" Width="120"/>
                 </StackPanel>

@@ -52,7 +52,9 @@ namespace WPFFrontend
             this.UseShiftClick.Click        += updateConfig;
             this.DebugMode.Click            += updateConfig;
             this.DebugMode.Click            += (s, e) => DebugModeChanged?.Invoke();
+            this.DebugMode.Click            += (s, e) => updateControlKeyVisibility();
             this.TwitchIntegrationEnabled.Click += updateConfig;
+            this.TwitchIntegrationEnabled.Click += (s, e) => updateTwitchControlsEnabled();
             this.TwitchRelayUrl.TextChanged += updateConfig;
             this.TwitchBroadcasterLogin.TextChanged += updateConfig;
             this.MouseUp                    += OptionsControl_MouseUp;
@@ -80,6 +82,30 @@ namespace WPFFrontend
             timer.Tick += (s, e) => updateTwitchStatusLabel();
             timer.Start();
             updateTwitchStatusLabel();
+        }
+
+        /// <summary>
+        /// The Control Key authorizes spawning creatures directly in-game, bypassing any
+        /// token/Bits/Channel Points check - it's for local mock testing only (see the hint next
+        /// to it in the extension's config.html), so it stays out of sight unless Debug Mode is
+        /// on, rather than being something a streamer could show on their own broadcast by
+        /// accident while this tab is open.
+        /// </summary>
+        private void updateControlKeyVisibility()
+        {
+            this.TwitchControlKeyRow.Visibility = (bool)this.DebugMode.IsChecked
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Every other control on this tab only means anything once integration is on - greyed
+        /// out as a group the instant the checkbox above is unchecked, rather than staying live
+        /// and implying they still do something.
+        /// </summary>
+        private void updateTwitchControlsEnabled()
+        {
+            this.TwitchControlsPanel.IsEnabled = (bool)this.TwitchIntegrationEnabled.IsChecked;
         }
 
         private void updateTwitchStatusLabel()
@@ -392,6 +418,8 @@ namespace WPFFrontend
             this.TwitchBroadcasterLogin.Text    = Configuration.TwitchBroadcasterLogin;
             this.TwitchStreamKey.Text           = Configuration.TwitchStreamKey;
             this.TwitchControlKey.Text          = Configuration.TwitchControlKey;
+            updateControlKeyVisibility();
+            updateTwitchControlsEnabled();
 
             spawnPacks = SpawnPack.Deserialize(Configuration.SpawnPacks);
 
