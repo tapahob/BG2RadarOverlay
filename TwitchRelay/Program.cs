@@ -51,6 +51,7 @@ var streamKeyToControlKey = new ConcurrentDictionary<string, string>();
 var streamKeyToBroadcasterLogin = new ConcurrentDictionary<string, string>();
 
 var keyPattern = new Regex("^[a-z0-9]{8,64}$");
+var broadcasterIdPattern = new Regex("^[0-9]{1,20}$");
 var staleAfter = TimeSpan.FromSeconds(15);
 
 // Kept in step with GameSpawnBridge.MaxMessageLength on the overlay side, which cuts again at
@@ -370,6 +371,26 @@ app.MapGet("/oauth/callback", async (HttpContext context) =>
         ok ? $"Authorized as broadcaster {broadcasterId}. EventSub subscription: {status}. Channel Points redemptions are live."
            : $"Authorized, but the EventSub subscription could not be created: {status}",
         statusCode: ok ? StatusCodes.Status200OK : StatusCodes.Status502BadGateway);
+});
+
+// Lets config.html show "Channel Points authorized" vs an Authorize button, using the
+// broadcaster's numeric id Twitch's own postMessage bridge already hands it (Twitch.ext.onAuthorized's
+// auth.channelId) - no separate lookup needed on the extension side.
+app.MapGet("/api/eventsub-status/{broadcasterId}", async (string broadcasterId) =>
+{
+    if (string.IsNullOrEmpty(twitchClientId) || string.IsNullOrEmpty(twitchClientSecret) || string.IsNullOrEmpty(oauthRedirectUri))
+        return Results.Json(new { authorized = false, configured = false });
+
+    if (!broadcasterIdPattern.IsMatch(broadcasterId))
+        return Results.BadRequest();
+
+    var appAccessToken = await TwitchApi.GetAppAccessTokenAsync(httpClient, twitchClientId, twitchClientSecret);
+    if (appAccessToken is null)
+        return Results.StatusCode(StatusCodes.Status502BadGateway);
+
+    var callbackUrl = new Uri(new Uri(oauthRedirectUri), "/eventsub/callback").ToString();
+    var status = await TwitchApi.FindActiveRedemptionSubscriptionStatusAsync(httpClient, appAccessToken, twitchClientId, broadcasterId, callbackUrl);
+    return Results.Json(new { authorized = status is not null, configured = true, status });
 });
 
 // Twitch's actual delivery endpoint once the subscription above exists. Public by necessity -

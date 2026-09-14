@@ -40,6 +40,11 @@ deployed on a separate Ubuntu VPS, not on this machine.
   `TwitchRelay/deploy/twitch-relay.service` (`sudo systemctl status/restart twitch-relay`). It
   listens on `localhost:5080`; Caddy fronts it on port 8443 with a real certificate, so the public
   base URL is `https://<host>:8443` - that is what the overlay and the extension config use.
+  Twitch's EventSub, though, rejects a webhook callback on a non-standard port - `/oauth/callback`
+  and `/eventsub/callback` are additionally reachable on the standard port 443 via a path-based
+  route added to this VPS's *other*, pre-existing Caddy instance (a third-party VPN admin panel
+  that already owns 443 for this hostname) - everything else on that port still falls through to
+  that panel's own routing untouched. `TWITCH_OAUTH_REDIRECT_URI` must point at the port-443 form.
 - Per-viewer/per-restart data (OAuth tokens, the EventSub webhook secret, token balances) is
   written under `<app dir>/data/` - a plain-file store, not a database. Back it up before wiping
   the deploy directory, or viewers lose whatever token balance they'd bought.
@@ -77,13 +82,18 @@ up in the Dev Console, since two of the three are both just called "Secret":
   / `TWITCH_EXTENSION_CLIENT_SECRET`. Also relay-wide - one pair, not one per streamer.
 - **A separate OAuth "Application"** (Dev Console -> register a new *Application*, not another
   Extension) - only needed for Channel Points, to create the EventSub subscription that reports
-  redemptions. -> `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` / `TWITCH_OAUTH_REDIRECT_URI` (set
-  to `https://<host>:8443/oauth/callback`) - registered once, shared by every streamer who
-  authorizes against it. **This is the one per-streamer step**: each of them individually visits
-  `/oauth/authorize` in their own browser, logged in as themselves, and approves - the relay
-  resolves their broadcaster id from the resulting token and files everything (their OAuth tokens,
-  their EventSub subscription) under that id, independently of every other streamer who's done the
-  same thing against this relay.
+  redemptions. -> `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` / `TWITCH_OAUTH_REDIRECT_URI`.
+  Registered once, shared by every streamer who authorizes against it. Twitch requires this
+  callback on the standard HTTPS port (443) even though the relay itself is otherwise fronted on
+  8443 - see the Caddy config below. **This is the one per-streamer step**: each of them
+  individually authorizes, logged in as themselves, and the relay resolves their broadcaster id
+  from the resulting token and files everything (their OAuth tokens, their EventSub subscription)
+  under that id, independently of every other streamer who's done the same thing against this
+  relay. The easiest way to do this is the "Authorize Channel Points" button on config.html itself
+  (it shows whether a subscription already exists for the current channel, via
+  `GET /api/eventsub-status/{broadcasterId}`, and opens `/oauth/authorize` in a new tab only when
+  it doesn't) - visiting `<relay base URL>/oauth/authorize` directly works the same way, the button
+  is just a convenience wrapper around it.
 
 Bits needs no broadcaster authorization at all - only the Extension Secret above, since a purchase
 is verified from a signed receipt the extension frontend already holds, not looked up separately.

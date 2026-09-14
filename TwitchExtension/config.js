@@ -1,6 +1,10 @@
   var saved = null;
   var saveBtn = document.getElementById('save');
   var statusEl = document.getElementById('status');
+  var eventsubSection = document.getElementById('eventsubSection');
+  var eventsubStatusEl = document.getElementById('eventsubStatus');
+  var authorizeBtn = document.getElementById('authorizeBtn');
+  var channelId = null;
 
   // Twitch.ext.configuration.set() only works once the postMessage handshake with the Twitch
   // client has completed - the button used to be clickable from page load regardless, so
@@ -44,20 +48,80 @@
   var isMock = new URLSearchParams(location.search).get('mock') === '1';
   if (isMock) {
     document.getElementById('mockOnly').style.display = 'block';
+    // There's no real broadcaster id or Twitch consent flow to test out here - the mock exists to
+    // preview the token fields, not this part.
+    eventsubSection.style.display = 'none';
     applyContent(localStorage.getItem('bg2ext_mock_config'));
     updateSaveButton();
   } else {
-    Twitch.ext.onAuthorized(function () {
+    Twitch.ext.onAuthorized(function (auth) {
       isAuthorized = true;
+      channelId = auth.channelId;
       updateSaveButton();
+      checkEventSubStatus();
     });
     // onChanged fires immediately with whatever is already stored, so this also covers the
     // initial load - no separate "read current config" call needed.
     Twitch.ext.configuration.onChanged(function () {
       var cfg = Twitch.ext.configuration.broadcaster;
       applyContent(cfg && cfg.content);
+      checkEventSubStatus();
     });
+
+    // Authorizing happens in a separate tab (Twitch's own consent screen can't live in this
+    // iframe) - there's no callback into this page when it's done, so re-check whenever the
+    // broadcaster comes back to this one.
+    window.addEventListener('focus', checkEventSubStatus);
   }
+
+  function relayUrlValue() {
+    return document.getElementById('relayUrl').value.trim().replace(/\/+$/, '');
+  }
+
+  var eventsubCheckToken = 0;
+
+  function checkEventSubStatus() {
+    var relayUrl = relayUrlValue();
+    if (!relayUrl || !channelId) {
+      eventsubStatusEl.textContent = 'Enter your Relay Server URL above to check.';
+      authorizeBtn.style.display = 'none';
+      return;
+    }
+
+    var thisCheck = ++eventsubCheckToken;
+    eventsubStatusEl.textContent = 'Checking authorization status…';
+    authorizeBtn.style.display = 'none';
+
+    fetch(relayUrl + '/api/eventsub-status/' + encodeURIComponent(channelId))
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (data) {
+        if (thisCheck !== eventsubCheckToken) return; // a newer check has since started
+        if (data.configured === false) {
+          eventsubStatusEl.textContent = 'Channel Points is not set up on this relay deployment.';
+          return;
+        }
+        if (data.authorized) {
+          eventsubStatusEl.textContent = '✅ Channel Points is authorized and active.';
+          authorizeBtn.style.display = 'none';
+        } else {
+          eventsubStatusEl.textContent = '⚠️ Not authorized yet - viewers’ Channel Points redemptions won’t be picked up until you do this.';
+          authorizeBtn.style.display = '';
+        }
+      })
+      .catch(function () {
+        if (thisCheck !== eventsubCheckToken) return;
+        eventsubStatusEl.textContent = 'Could not check status - verify your Relay Server URL is correct.';
+      });
+  }
+
+  authorizeBtn.addEventListener('click', function () {
+    var relayUrl = relayUrlValue();
+    if (!relayUrl) return;
+    window.open(relayUrl + '/oauth/authorize', '_blank');
+    eventsubStatusEl.textContent = 'After approving in the new tab, come back here - this will refresh automatically.';
+  });
+
+  document.getElementById('relayUrl').addEventListener('change', checkEventSubStatus);
 
   saveBtn.addEventListener('click', function () {
     var relayUrl = document.getElementById('relayUrl').value.trim().replace(/\/+$/, '');

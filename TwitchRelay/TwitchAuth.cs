@@ -234,6 +234,40 @@ public static class TwitchApi
     }
 
     /// <summary>
+    /// Whether this broadcaster already has a live (or pending-verification) redemption
+    /// subscription pointed at our callback URL - shared by the idempotent create below and by
+    /// config.html's "is Channel Points authorized yet" status check, so a streamer can see
+    /// whether they still need to click Authorize without it ever creating a duplicate.
+    /// </summary>
+    public static async Task<string?> FindActiveRedemptionSubscriptionStatusAsync(
+        HttpClient http, string appAccessToken, string clientId, string broadcasterId, string callbackUrl)
+    {
+        using var listRequest = new HttpRequestMessage(HttpMethod.Get,
+            "https://api.twitch.tv/helix/eventsub/subscriptions?type=channel.channel_points_custom_reward_redemption.add");
+        listRequest.Headers.Add("Authorization", "Bearer " + appAccessToken);
+        listRequest.Headers.Add("Client-Id", clientId);
+
+        using var listResponse = await http.SendAsync(listRequest);
+        if (!listResponse.IsSuccessStatusCode)
+            return null;
+
+        using var listDoc = JsonDocument.Parse(await listResponse.Content.ReadAsStringAsync());
+        foreach (var sub in listDoc.RootElement.GetProperty("data").EnumerateArray())
+        {
+            var condBroadcaster = sub.GetProperty("condition").TryGetProperty("broadcaster_user_id", out var b) ? b.GetString() : null;
+            var transportCallback = sub.GetProperty("transport").TryGetProperty("callback", out var c) ? c.GetString() : null;
+            var status = sub.TryGetProperty("status", out var s) ? s.GetString() : null;
+
+            if (condBroadcaster == broadcasterId && transportCallback == callbackUrl
+                && status is "enabled" or "webhook_callback_verification_pending")
+            {
+                return status;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
     /// Idempotent: lists what's already subscribed and only creates a new one if nothing matches
     /// this broadcaster + callback URL yet, so re-running /oauth/authorize (or a relay restart
     /// that redoes setup) doesn't pile up duplicate subscriptions - Twitch would otherwise deliver
@@ -243,30 +277,9 @@ public static class TwitchApi
         HttpClient http, string accessToken, string clientId,
         string broadcasterId, string callbackUrl, string webhookSecret)
     {
-        using (var listRequest = new HttpRequestMessage(HttpMethod.Get,
-            "https://api.twitch.tv/helix/eventsub/subscriptions?type=channel.channel_points_custom_reward_redemption.add"))
-        {
-            listRequest.Headers.Add("Authorization", "Bearer " + accessToken);
-            listRequest.Headers.Add("Client-Id", clientId);
-
-            using var listResponse = await http.SendAsync(listRequest);
-            if (listResponse.IsSuccessStatusCode)
-            {
-                using var listDoc = JsonDocument.Parse(await listResponse.Content.ReadAsStringAsync());
-                foreach (var sub in listDoc.RootElement.GetProperty("data").EnumerateArray())
-                {
-                    var condBroadcaster = sub.GetProperty("condition").TryGetProperty("broadcaster_user_id", out var b) ? b.GetString() : null;
-                    var transportCallback = sub.GetProperty("transport").TryGetProperty("callback", out var c) ? c.GetString() : null;
-                    var status = sub.TryGetProperty("status", out var s) ? s.GetString() : null;
-
-                    if (condBroadcaster == broadcasterId && transportCallback == callbackUrl
-                        && status is "enabled" or "webhook_callback_verification_pending")
-                    {
-                        return (true, "already subscribed (" + status + ")");
-                    }
-                }
-            }
-        }
+        var existingStatus = await FindActiveRedemptionSubscriptionStatusAsync(http, accessToken, clientId, broadcasterId, callbackUrl);
+        if (existingStatus is not null)
+            return (true, "already subscribed (" + existingStatus + ")");
 
         var body = JsonSerializer.Serialize(new
         {

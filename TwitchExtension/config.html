@@ -81,6 +81,16 @@
     Integration tab) is in tokens, not Bits or points directly.
   </div>
 
+  <div id="eventsubSection" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #3a3a3d;">
+    <label style="margin: 0 0 4px;">Channel Points Setup</label>
+    <div id="eventsubStatus" class="hint">Enter your Relay Server URL above to check.</div>
+    <button id="authorizeBtn" type="button" style="display: none;">Authorize Channel Points</button>
+    <div class="hint">
+      One-time step, done once per channel - opens Twitch's consent screen in a new tab, logged in
+      as you. Only needed if Channel Points per token above is not 0; Bits needs no authorization.
+    </div>
+  </div>
+
   <!-- Hidden unless ?mock=1. The control key authorizes summons in the streamer's game, so it
        must never be written into the real broadcaster configuration - Twitch serves that to
        every viewer's browser. It exists here only so the local mock can stand in for the
