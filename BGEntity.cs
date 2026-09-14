@@ -1,5 +1,6 @@
 ﻿using BGOverlay.NativeStructs;
 using BGOverlay.Resources;
+using NLog.LayoutRenderers;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -71,10 +72,16 @@ namespace BGOverlay
         /// <summary>
         /// Returns a string representation of a CLASS enum value.
         /// </summary>
-        public string Class
+        public string ClassString
         {
             get
             {
+                if (this.Kit != CREReader.KIT.NONE && this.Kit != CREReader.KIT.TRUECLASS)
+                {
+                    if (RadarLocalization.TryGet($"Kit_{this.Kit}", out var localizedKit))
+                        return localizedKit;
+                    return this.Kit.ToString().Replace('_', ' ');
+                }
                 if (this.Reader == null || this.CLASS != this.Reader.Class)
                 {
                     if (RadarLocalization.TryGet($"Class_{this.CLASS}", out var localizedClass1))
@@ -402,6 +409,7 @@ namespace BGOverlay
         public string HPString { get { return $"{this.CurrentHP}/{this.DerivedStatsTemp.MaxHP}"; } }
 
         public bool CritImmune { get; private set; }
+        public KIT Kit { get; private set; }
 
         private static List<string> filter = new List<string>()
         {
@@ -501,9 +509,17 @@ namespace BGOverlay
                 this.EnemyAlly      = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
                 this.RACE           = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
                 this.CLASS          = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
+                // try to get kit
+                ushort mageSpecUpper = WinAPIBindings.ReadUInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x23C }));
+                ushort mageSpec = WinAPIBindings.ReadUInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x23E }));
+                this.Kit = (CREReader.KIT)((mageSpec << 16) | mageSpecUpper);
+                var kit5DebugStr = ((mageSpec << 16) | mageSpecUpper).ToString("X8");
+
 
                 if (this.CreResourceFilename == ".CRE")
                     return;
+
+                
                 this.cInfGamePtr = WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x228 });
                 this.updateTime();
                 this.AreaName              = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x0 }), 8);
@@ -599,10 +615,13 @@ namespace BGOverlay
                 if (copy.X < 0 || copy.Y < 0)
                     return null;
 
-                IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
-                copy.EnemyAlly = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
-                copy.RACE      = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
-                copy.CLASS     = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
+                IntPtr cGameAreaPtr  = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
+                copy.EnemyAlly       = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
+                copy.RACE            = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
+                copy.CLASS           = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
+                ushort mageSpecUpper = WinAPIBindings.ReadUInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x23C }));
+                ushort mageSpec      = WinAPIBindings.ReadUInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x23E }));
+                copy.Kit             = (CREReader.KIT)((mageSpec << 16) | mageSpecUpper);
 
                 copy.updateTime();
                 copy.MousePosX      = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 }));
