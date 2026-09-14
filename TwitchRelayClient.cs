@@ -40,6 +40,7 @@ namespace BGOverlay
         private string activeUrl;
         private string activeKey;
         private string activeControlKey;
+        private string activeBroadcasterLogin;
         private DateTime lastSendUtc = DateTime.MinValue;
         private volatile string pendingPayload;
 
@@ -51,7 +52,7 @@ namespace BGOverlay
         /// tick, instead of pushing change events in from the UI thread). No-op unless
         /// enabled/url/key actually changed since the last call.
         /// </summary>
-        public void UpdateConfig(bool enabled, string relayUrl, string streamKey, string controlKey)
+        public void UpdateConfig(bool enabled, string relayUrl, string streamKey, string controlKey, string broadcasterLogin)
         {
             lock (gate)
             {
@@ -62,17 +63,18 @@ namespace BGOverlay
                     return;
                 }
 
-                if (cts != null && activeUrl == relayUrl && activeKey == streamKey && activeControlKey == controlKey)
+                if (cts != null && activeUrl == relayUrl && activeKey == streamKey && activeControlKey == controlKey && activeBroadcasterLogin == broadcasterLogin)
                     return;
 
                 stopLocked();
                 activeUrl = relayUrl;
                 activeKey = streamKey;
                 activeControlKey = controlKey;
+                activeBroadcasterLogin = broadcasterLogin;
                 cts = new CancellationTokenSource();
                 status = TwitchRelayStatus.Connecting;
                 var token = cts.Token;
-                Task.Factory.StartNew(() => runAsync(relayUrl, streamKey, controlKey, token),
+                Task.Factory.StartNew(() => runAsync(relayUrl, streamKey, controlKey, broadcasterLogin, token),
                     token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
@@ -84,6 +86,7 @@ namespace BGOverlay
             activeUrl = null;
             activeKey = null;
             activeControlKey = null;
+            activeBroadcasterLogin = null;
         }
 
         /// <summary>
@@ -140,7 +143,7 @@ namespace BGOverlay
             return relayUrl;
         }
 
-        private async Task runAsync(string relayUrl, string streamKey, string controlKey, CancellationToken token)
+        private async Task runAsync(string relayUrl, string streamKey, string controlKey, string broadcasterLogin, CancellationToken token)
         {
             var uri = new Uri($"{normalizeToWebSocketScheme(relayUrl).TrimEnd('/')}/ws/ingest/{streamKey}");
             while (!token.IsCancellationRequested)
@@ -154,11 +157,15 @@ namespace BGOverlay
                         LastError = null;
 
                         // Handshake first: tells the relay which control key may address
-                        // commands at this connection. Sent as a message rather than in the
-                        // URL so the secret doesn't end up in the relay's request logs.
+                        // commands at this connection, and which Twitch channel this stream key
+                        // belongs to - a relay shared by several streamers has no other way to
+                        // tell them apart. Sent as a message rather than in the URL so the
+                        // control key doesn't end up in the relay's request logs.
                         if (!string.IsNullOrWhiteSpace(controlKey))
                         {
-                            var handshake = Encoding.UTF8.GetBytes($"{{\"control\":\"{jsonEscape(controlKey)}\"}}");
+                            var login = broadcasterLogin ?? "";
+                            var handshake = Encoding.UTF8.GetBytes(
+                                $"{{\"control\":\"{jsonEscape(controlKey)}\",\"broadcasterLogin\":\"{jsonEscape(login)}\"}}");
                             await socket.SendAsync(new ArraySegment<byte>(handshake), WebSocketMessageType.Text, true, token)
                                 .ConfigureAwait(false);
                         }
@@ -453,7 +460,7 @@ namespace BGOverlay
                 sb.Append('{');
                 sb.Append("\"name\":\"").Append(jsonEscape(member.Name2)).Append("\",");
                 sb.Append("\"race\":\"").Append(jsonEscape(member.Race)).Append("\",");
-                sb.Append("\"class\":\"").Append(jsonEscape(member.Class)).Append("\",");
+                sb.Append("\"class\":\"").Append(jsonEscape(member.ClassString)).Append("\",");
                 sb.Append("\"currentHp\":").Append(member.CurrentHP);
                 sb.Append('}');
             }

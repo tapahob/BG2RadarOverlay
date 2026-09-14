@@ -54,6 +54,7 @@ namespace WPFFrontend
             this.DebugMode.Click            += (s, e) => DebugModeChanged?.Invoke();
             this.TwitchIntegrationEnabled.Click += updateConfig;
             this.TwitchRelayUrl.TextChanged += updateConfig;
+            this.TwitchBroadcasterLogin.TextChanged += updateConfig;
             this.MouseUp                    += OptionsControl_MouseUp;
             this.CloseBtn.MouseUp           += Label_MouseDown;
             var app                          = System.Windows.Application.Current;
@@ -166,6 +167,10 @@ namespace WPFFrontend
             Configuration.TwitchIntegrationEnabled = (bool)this.TwitchIntegrationEnabled.IsChecked;
             Configuration.TwitchRelayUrl       = this.TwitchRelayUrl.Text;
             Configuration.TwitchStreamKey      = this.TwitchStreamKey.Text;
+            // Twitch logins are canonically lowercase and case-insensitive - normalizing here
+            // means what's persisted always matches what the relay resolves via Helix, rather
+            // than depending on Twitch's lookup happening to tolerate whatever case she typed.
+            Configuration.TwitchBroadcasterLogin = this.TwitchBroadcasterLogin.Text.Trim().ToLowerInvariant();
 
             this.Font3.Content = Configuration.BigBuffIcons
                 ? $"{Configuration.Font3}, {Configuration.FontSize3Big}"
@@ -384,6 +389,7 @@ namespace WPFFrontend
             this.DebugMode.IsChecked            = Configuration.DebugMode;
             this.TwitchIntegrationEnabled.IsChecked = Configuration.TwitchIntegrationEnabled;
             this.TwitchRelayUrl.Text            = Configuration.TwitchRelayUrl;
+            this.TwitchBroadcasterLogin.Text    = Configuration.TwitchBroadcasterLogin;
             this.TwitchStreamKey.Text           = Configuration.TwitchStreamKey;
             this.TwitchControlKey.Text          = Configuration.TwitchControlKey;
 

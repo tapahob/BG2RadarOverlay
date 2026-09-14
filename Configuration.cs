@@ -46,6 +46,14 @@ namespace BGOverlay
         public static string TwitchControlKey { get; set; }
 
         /// <summary>
+        /// Her Twitch channel login (e.g. "yuna_maxwell") - sent to the relay in the same
+        /// handshake as the control key, so a relay serving several streamers can tell whose
+        /// stream key belongs to whom. Lowercase already (Twitch logins are), so
+        /// getProperty()'s lowercasing on reload is harmless here, unlike the two keys above.
+        /// </summary>
+        public static string TwitchBroadcasterLogin { get; set; }
+
+        /// <summary>
         /// Level-banded creature packs a viewer summon draws from - see <see cref="SpawnPack"/>
         /// for the encoding. Stored as one flat string because config.cfg is key=value only.
         /// </summary>
@@ -80,6 +88,7 @@ namespace BGOverlay
             TwitchRelayUrl      = "ws://localhost:5080";
             TwitchStreamKey     = "";
             TwitchControlKey    = "";
+            TwitchBroadcasterLogin = "";
             SpawnPacks          = "";
             loadConfig();
 
@@ -131,6 +140,7 @@ namespace BGOverlay
                 $"TwitchRelayUrl={TwitchRelayUrl}",
                 $"TwitchStreamKey={TwitchStreamKey}",
                 $"TwitchControlKey={TwitchControlKey}",
+                $"TwitchBroadcasterLogin={TwitchBroadcasterLogin}",
                 $"SpawnPacks={SpawnPacks}",
             });
         }
@@ -203,6 +213,7 @@ namespace BGOverlay
                 TwitchRelayUrl      = getProperty("TwitchRelayUrl", "ws://localhost:5080");
                 TwitchStreamKey     = getProperty("TwitchStreamKey", "");
                 TwitchControlKey    = getProperty("TwitchControlKey", "");
+                TwitchBroadcasterLogin = getProperty("TwitchBroadcasterLogin", "");
                 SpawnPacks          = getProperty("SpawnPacks", "");
                 if (version != Configuration.Version)
                 {

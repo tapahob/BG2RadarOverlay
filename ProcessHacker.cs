@@ -65,7 +65,7 @@ namespace BGOverlay
                 entityPool.Remove(invalidatedIndex);
             }
 
-            TwitchRelayClient.Instance.UpdateConfig(Configuration.TwitchIntegrationEnabled, Configuration.TwitchRelayUrl, Configuration.TwitchStreamKey, Configuration.TwitchControlKey);
+            TwitchRelayClient.Instance.UpdateConfig(Configuration.TwitchIntegrationEnabled, Configuration.TwitchRelayUrl, Configuration.TwitchStreamKey, Configuration.TwitchControlKey, Configuration.TwitchBroadcasterLogin);
 
             entityListTemp.Clear();
             allEntities.Clear();

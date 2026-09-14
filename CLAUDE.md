@@ -52,36 +52,52 @@ however many packs are picked, since neither Bits nor Channel Points can charge 
 total in a single native transaction. `SpawnPack.Cost` (Twitch Integration tab, per pack) is a
 token count, not raw Bits or points.
 
-Three *different* Twitch credentials are involved - easy to mix up in the Dev Console, since two
-of them are both just called "Secret":
+**This relay is multi-tenant: one deployment serves however many streamers run the Radar app
+against it, not just one.** Nothing about a specific broadcaster is baked into the relay's own
+config - a stream key alone never identifies who it belongs to (there's no relation between the
+two), so each Radar app declares its own Twitch channel login on the **Twitch Integration tab**
+("Twitch Channel" field, `Configuration.TwitchBroadcasterLogin`) and sends it to the relay in the
+same WebSocket handshake that already carries the control key. The relay resolves that login to a
+numeric broadcaster id via Helix and keys everything per-streamer from there: token balances
+(`<broadcasterId>:<viewerId>`), cached config.html prices, and OAuth tokens for the Channel Points
+path are all dictionaries, not singletons.
+
+Three *different* Twitch credentials are involved, and only one of the three needs a value **per
+streamer** - the other two are relay-wide, shared by everyone using this deployment. Easy to mix
+up in the Dev Console, since two of the three are both just called "Secret":
 
 - **Extension Secret** (Dev Console -> Extensions -> Manage -> Secret) - base64-encoded, signs
   every JWT the extension deals with (`onAuthorized`, Bits `transactionReceipt`). -> relay env var
-  `TWITCH_EXTENSION_SECRET`. Required for both the Bits and the token-spend paths.
+  `TWITCH_EXTENSION_SECRET`. One value, shared by every streamer on this relay (it belongs to the
+  Extension itself, not to any one channel). Required for both the Bits and the token-spend paths.
 - **Extension client id/secret** (same Manage page, a *different* field - for the
-  `client_credentials` OAuth grant) - lets the relay read what `config.html` saved (token prices,
-  reward name) via Helix `GET /helix/extensions/configurations`, authenticated as the extension
-  itself rather than as the broadcaster. -> `TWITCH_EXTENSION_CLIENT_ID` /
-  `TWITCH_EXTENSION_CLIENT_SECRET`. Also needs `TWITCH_BROADCASTER_LOGIN` (her channel's login
-  name, e.g. `yuna_maxwell`) to resolve her numeric broadcaster id.
+  `client_credentials` OAuth grant) - lets the relay read what each streamer's `config.html` saved
+  (token prices, reward name) via Helix `GET /helix/extensions/configurations`, authenticated as
+  the extension itself rather than as any particular broadcaster. -> `TWITCH_EXTENSION_CLIENT_ID`
+  / `TWITCH_EXTENSION_CLIENT_SECRET`. Also relay-wide - one pair, not one per streamer.
 - **A separate OAuth "Application"** (Dev Console -> register a new *Application*, not another
   Extension) - only needed for Channel Points, to create the EventSub subscription that reports
   redemptions. -> `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` / `TWITCH_OAUTH_REDIRECT_URI` (set
-  to `https://<host>:8443/oauth/callback`). One-time setup: visit `/oauth/authorize` in a browser
-  logged in as the broadcaster, approve, done - the relay persists the resulting tokens and
-  refreshes them itself.
+  to `https://<host>:8443/oauth/callback`) - registered once, shared by every streamer who
+  authorizes against it. **This is the one per-streamer step**: each of them individually visits
+  `/oauth/authorize` in their own browser, logged in as themselves, and approves - the relay
+  resolves their broadcaster id from the resulting token and files everything (their OAuth tokens,
+  their EventSub subscription) under that id, independently of every other streamer who's done the
+  same thing against this relay.
 
 Bits needs no broadcaster authorization at all - only the Extension Secret above, since a purchase
 is verified from a signed receipt the extension frontend already holds, not looked up separately.
 
-Setting up each currency in the Dev Console:
+Setting up each currency in the Dev Console (per streamer, on their own channel):
 - **Bits**: Monetization tab -> enable Bits -> add at least one Product (any price, 1-10,000
   Bits) - the viewer picks a listed product, the relay works out tokens from
   `product cost / bitsPerToken`.
 - **Channel Points**: create exactly one Custom Reward whose title matches what's typed into
   config.html's "Token Reward Name" field (case-insensitive) - that's the only reward the relay
-  treats as a token purchase; every other reward on the channel is ignored.
+  treats as a token purchase; every other reward on the channel is ignored. Then do the
+  `/oauth/authorize` step above, once, as that channel's broadcaster.
 
-None of this needs a code change to add/rename packs or change prices - config.html's saved values
-and the streamer's live pack list are both read fresh (config.html on a ~60s cache, packs from the
-overlay's own snapshot), not baked into the relay's deployment.
+None of this needs a code change to add/rename packs, change prices, or onboard another streamer -
+config.html's saved values and each streamer's live pack list are both read fresh (config.html on
+a ~60s cache per broadcaster, packs from that streamer's own overlay snapshot), not baked into the
+relay's deployment.
