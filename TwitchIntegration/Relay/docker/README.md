@@ -125,6 +125,9 @@ live elsewhere if you have a reason, but there's rarely one.
 
 ## Troubleshooting
 
+**`docker: unknown command: docker compose`.** Ubuntu's `docker.io` package doesn't include the
+compose plugin. `sudo apt install docker-compose-v2`.
+
 **`docker compose up` exits complaining about a variable.** A required entry in `.env` is empty.
 The message names it.
 
