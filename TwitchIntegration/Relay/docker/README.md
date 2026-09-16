@@ -107,12 +107,11 @@ turn purchases away.
 
 ## Using your own reverse proxy
 
-If the host already runs nginx, Traefik, or another Caddy, delete the `caddy` service from
-`docker-compose.yml` and publish the relay directly:
+If the host already runs nginx, Traefik, or another Caddy, use the second compose file instead -
+it brings up the relay alone, on a loopback port, and no Caddy:
 
-```yaml
-    ports:
-      - "127.0.0.1:5080:8080"
+```sh
+docker compose -f docker-compose.existing-proxy.yml up -d
 ```
 
 Then proxy your domain to `127.0.0.1:5080`, making sure to:
@@ -122,6 +121,24 @@ Then proxy your domain to `127.0.0.1:5080`, making sure to:
 
 At minimum, `/oauth/callback` and `/eventsub/callback` must be reachable on port 443. The rest can
 live elsewhere if you have a reason, but there's rarely one.
+
+### Moving an existing host install into Docker
+
+If you already run the relay on the host and your proxy points at `127.0.0.1:5080`, the container
+can take over that exact port and **your proxy configuration doesn't change at all**.
+
+Point `RELAY_DATA_PATH` at the data you already have, and set `RELAY_UID`/`RELAY_GID` to whoever
+owns it (`stat -c %u:%g /var/lib/twitch-relay`) so nothing on disk needs chowning — and so falling
+back to the host install stays a matter of starting the service again. Then stop the old service
+before starting the container, since both want the same port:
+
+```sh
+sudo systemctl disable --now twitch-relay
+docker compose -f docker-compose.existing-proxy.yml up -d
+```
+
+Keep the old unit file around until you're satisfied; rolling back is `docker compose down` and
+`systemctl enable --now twitch-relay`.
 
 ## Troubleshooting
 

@@ -1,0 +1,41 @@
+# The relay on its own, for a host that already terminates TLS - another site on 443, a panel you
+# don't control, anything that means the turnkey docker-compose.yml can't have 80 and 443.
+#
+# It binds a loopback port and nothing else, so an existing reverse proxy can point at it exactly
+# the way it would point at a relay installed on the host. If it is already proxying to
+# 127.0.0.1:5080, migrating to this needs no change to the proxy's configuration at all.
+#
+#   cp .env.example .env    # fill it in
+#   docker compose -f docker-compose.existing-proxy.yml up -d
+#
+# Your proxy still has to serve /oauth/callback and /eventsub/callback on port 443 - Twitch refuses
+# to deliver EventSub notifications anywhere else - and forward WebSocket upgrades for /ws/ingest.
+
+services:
+  relay:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: bg2-radar-twitch-relay:latest
+    restart: unless-stopped
+    environment:
+      TWITCH_EXTENSION_SECRET: ${TWITCH_EXTENSION_SECRET:?set TWITCH_EXTENSION_SECRET in .env}
+      TWITCH_EXTENSION_CLIENT_ID: ${TWITCH_EXTENSION_CLIENT_ID:?set TWITCH_EXTENSION_CLIENT_ID in .env}
+      TWITCH_EXTENSION_CLIENT_SECRET: ${TWITCH_EXTENSION_CLIENT_SECRET:?set TWITCH_EXTENSION_CLIENT_SECRET in .env}
+      TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}
+      TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:-}
+      TWITCH_OAUTH_REDIRECT_URI: https://${RELAY_DOMAIN:?set RELAY_DOMAIN in .env}/oauth/callback
+    ports:
+      # Loopback only - the proxy in front is what faces the internet. Binding 0.0.0.0 here would
+      # publish the relay unencrypted on a public port, and Docker's own iptables rules would
+      # happily do it whatever the host firewall says.
+      - "${RELAY_BIND:-127.0.0.1:5080}:8080"
+    volumes:
+      # A bind mount rather than a named volume, so the data stays somewhere the host can see,
+      # back up, and hand back to a non-container relay if you ever need to.
+      - ${RELAY_DATA_PATH:-/var/lib/twitch-relay}:/data
+    # A bind mount keeps the host's ownership, so the container has to run as whoever owns that
+    # directory - the image's own uid means nothing here. Migrating from a host install, point
+    # this at the account that already owns the data (`stat -c %u:%g <dir>`) and nothing on disk
+    # has to be touched or chowned.
+    user: "${RELAY_UID:-1654}:${RELAY_GID:-1654}"
