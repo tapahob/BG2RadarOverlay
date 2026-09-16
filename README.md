@@ -1,6 +1,13 @@
 # BG2RadarOverlay
 An overlay program for Baldurs Gate 1-2 EE and Icewind Dale:EE showing nearest enemies, their resistances, buffs and its durations in realtime.
 
+## Twitch integration
+
+Viewers can spend Bits or Channel Points to summon creatures into your game. It needs a small relay
+server between the overlay and viewers' browsers — you can use someone else's, or run your own:
+
+**[Self-hosting guide →](https://tapahob.github.io/BG2RadarOverlay/)**
+
 ## Demos
 
 [![IMAGE_ALT_TEXT](http://img.youtube.com/vi/dqm3qja_ARE/0.jpg)](https://youtu.be/dqm3qja_ARE "Radar Overlay 2.5 Major Update")

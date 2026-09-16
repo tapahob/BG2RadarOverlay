@@ -1,5 +1,8 @@
 # Hosting your own relay
 
+> There is a friendlier, step-by-step version of this with screenshots-worth of detail at
+> **<https://tapahob.github.io/BG2RadarOverlay/>**. This file is the terse reference.
+
 The BG Radar Overlay Twitch integration needs a small server between the overlay running on your
 PC and your viewers' browsers. This runs that server in Docker.
 

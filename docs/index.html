@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self-hosting the BG Radar Overlay relay</title>
+<meta name="description" content="Step-by-step guide to running your own Twitch relay server for the BG Radar Overlay, including registering the Twitch Extension and OAuth Application and filling in every environment variable.">
+<style>
+  :root {
+    --bg: #fbfaf9;
+    --surface: #ffffff;
+    --surface-2: #f4f2ef;
+    --text: #1d1b19;
+    --text-dim: #5d574f;
+    --border: #e2ddd6;
+    --accent: #7a4fd4;
+    --accent-dim: #ede6fb;
+    --code-bg: #2a2724;
+    --code-text: #eee8e0;
+    --warn-bg: #fdf3e3;
+    --warn-border: #d9a441;
+    --danger-bg: #fdeceb;
+    --danger-border: #cf5a4e;
+    --ok-bg: #eaf5ec;
+    --ok-border: #4f9a63;
+    --maxw: 820px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #171513;
+      --surface: #1f1d1a;
+      --surface-2: #26231f;
+      --text: #ece7e0;
+      --text-dim: #a49c91;
+      --border: #332f2a;
+      --accent: #b394f0;
+      --accent-dim: #2b2340;
+      --code-bg: #0f0e0d;
+      --code-text: #ece7e0;
+      --warn-bg: #2e2617;
+      --warn-border: #a5802f;
+      --danger-bg: #331c1a;
+      --danger-border: #b04a3f;
+      --ok-bg: #1a2a1e;
+      --ok-border: #43794f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #171513;
+    --surface: #1f1d1a;
+    --surface-2: #26231f;
+    --text: #ece7e0;
+    --text-dim: #a49c91;
+    --border: #332f2a;
+    --accent: #b394f0;
+    --accent-dim: #2b2340;
+    --code-bg: #0f0e0d;
+    --code-text: #ece7e0;
+    --warn-bg: #2e2617;
+    --warn-border: #a5802f;
+    --danger-bg: #331c1a;
+    --danger-border: #b04a3f;
+    --ok-bg: #1a2a1e;
+    --ok-border: #43794f;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 1.5rem; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  code, pre, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+
+  .wrap { display: flex; gap: 3rem; max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 0; }
+  main { flex: 1 1 auto; min-width: 0; max-width: var(--maxw); padding-block: 3rem 5rem; }
+
+  /* ---- Table of contents ---- */
+  nav.toc {
+    flex: 0 0 230px;
+    align-self: flex-start;
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding-block: 3rem 2rem;
+    font-size: 13.5px;
+  }
+  nav.toc h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--text-dim); margin: 0 0 .9rem; font-weight: 600;
+  }
+  nav.toc ol { list-style: none; margin: 0 0 1.4rem; padding: 0; }
+  nav.toc li { margin-bottom: .1rem; }
+  nav.toc a {
+    display: block; padding: .3rem .6rem; border-radius: 5px;
+    color: var(--text-dim); text-decoration: none; border-left: 2px solid transparent;
+  }
+  nav.toc a:hover { color: var(--text); background: var(--surface-2); }
+  nav.toc a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-dim); }
+  @media (max-width: 900px) { nav.toc { display: none; } }
+
+  /* ---- Header ---- */
+  header.page { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2.5rem; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 .5rem; }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.15; margin: 0 0 .8rem; letter-spacing: -.02em; }
+  .lede { font-size: 1.1rem; color: var(--text-dim); margin: 0; }
+
+  h2 { font-size: 1.5rem; margin: 3.5rem 0 .4rem; letter-spacing: -.01em; scroll-margin-top: 1.5rem; }
+  h2 .part { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: .35rem; }
+  h3 { font-size: 1.12rem; margin: 2.2rem 0 .4rem; scroll-margin-top: 1.5rem; }
+  p { margin: .9rem 0; }
+  a { color: var(--accent); }
+
+  /* ---- Steps ---- */
+  .step { position: relative; padding-left: 3rem; margin-top: 2.6rem; scroll-margin-top: 1.5rem; }
+  .step > .num {
+    position: absolute; left: 0; top: .1rem;
+    width: 2rem; height: 2rem; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-size: .88rem; font-weight: 700;
+  }
+  .step > h3 { margin-top: 0; }
+  @media (max-width: 560px) {
+    .step { padding-left: 0; }
+    .step > .num { position: static; margin-bottom: .6rem; }
+  }
+
+  /* ---- Code ---- */
+  .code { position: relative; margin: 1.1rem 0; }
+  pre {
+    background: var(--code-bg); color: var(--code-text);
+    padding: 1rem 1.1rem; border-radius: 8px; overflow-x: auto;
+    font-size: 13.5px; line-height: 1.6; margin: 0;
+  }
+  pre .c { color: #8c857b; }
+  pre .k { color: #c5a3ff; }
+  .copy {
+    position: absolute; top: .5rem; right: .5rem;
+    background: rgba(255,255,255,.1); color: #d8d2c9;
+    border: 1px solid rgba(255,255,255,.16); border-radius: 5px;
+    font-size: 11px; padding: .25rem .5rem; cursor: pointer;
+    font-family: inherit;
+  }
+  .copy:hover { background: rgba(255,255,255,.2); color: #fff; }
+  .copy.done { color: #8fe0a4; border-color: #8fe0a4; }
+  :not(pre) > code {
+    background: var(--surface-2); border: 1px solid var(--border);
+    padding: .1em .38em; border-radius: 4px; font-size: .88em;
+  }
+
+  /* ---- Callouts ---- */
+  .note, .warn, .danger, .ok {
+    border-left: 3px solid; border-radius: 0 7px 7px 0;
+    padding: .9rem 1.1rem; margin: 1.3rem 0; font-size: .95rem;
+  }
+  .note   { background: var(--surface-2); border-color: var(--border); }
+  .warn   { background: var(--warn-bg);   border-color: var(--warn-border); }
+  .danger { background: var(--danger-bg); border-color: var(--danger-border); }
+  .ok     { background: var(--ok-bg);     border-color: var(--ok-border); }
+  .note > :first-child, .warn > :first-child, .danger > :first-child, .ok > :first-child { margin-top: 0; }
+  .note > :last-child, .warn > :last-child, .danger > :last-child, .ok > :last-child { margin-bottom: 0; }
+  .label { font-weight: 700; }
+
+  /* ---- Tables ---- */
+  .tablewrap { overflow-x: auto; margin: 1.3rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 540px; }
+  th, td { text-align: left; padding: .65rem .8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-dim); font-weight: 600; }
+  tbody tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+
+  ul, ol { padding-left: 1.3rem; }
+  li { margin: .35rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+
+  .field { display: inline-block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: .05em .4em; font-size: .9em; }
+
+  footer.page { border-top: 1px solid var(--border); margin-top: 4rem; padding-top: 1.5rem; color: var(--text-dim); font-size: .9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#before">Before you start</a></li>
+    <li><a href="#need">What you need</a></li>
+  </ol>
+  <h2>Part 1 · Twitch</h2>
+  <ol>
+    <li><a href="#s1">1. Create the extension</a></li>
+    <li><a href="#s2">2. Upload the files</a></li>
+    <li><a href="#s3">3. Allowlist your domain</a></li>
+    <li><a href="#s4">4. Turn on Bits</a></li>
+    <li><a href="#s5">5. Extension secrets</a></li>
+    <li><a href="#s6">6. OAuth Application</a></li>
+  </ol>
+  <h2>Part 2 · Server</h2>
+  <ol>
+    <li><a href="#s7">7. Docker</a></li>
+    <li><a href="#s8">8. Get the code</a></li>
+    <li><a href="#s9">9. Fill in .env</a></li>
+    <li><a href="#s10">10. Start it</a></li>
+  </ol>
+  <h2>Part 3 · Connect</h2>
+  <ol>
+    <li><a href="#s11">11. The overlay app</a></li>
+    <li><a href="#s12">12. The config page</a></li>
+    <li><a href="#s13">13. Channel Points</a></li>
+  </ol>
+  <h2>Reference</h2>
+  <ol>
+    <li><a href="#envref">Every variable</a></li>
+    <li><a href="#backups">Backups &amp; updates</a></li>
+    <li><a href="#proxy">Existing web server</a></li>
+    <li><a href="#trouble">Troubleshooting</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="page">
+  <p class="eyebrow">BG Radar Overlay</p>
+  <h1>Self-hosting the relay</h1>
+  <p class="lede">Run your own relay server so viewers can summon creatures into your game with Bits
+  or Channel Points — end to end, from an empty Twitch Developer Console to a working panel.</p>
+</header>
+
+<h2 id="before">Before you start</h2>
+
+<p>The Twitch integration needs a small server sitting between the overlay running on your PC and
+your viewers' browsers. Your PC never accepts connections from viewers; the relay does, and it
+passes summons back down.</p>
+
+<div class="note">
+<p><span class="label">You may not need this.</span> If somebody has already given you a relay URL
+and an extension to install, put that URL into the overlay and the extension's config page and
+you're done. Host your own if you'd rather not depend on someone else's server, or if you want to
+run one for several streamers.</p>
+</div>
+
+<p><span class="label">One relay serves any number of streamers.</span> Nothing about a particular
+channel is baked into it. Each overlay tells the relay which Twitch channel it belongs to when it
+connects, and balances, prices and tokens are tracked per channel from there.</p>
+
+<h3>Hosting the relay means hosting the extension too</h3>
+
+<p>This is the part that surprises people, so it's worth understanding before you spend time on
+anything else.</p>
+
+<p>The extension secret signs every token that extension deals with, on every channel it runs on.
+Whoever holds it can mint a token for any of those channels. So nobody can hand you theirs, and
+you can't point your own relay at somebody else's published extension — the signatures wouldn't
+match.</p>
+
+<p>Which means self-hosting is really two things: <strong>your own Twitch Extension</strong> (Part
+1) and <strong>your own relay server</strong> (Part 2). The good news is you do not need Twitch to
+review anything. An extension in <em>Hosted Test</em> can be installed on your own channel, and on
+the channels of anyone you add as a tester. Review is only needed to list it publicly.</p>
+
+<h2 id="need">What you need</h2>
+
+<ul>
+  <li>A server with a <strong>public IP</strong> that can hold ports <strong>80 and 443</strong> —
+      any small VPS is plenty.</li>
+  <li>A <strong>domain name pointing at it</strong>. Not optional: Twitch only talks to an
+      <code>https://</code> relay and won't deliver events to a self-signed certificate.</li>
+  <li>A Twitch account, and the <a href="https://dev.twitch.tv/console">Developer Console</a>.</li>
+</ul>
+
+<div class="warn">
+<p><span class="label">Port 443 is not negotiable.</span> Twitch refuses to deliver Channel Points
+events to a callback on any other port. If something else on the server already owns 443, you can
+still do this — see <a href="#proxy">Already running a web server</a>.</p>
+</div>
+
+<p>Throughout this guide, replace <code class="field">relay.example.com</code> with your own
+domain.</p>
+
+<hr>
+
+<h2 id="s1"><span class="part">Part 1 · Twitch</span>Create the extension</h2>
+
+<div class="step">
+<span class="num">1</span>
+<h3>Create it in the Developer Console</h3>
+<p>Go to <a href="https://dev.twitch.tv/console/extensions">Developer Console → Extensions</a> and
+click <span class="field">Create Extension</span>. Give it a name — this is what viewers see, so
+something like "Summon Creatures" works.</p>
+<p>When asked which types it supports, tick <span class="field">Video - Fullscreen</span> and/or
+<span class="field">Video - Overlay</span>. The panel draws itself over the video.</p>
+</div>
+
+<div class="step" id="s2">
+<span class="num">2</span>
+<h3>Upload the files and set the paths</h3>
+<p>On the new version's <span class="field">Asset Hosting</span> section, choose to upload your own
+files and upload <code>Extension.zip</code> from
+<code>TwitchIntegration/Extension/</code> in the repository.</p>
+<p>Then set the paths Twitch asks for:</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Video Overlay Path</td><td><code>video_overlay.html</code></td></tr>
+    <tr><td>Config Path</td><td><code>config.html</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p>You'll also be asked for icons and a screenshot; the repository has some under
+<code>TwitchIntegration/Extension/icons/</code> you can use or replace.</p>
+</div>
+
+<div class="step" id="s3">
+<span class="num">3</span>
+<h3>Allowlist your relay domain</h3>
+<p>In the extension's <span class="field">Capabilities</span> settings, find the allowlist for URL
+fetching domains and add your relay's domain:</p>
+<div class="code">
+<pre>relay.example.com</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<div class="danger">
+<p><span class="label">Do not skip this, and check it first if anything breaks.</span> Twitch runs
+extensions under a Content Security Policy. If your domain isn't on this list, every request the
+panel makes to your relay is blocked <em>before it leaves the browser</em> — with no error anyone
+will see. The panel simply sits there looking as though the stream isn't live. It is the single
+most common reason a correctly-built relay appears dead.</p>
+</div>
+</div>
+
+<div class="step" id="s4">
+<span class="num">4</span>
+<h3>Turn on Bits <span style="font-weight:400;color:var(--text-dim)">(optional)</span></h3>
+<p>If you want viewers to buy summon tokens with Bits, open the
+<span class="field">Monetization</span> settings, enable Bits, and add at least one
+<strong>Bits Product</strong>.</p>
+<p>The price doesn't matter much — viewers pick a listed product, and the relay works out how many
+tokens that is from the exchange rate you'll set later. One product at 100 Bits is a fine start.</p>
+<p>Skip this if you only want Channel Points.</p>
+</div>
+
+<div class="step" id="s5">
+<span class="num">5</span>
+<h3>Collect the extension's secrets</h3>
+<p>Still in the extension's <span class="field">Manage</span> area, you need three values. Two of
+them are both called some kind of "secret", which is the usual place to go wrong:</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Where</th><th>Goes into</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>The <strong>Secret</strong> — a long base64 string, usually behind a button that
+          generates one</td>
+      <td><code>TWITCH_EXTENSION_SECRET</code></td>
+    </tr>
+    <tr>
+      <td>The extension's <strong>Client ID</strong></td>
+      <td><code>TWITCH_EXTENSION_CLIENT_ID</code></td>
+    </tr>
+    <tr>
+      <td>The extension's <strong>Client Secret</strong> — a different field from the Secret above,
+          on the same page</td>
+      <td><code>TWITCH_EXTENSION_CLIENT_SECRET</code></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Keep them somewhere for a minute; you'll paste all of them into one file in step 9.</p>
+<div class="note">
+<p>The first one signs every token the extension deals with. The other two let your relay read the
+prices you save on the config page. Different jobs, same page.</p>
+</div>
+</div>
+
+<h2 id="s6"><span class="part">Part 1 · Twitch</span>Register the OAuth Application</h2>
+
+<p>This step is only needed for <strong>Channel Points</strong>. Skip it if you only want Bits, and
+leave the two variables blank in step 9.</p>
+
+<p>It is a <em>separate registration</em> from the extension — a different thing in the Developer
+Console, with its own client ID and secret. The extension's own credentials can't create the
+event subscription that tells your relay when someone redeems a reward.</p>
+
+<div class="step">
+<span class="num">6</span>
+<h3>Create an Application and point it at your relay</h3>
+<p>Go to <a href="https://dev.twitch.tv/console/apps">Developer Console → Applications</a> and click
+<span class="field">Register Your Application</span>.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Name</td><td>Anything — <code>My Radar Relay</code></td></tr>
+    <tr><td><strong>OAuth Redirect URLs</strong></td><td><code>https://relay.example.com/oauth/callback</code></td></tr>
+    <tr><td>Category</td><td>Application Integration</td></tr>
+    <tr><td>Client Type</td><td>Confidential</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Save, then copy the <strong>Client ID</strong>, and use <span class="field">New Secret</span> to
+generate a <strong>Client Secret</strong>. These become
+<code>TWITCH_CLIENT_ID</code> and <code>TWITCH_CLIENT_SECRET</code>.</p>
+
+<div class="warn">
+<p><span class="label">The redirect URL must match exactly.</span> Character for character:
+<code>https://</code>, your domain, <code>/oauth/callback</code>, no trailing slash and no port
+number. Your relay builds the same URL from the domain you give it, and Twitch rejects the whole
+exchange if the two differ by so much as a slash.</p>
+</div>
+
+<div class="note">
+<p><span class="label">Register your own — don't ask to be added to someone else's.</span> An
+Application can hold several redirect URLs, so in principle somebody could add yours to theirs. It
+would also mean sharing their client secret with you, which hands you the ability to complete
+OAuth flows as them. Registering your own takes a minute and costs nothing.</p>
+</div>
+</div>
+
+<hr>
+
+<h2 id="s7"><span class="part">Part 2 · Server</span>Set up the server</h2>
+
+<div class="step">
+<span class="num">7</span>
+<h3>Install Docker</h3>
+<p>On a fresh Ubuntu or Debian server:</p>
+<div class="code">
+<pre><span class="c"># Docker itself, plus the compose plugin - Ubuntu's docker.io</span>
+<span class="c"># package does not include compose, which trips people up later.</span>
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<p>Check both are there:</p>
+<div class="code">
+<pre>docker --version &amp;&amp; docker compose version</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<p>Also make sure your domain's DNS <strong>A record</strong> points at this server's IP before
+going further — the certificate can't be issued until it does.</p>
+</div>
+
+<div class="step" id="s8">
+<span class="num">8</span>
+<h3>Get the code</h3>
+<div class="code">
+<pre>sudo git clone https://github.com/tapahob/BG2RadarOverlay.git /opt/bg2radar-relay
+cd /opt/bg2radar-relay/TwitchIntegration/Relay/docker</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<p>Everything from here happens in that <code>docker</code> folder.</p>
+</div>
+
+<div class="step" id="s9">
+<span class="num">9</span>
+<h3>Fill in the environment file</h3>
+<p>Copy the template and open it:</p>
+<div class="code">
+<pre>sudo cp .env.example .env
+sudo chmod 600 .env
+sudo nano .env</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<p>Fill in the values you collected in steps 5 and 6:</p>
+<div class="code">
+<pre><span class="c"># Your domain, without https:// and without a port.</span>
+<span class="k">RELAY_DOMAIN</span>=relay.example.com
+
+<span class="c"># From the extension (step 5).</span>
+<span class="k">TWITCH_EXTENSION_SECRET</span>=the-long-base64-secret
+<span class="k">TWITCH_EXTENSION_CLIENT_ID</span>=your-extension-client-id
+<span class="k">TWITCH_EXTENSION_CLIENT_SECRET</span>=your-extension-client-secret
+
+<span class="c"># From the Application (step 6). Leave both empty for Bits-only.</span>
+<span class="k">TWITCH_CLIENT_ID</span>=your-application-client-id
+<span class="k">TWITCH_CLIENT_SECRET</span>=your-application-client-secret</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<div class="note">
+<p>You don't set the redirect URL here. The relay builds
+<code>https://<em>RELAY_DOMAIN</em>/oauth/callback</code> from the domain, which is exactly what you
+registered in step 6 — one place to get it wrong instead of two.</p>
+</div>
+<div class="danger">
+<p><span class="label">Three of these are secrets.</span> Keep <code>.env</code> at mode
+<code>600</code> and never commit it. The repository ignores it by default.</p>
+</div>
+</div>
+
+<div class="step" id="s10">
+<span class="num">10</span>
+<h3>Start it</h3>
+<div class="code">
+<pre>sudo docker compose up -d</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<p>This builds the relay and starts it behind Caddy, which gets a real certificate for your domain
+on first run. Give it a few seconds, then check:</p>
+<div class="code">
+<pre>curl https://relay.example.com/health</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<div class="ok">
+<p><span class="label">It should print <code>OK</code>.</span> If it does, the relay is live and
+reachable from the internet, with a valid certificate. <code>sudo docker compose ps</code> should
+also show the relay as <em>healthy</em>.</p>
+</div>
+</div>
+
+<hr>
+
+<h2 id="s11"><span class="part">Part 3 · Connect</span>Point everything at it</h2>
+
+<div class="step">
+<span class="num">11</span>
+<h3>The overlay app</h3>
+<p>In BG Radar Overlay, open <span class="field">Options → Twitch Integration</span> and set:</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Twitch Integration</td><td>Enabled</td></tr>
+    <tr><td>Relay Server URL</td><td><code>https://relay.example.com</code></td></tr>
+    <tr><td>Twitch Channel</td><td>your channel login, e.g. <code>yourname</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p>Then press <span class="field">Generate</span>. It creates a stream key, saves it, and connects
+— the status should go to <em>Connected</em>, and the button becomes
+<span class="field">Connect</span> for next time.</p>
+<p>Copy that stream key; you need it in the next step.</p>
+</div>
+
+<div class="step" id="s12">
+<span class="num">12</span>
+<h3>The extension's config page</h3>
+<p>Install your extension on your own channel, then open its configuration page from the Twitch
+creator dashboard and fill in:</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Field</th><th>What to put</th></tr></thead>
+  <tbody>
+    <tr><td>Relay Server URL</td><td><code>https://relay.example.com</code> — the same as in the app</td></tr>
+    <tr><td>Stream Key</td><td>the key from step 11</td></tr>
+    <tr><td>Bits per Summon Token</td><td>e.g. <code>100</code>. <code>0</code> turns Bits off</td></tr>
+    <tr><td>Channel Points per Summon Token</td><td>e.g. <code>500</code>. <code>0</code> turns Channel Points off</td></tr>
+    <tr><td>Token Reward Name</td><td>the exact title of the reward you'll create in step 13</td></tr>
+    <tr><td>Max Tokens per Viewer</td><td>optional ceiling; <code>0</code> means no limit</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Save. The panel on your stream should start showing your party within a few seconds.</p>
+</div>
+
+<div class="step" id="s13">
+<span class="num">13</span>
+<h3>Channel Points <span style="font-weight:400;color:var(--text-dim)">(optional)</span></h3>
+<p>Two things, in this order.</p>
+<p><strong>Create the reward.</strong> In your Twitch creator dashboard, add a Custom Reward whose
+title matches the <em>Token Reward Name</em> you typed on the config page, exactly (capitalisation
+doesn't matter). That is the only reward your relay treats as buying tokens; every other reward on
+your channel is ignored.</p>
+<div class="warn">
+<p><span class="label">Turn on "Skip Reward Requests Queue"</span> for that reward. Tokens are
+credited the moment a redemption arrives. If the reward sits in your queue and you refund it later,
+the relay does take the tokens back — but only if you completed the authorization below. Skipping
+the queue means the points are final at redemption time and the two can never disagree.</p>
+</div>
+<p><strong>Authorize.</strong> Back on the config page, press
+<span class="field">Authorize Channel Points</span> and approve in the tab that opens. This is the
+one step each streamer does individually, as themselves.</p>
+<p>The config page should then report Channel Points as authorized and active.</p>
+</div>
+
+<hr>
+
+<h2 id="envref">Every variable, and where it comes from</h2>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Variable</th><th>Where to find it</th><th>Needed for</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>RELAY_DOMAIN</code></td>
+      <td>Your own domain, pointing at the server. No <code>https://</code>, no port.</td>
+      <td>Always</td>
+    </tr>
+    <tr>
+      <td><code>TWITCH_EXTENSION_SECRET</code></td>
+      <td>Your extension → Manage → the base64 <strong>Secret</strong></td>
+      <td>Always</td>
+    </tr>
+    <tr>
+      <td><code>TWITCH_EXTENSION_CLIENT_ID</code></td>
+      <td>Your extension → Manage → <strong>Client ID</strong></td>
+      <td>Always</td>
+    </tr>
+    <tr>
+      <td><code>TWITCH_EXTENSION_CLIENT_SECRET</code></td>
+      <td>Your extension → Manage → <strong>Client Secret</strong> (not the Secret above)</td>
+      <td>Always</td>
+    </tr>
+    <tr>
+      <td><code>TWITCH_CLIENT_ID</code></td>
+      <td>Your <em>Application</em> → Client ID</td>
+      <td>Channel Points</td>
+    </tr>
+    <tr>
+      <td><code>TWITCH_CLIENT_SECRET</code></td>
+      <td>Your <em>Application</em> → New Secret</td>
+      <td>Channel Points</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>The relay derives two more URLs from <code>RELAY_DOMAIN</code> so you never type them twice:
+<code>https://<em>domain</em>/oauth/callback</code>, which must match what you registered on the
+Application, and <code>https://<em>domain</em>/eventsub/callback</code>, which Twitch posts
+redemptions to.</p>
+
+<h2 id="backups">Backups and updates</h2>
+
+<p>Everything that has to survive a restart lives in a Docker volume called
+<code>relay-data</code>: token balances viewers paid real Bits for, each streamer's authorization,
+spent transaction records, and the secret Twitch signs events with.</p>
+
+<div class="danger">
+<p><span class="label"><code>docker compose down -v</code> deletes it</span> — and that is worse than
+it sounds. Losing balances is the obvious part. The quiet part is the event secret: the relay
+generates a new one, every subscription already registered with Twitch keeps signing with the old
+one, and from then on every Channel Points redemption is rejected while Twitch still reports
+everything as healthy. Nothing looks broken. Redemptions just stop crediting.</p>
+<p>If that happens, each affected streamer presses <span class="field">Authorize Channel
+Points</span> again, which rebuilds their subscriptions with the current secret.</p>
+</div>
+
+<p>Back it up instead:</p>
+<div class="code">
+<pre>sudo docker run --rm -v relay-data:/data -v "$PWD:/backup" alpine \
+  tar czf /backup/relay-data-$(date +%F).tar.gz -C /data .</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+
+<p>To update the relay:</p>
+<div class="code">
+<pre>cd /opt/bg2radar-relay
+sudo git pull
+cd TwitchIntegration/Relay/docker
+sudo docker compose up -d --build</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<p>The volume is untouched, so balances and credentials carry over.</p>
+
+<div class="warn">
+<p><span class="label">Update the extension at the same time.</span> The relay and the extension
+are versioned together. A relay expecting something an older installed extension doesn't send will
+turn purchases away — so re-upload <code>Extension.zip</code> when you pull a new relay.</p>
+</div>
+
+<h2 id="proxy">Already running a web server?</h2>
+
+<p>If the server already has nginx, Traefik or another Caddy on 443, use the second compose file
+instead. It brings up the relay alone, on a loopback port, with no Caddy of its own:</p>
+<div class="code">
+<pre>sudo docker compose -f docker-compose.existing-proxy.yml up -d</pre>
+<button class="copy" type="button">Copy</button>
+</div>
+<p>Then point your existing proxy at <code>127.0.0.1:5080</code>, making sure it:</p>
+<ul>
+  <li>serves your domain over <strong>HTTPS on port 443</strong> with a real certificate;</li>
+  <li>forwards <strong>WebSocket upgrades</strong> — the overlay opens
+      <code>/ws/ingest/…</code> and holds it open;</li>
+  <li>routes <strong><code>/oauth/callback</code> and <code>/eventsub/callback</code> on port
+      443</strong> specifically. Everything else can live elsewhere if you have a reason.</li>
+</ul>
+
+<h2 id="trouble">Troubleshooting</h2>
+
+<h3>The panel never loads anything, and nothing errors</h3>
+<p>Almost always the extension's URL-fetching allowlist (<a href="#s3">step 3</a>). Twitch blocks
+the request before it leaves the browser, so the panel waits forever. Open the browser console on
+your own stream — a Content Security Policy violation confirms it.</p>
+
+<h3>docker: unknown command: docker compose</h3>
+<p>Ubuntu's <code>docker.io</code> package doesn't include the compose plugin.
+<code>sudo apt install docker-compose-v2</code>.</p>
+
+<h3>compose exits complaining about a variable</h3>
+<p>A required entry in <code>.env</code> is empty. The message names which one.</p>
+
+<h3>No certificate</h3>
+<p>Your domain has to already resolve to this server, and ports 80 and 443 have to be free.
+<code>sudo docker compose logs caddy</code> will say which one is the problem.</p>
+
+<h3>The overlay says Error</h3>
+<p>Check the Relay Server URL matches your domain and that the Twitch Integration tab has a stream
+key. <code>sudo docker compose logs relay</code> shows connection attempts as they arrive.</p>
+
+<h3>Bits purchases fail</h3>
+<p>Usually <code>TWITCH_EXTENSION_SECRET</code>. Check it's the base64 <em>Secret</em> from the
+Manage page and not the client secret from the same page — and that it's from
+<em>your</em> extension.</p>
+
+<h3>OAuth says the redirect doesn't match</h3>
+<p>The Application's registered redirect URL has to equal
+<code>https://<em>RELAY_DOMAIN</em>/oauth/callback</code> character for character. No trailing
+slash, no port.</p>
+
+<h3>Channel Points redemptions don't credit</h3>
+<p>Check the config page reports Channel Points as authorized — if it mentions rejected deliveries,
+press Authorize again. Then confirm the reward's title matches the <em>Token Reward Name</em> field
+and that <em>Skip Reward Requests Queue</em> is on.</p>
+
+<footer class="page">
+  <p>Part of <a href="https://github.com/tapahob/BG2RadarOverlay">BG Radar Overlay</a>. Found a gap
+  in this guide, or something that didn't match what you saw?
+  <a href="https://github.com/tapahob/BG2RadarOverlay/issues">Open an issue</a>.</p>
+</footer>
+</main>
+</div>
+
+<script>
+// Copy buttons. Each one sits inside a .code next to its <pre>.
+document.querySelectorAll('.copy').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var pre = btn.parentElement.querySelector('pre');
+    if (!pre) return;
+    var text = pre.innerText;
+    var done = function () {
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () {});
+    } else {
+      // http:// or an old browser - the clipboard API is unavailable, so fall back to a selection.
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  });
+});
+
+// Highlight whichever section is on screen in the contents.
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  if (!links.length || !('IntersectionObserver' in window)) return;
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+  var targets = Object.keys(byId)
+    .map(function (id) { return document.getElementById(id); })
+    .filter(Boolean);
+
+  var seen = {};
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { seen[e.target.id] = e.isIntersecting; });
+    var current = targets.filter(function (t) { return seen[t.id]; })[0];
+    if (!current) return;
+    links.forEach(function (a) { a.classList.remove('active'); });
+    byId[current.id].classList.add('active');
+  }, { rootMargin: '0px 0px -70% 0px' });
+
+  targets.forEach(function (t) { observer.observe(t); });
+})();
+</script>
+</body>
+</html>
