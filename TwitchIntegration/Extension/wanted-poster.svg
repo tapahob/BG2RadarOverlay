@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 110"
+     preserveAspectRatio="none" role="img" aria-label="Aged wanted poster paper">
+  <title>Wanted poster</title>
+  <defs>
+    <!-- Sun-bleached in the middle, dirtier towards the edges. -->
+    <radialGradient id="paper" cx="45%" cy="38%" r="78%">
+      <stop offset="0%"   stop-color="#f6e7c4"/>
+      <stop offset="55%"  stop-color="#ecd7ab"/>
+      <stop offset="100%" stop-color="#cdb184"/>
+    </radialGradient>
+
+    <!-- Paper tooth. fractalNoise rather than turbulence: turbulence gives a marbled, wet look,
+         fractalNoise gives the flat speckle of cheap pulp. -->
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" seed="7" result="n"/>
+      <feColorMatrix in="n" type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.16"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- Softens the torn edge so it doesn't read as a crisp vector outline. -->
+    <filter id="edgeblur" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="0.35"/>
+    </filter>
+
+    <clipPath id="sheet">
+      <path d="M 2.50 2.64 L 11.92 2.69 L 21.35 3.05 L 30.77 3.03 L 40.19 1.86 L 49.62 2.51 L 59.04 3.24 L 68.46 2.70 L 77.88 2.89 L 87.31 2.77 L 96.73 3.16 L 106.15 2.84 L 115.58 1.68 L 125.00 1.39 L 134.42 1.76 L 143.85 2.92 L 153.27 3.34 L 162.69 2.86 L 172.12 2.57 L 181.54 2.29 L 190.96 1.75 L 200.38 2.47 L 209.81 3.00 L 219.23 2.04 L 228.65 2.47 L 238.08 2.60 L 247.33 2.50 L 246.96 10.00 L 247.54 17.50 L 248.52 25.00 L 248.59 32.50 L 248.85 40.00 L 249.11 47.50 L 248.17 55.00 L 245.98 62.50 L 248.22 70.00 L 246.46 77.50 L 246.42 85.00 L 247.59 92.50 L 247.38 100.00 L 247.50 107.33 L 238.08 107.38 L 228.65 108.05 L 219.23 107.39 L 209.81 107.96 L 200.38 107.35 L 190.96 106.70 L 181.54 108.57 L 172.12 108.48 L 162.69 107.92 L 153.27 108.28 L 143.85 108.65 L 134.42 108.57 L 125.00 106.94 L 115.58 106.38 L 106.15 106.46 L 96.73 106.11 L 87.31 108.66 L 77.88 107.80 L 68.46 107.75 L 59.04 107.41 L 49.62 107.05 L 40.19 107.59 L 30.77 107.94 L 21.35 107.64 L 11.92 107.34 L 2.62 107.50 L 2.45 100.00 L 2.45 92.50 L 1.80 85.00 L 3.71 77.50 L 3.11 70.00 L 2.92 62.50 L 1.04 55.00 L 2.45 47.50 L 3.61 40.00 L 1.89 32.50 L 3.28 25.00 L 2.20 17.50 L 3.10 10.00 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Shadow cast onto whatever sits behind the poster. -->
+  <path d="M 2.50 2.64 L 11.92 2.69 L 21.35 3.05 L 30.77 3.03 L 40.19 1.86 L 49.62 2.51 L 59.04 3.24 L 68.46 2.70 L 77.88 2.89 L 87.31 2.77 L 96.73 3.16 L 106.15 2.84 L 115.58 1.68 L 125.00 1.39 L 134.42 1.76 L 143.85 2.92 L 153.27 3.34 L 162.69 2.86 L 172.12 2.57 L 181.54 2.29 L 190.96 1.75 L 200.38 2.47 L 209.81 3.00 L 219.23 2.04 L 228.65 2.47 L 238.08 2.60 L 247.33 2.50 L 246.96 10.00 L 247.54 17.50 L 248.52 25.00 L 248.59 32.50 L 248.85 40.00 L 249.11 47.50 L 248.17 55.00 L 245.98 62.50 L 248.22 70.00 L 246.46 77.50 L 246.42 85.00 L 247.59 92.50 L 247.38 100.00 L 247.50 107.33 L 238.08 107.38 L 228.65 108.05 L 219.23 107.39 L 209.81 107.96 L 200.38 107.35 L 190.96 106.70 L 181.54 108.57 L 172.12 108.48 L 162.69 107.92 L 153.27 108.28 L 143.85 108.65 L 134.42 108.57 L 125.00 106.94 L 115.58 106.38 L 106.15 106.46 L 96.73 106.11 L 87.31 108.66 L 77.88 107.80 L 68.46 107.75 L 59.04 107.41 L 49.62 107.05 L 40.19 107.59 L 30.77 107.94 L 21.35 107.64 L 11.92 107.34 L 2.62 107.50 L 2.45 100.00 L 2.45 92.50 L 1.80 85.00 L 3.71 77.50 L 3.11 70.00 L 2.92 62.50 L 1.04 55.00 L 2.45 47.50 L 3.61 40.00 L 1.89 32.50 L 3.28 25.00 L 2.20 17.50 L 3.10 10.00 Z" fill="#000" opacity="0.30" transform="translate(1.2 1.8)" filter="url(#edgeblur)"/>
+
+  <g clip-path="url(#sheet)">
+    <path d="M 2.50 2.64 L 11.92 2.69 L 21.35 3.05 L 30.77 3.03 L 40.19 1.86 L 49.62 2.51 L 59.04 3.24 L 68.46 2.70 L 77.88 2.89 L 87.31 2.77 L 96.73 3.16 L 106.15 2.84 L 115.58 1.68 L 125.00 1.39 L 134.42 1.76 L 143.85 2.92 L 153.27 3.34 L 162.69 2.86 L 172.12 2.57 L 181.54 2.29 L 190.96 1.75 L 200.38 2.47 L 209.81 3.00 L 219.23 2.04 L 228.65 2.47 L 238.08 2.60 L 247.33 2.50 L 246.96 10.00 L 247.54 17.50 L 248.52 25.00 L 248.59 32.50 L 248.85 40.00 L 249.11 47.50 L 248.17 55.00 L 245.98 62.50 L 248.22 70.00 L 246.46 77.50 L 246.42 85.00 L 247.59 92.50 L 247.38 100.00 L 247.50 107.33 L 238.08 107.38 L 228.65 108.05 L 219.23 107.39 L 209.81 107.96 L 200.38 107.35 L 190.96 106.70 L 181.54 108.57 L 172.12 108.48 L 162.69 107.92 L 153.27 108.28 L 143.85 108.65 L 134.42 108.57 L 125.00 106.94 L 115.58 106.38 L 106.15 106.46 L 96.73 106.11 L 87.31 108.66 L 77.88 107.80 L 68.46 107.75 L 59.04 107.41 L 49.62 107.05 L 40.19 107.59 L 30.77 107.94 L 21.35 107.64 L 11.92 107.34 L 2.62 107.50 L 2.45 100.00 L 2.45 92.50 L 1.80 85.00 L 3.71 77.50 L 3.11 70.00 L 2.92 62.50 L 1.04 55.00 L 2.45 47.50 L 3.61 40.00 L 1.89 32.50 L 3.28 25.00 L 2.20 17.50 L 3.10 10.00 Z" fill="url(#paper)" filter="url(#edgeblur)"/>
+    <path d="M 85.0 0 Q 88.5 55.0 85.0 110.0" stroke="#8a6633" stroke-width="0.7" fill="none" opacity="0.13"/>
+    <path d="M 86.1 0 Q 89.6 55.0 86.1 110.0" stroke="#fff6e2" stroke-width="0.7" fill="none" opacity="0.22"/>
+    <path d="M 177.5 0 Q 179.3 55.0 177.5 110.0" stroke="#8a6633" stroke-width="0.7" fill="none" opacity="0.13"/>
+    <path d="M 178.6 0 Q 180.4 55.0 178.6 110.0" stroke="#fff6e2" stroke-width="0.7" fill="none" opacity="0.22"/>
+    <ellipse cx="48.4" cy="17.4" rx="11.5" ry="6.9" fill="#6b4a22" opacity="0.109"/>
+    <ellipse cx="113.6" cy="56.5" rx="3.4" ry="2.4" fill="#6b4a22" opacity="0.069"/>
+    <ellipse cx="200.8" cy="51.9" rx="6.5" ry="5.5" fill="#6b4a22" opacity="0.115"/>
+    <ellipse cx="213.8" cy="77.8" rx="11.4" ry="9.5" fill="#6b4a22" opacity="0.054"/>
+    <ellipse cx="89.9" cy="49.2" rx="3.9" ry="3.4" fill="#6b4a22" opacity="0.048"/>
+    <ellipse cx="9.7" cy="73.7" rx="6.7" ry="3.9" fill="#6b4a22" opacity="0.069"/>
+    <ellipse cx="128.6" cy="45.8" rx="5.4" ry="4.6" fill="#6b4a22" opacity="0.029"/>
+    <ellipse cx="186.0" cy="68.4" rx="8.4" ry="4.6" fill="#6b4a22" opacity="0.119"/>
+    <ellipse cx="29.0" cy="67.5" rx="7.9" ry="6.9" fill="#6b4a22" opacity="0.096"/>
+    <ellipse cx="221.7" cy="96.3" rx="8.1" ry="5.9" fill="#6b4a22" opacity="0.079"/>
+    <ellipse cx="154.2" cy="73.9" rx="8.2" ry="6.1" fill="#6b4a22" opacity="0.035"/>
+    <ellipse cx="207.3" cy="46.9" rx="4.8" ry="4.4" fill="#6b4a22" opacity="0.084"/>
+    <ellipse cx="103.2" cy="18.1" rx="9.0" ry="5.3" fill="#6b4a22" opacity="0.090"/>
+    <ellipse cx="184.1" cy="37.8" rx="5.6" ry="4.4" fill="#6b4a22" opacity="0.093"/>
+    <rect width="100%" height="100%" filter="url(#grain)" opacity="0.55"/>
+
+    <!-- Double rule, the way a real bill is set: heavy outer, hairline inner. -->
+    <rect x="5" y="5" width="240" height="100" fill="none" stroke="#3b2a15"
+          stroke-width="2.2" opacity="0.85"/>
+    <rect x="8.5" y="8.5" width="233" height="93" fill="none" stroke="#3b2a15"
+          stroke-width="0.6" opacity="0.6"/>
+
+    <!-- Nail holes, top corners only - the bottom of a poster curls away. -->
+    <circle cx="14" cy="13" r="1.5" fill="#2a1c0c" opacity="0.45"/>
+    <circle cx="14" cy="13" r="2.6" fill="none" stroke="#7a5a2e" stroke-width="0.5" opacity="0.3"/>
+    <circle cx="236" cy="13" r="1.5" fill="#2a1c0c" opacity="0.45"/>
+    <circle cx="236" cy="13" r="2.6" fill="none" stroke="#7a5a2e" stroke-width="0.5" opacity="0.3"/>
+  </g>
+</svg>
