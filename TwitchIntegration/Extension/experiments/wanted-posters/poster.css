@@ -1,0 +1,82 @@
+  /* Each party member is a wanted poster nailed to the panel. The paper itself is an SVG
+     (wanted-poster.svg) - scalable, a few KB, and no web font to load, which matters because an
+     extension's CSP would block one anyway. Everything on top of it is plain CSS text so it stays
+     crisp at any size and can be selected and read by a screen reader. */
+  .member {
+    position: relative;
+    background-image: url('wanted-poster.svg');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    padding: 11px 14px 10px;
+    margin-bottom: 9px;
+    color: #3b2a15;
+    font-family: Georgia, "Times New Roman", Times, serif;
+    text-align: center;
+    /* Posters slapped up in a hurry don't hang straight. Alternating a fraction of a degree
+       reads as hand-placed; any more and it looks like a mistake. */
+    transform: rotate(-0.5deg);
+  }
+  .member:nth-child(even) { transform: rotate(0.45deg); }
+  .member:last-child { margin-bottom: 2px; }
+
+  .member .wanted {
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 1;
+    letter-spacing: 0.22em;
+    text-indent: 0.22em;          /* balances the trailing letter-space so it stays centred */
+    text-transform: uppercase;
+    color: #2a1c0c;
+  }
+
+  .member .name {
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 1.15;
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #24170a;
+    overflow-wrap: anywhere;      /* a long name breaks rather than escaping the paper */
+  }
+
+  .member .meta {
+    font-size: 10px;
+    font-style: italic;
+    line-height: 1.2;
+    color: #6b5433;
+  }
+
+  /* "Dead or Alive" with a rule running out to each side, set like a real bill. */
+  .member .doa {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 5px 0 4px;
+    font-size: 8px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #5a4223;
+  }
+  .member .doa::before,
+  .member .doa::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: rgba(59, 42, 21, 0.45);
+  }
+
+  .member .bounty {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .member .reward { font-weight: bold; font-size: 12px; color: #7a2f17; }
+  .member .hp { color: #4c5a26; font-weight: bold; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .member { transform: none; }
+  }

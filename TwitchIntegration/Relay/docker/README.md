@@ -67,8 +67,8 @@ match.
 What that means in practice:
 
 1. **Create your own Extension** in the Developer Console and upload the contents of
-   `TwitchIntegration/Extension/` as its files. Set the Video Overlay path to `video_overlay.html`
-   and the config path to `config.html`.
+   `TwitchIntegration/Extension/` as its files. Set the Video Component path to
+   `video_component.html` and the config path to `config.html`.
 2. **Add your relay domain to the extension's URL fetching allowlist** (Manage → Capabilities →
    *Allowlist for URL Fetching Domains*). Without it, Twitch's Content Security Policy blocks every
    request the panel makes to your relay — and it fails *silently*, so the panel just sits there

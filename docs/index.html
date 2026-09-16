@@ -301,8 +301,12 @@ domain.</p>
 <p>Go to <a href="https://dev.twitch.tv/console/extensions">Developer Console → Extensions</a> and
 click <span class="field">Create Extension</span>. Give it a name — this is what viewers see, so
 something like "Summon Creatures" works.</p>
-<p>When asked which types it supports, tick <span class="field">Video - Fullscreen</span> and/or
-<span class="field">Video - Overlay</span>. The panel draws itself over the video.</p>
+<p>When asked which types it supports, tick <span class="field">Video - Component</span>. Twitch
+then gives the panel its own box on the video and supplies the control viewers use to show and
+hide it, so the extension doesn't draw an icon of its own.</p>
+<p>You'll be asked for the component's size and position on the same page. The panel fills
+whatever it is given, so this is the one place the size is decided — something tall and narrow
+down one side suits the party list and pack tiles.</p>
 </div>
 
 <div class="step" id="s2">
@@ -316,7 +320,7 @@ files and upload <code>Extension.zip</code> from
 <table>
   <thead><tr><th>Field</th><th>Value</th></tr></thead>
   <tbody>
-    <tr><td>Video Overlay Path</td><td><code>video_overlay.html</code></td></tr>
+    <tr><td>Video Component Path</td><td><code>video_component.html</code></td></tr>
     <tr><td>Config Path</td><td><code>config.html</code></td></tr>
   </tbody>
 </table>

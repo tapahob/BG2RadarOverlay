@@ -9,7 +9,7 @@
 //
 // Run with:  node TwitchIntegration/Extension/tests/pending-receipts.test.js
 //
-// video_overlay.js is loaded into a stub browser rather than a real one - no DOM, no Twitch, no
+// video_component.js is loaded into a stub browser rather than a real one - no DOM, no Twitch, no
 // network - because none of those are what is under test. What is under test is the bookkeeping.
 
 const fs = require('fs');
@@ -17,8 +17,8 @@ const path = require('path');
 const vm = require('vm');
 const assert = require('assert');
 
-const overlaySource = fs.readFileSync(
-  path.join(__dirname, '..', 'video_overlay.js'), 'utf8');
+const componentSource = fs.readFileSync(
+  path.join(__dirname, '..', 'video_component.js'), 'utf8');
 
 const PENDING_KEY = 'bg2ext_pending_receipts';
 const RELAY = 'https://relay.example';
@@ -101,6 +101,7 @@ function createHarness(options) {
         onChanged: (cb) => { twitchCallbacks.configuration = cb; }
       },
       onAuthorized: (cb) => { twitchCallbacks.authorized = cb; },
+      onVisibilityChanged: (cb) => { twitchCallbacks.visibilityChanged = cb; },
       actions: { requestIdShare: () => {} },
       bits: {
         getProducts: () => Promise.resolve([]),
@@ -112,7 +113,7 @@ function createHarness(options) {
   };
 
   vm.createContext(sandbox);
-  vm.runInContext(overlaySource, sandbox, { filename: 'video_overlay.js' });
+  vm.runInContext(componentSource, sandbox, { filename: 'video_component.js' });
 
   return {
     sandbox,
@@ -141,6 +142,13 @@ function authorize(h, opts) {
 
 function purchase(h, receipt) {
   h.twitchCallbacks.transactionComplete({ transactionReceipt: receipt });
+}
+
+// Twitch hiding and re-showing the component - the closest thing a component extension has to
+// the viewer reopening the panel.
+function hideAndShow(h) {
+  h.twitchCallbacks.visibilityChanged(false);
+  h.twitchCallbacks.visibilityChanged(true);
 }
 
 function bitsRequests(h) {
@@ -232,7 +240,7 @@ test('a purchase left over from a previous session is retried once identity arri
   assert.deepStrictEqual(h.pending(), []);
 });
 
-test('a purchase that failed is retried when the panel is opened again', async () => {
+test('a purchase that failed is retried when the component is shown again', async () => {
   let failFirst = true;
   const h = createHarness({
     bitsResponder: () => {
@@ -246,11 +254,27 @@ test('a purchase that failed is retried when the panel is opened again', async (
   await h.settle();
   assert.deepStrictEqual(h.pending(), ['receipt-A']);
 
-  h.elements.icon.handlers.click(); // open the panel
+  hideAndShow(h);
   await h.settle();
 
-  assert.deepStrictEqual(h.pending(), [], 'reopening the panel should have settled it');
+  assert.deepStrictEqual(h.pending(), [], 'becoming visible again should have settled it');
   assert.strictEqual(bitsRequests(h).length, 2);
+});
+
+test('staying visible does not re-post receipts on every callback', async () => {
+  const h = createHarness({ bitsResponder: () => ({ reject: true }) });
+  configure(h);
+  authorize(h);
+  purchase(h, 'receipt-A');
+  await h.settle();
+  const before = bitsRequests(h).length;
+
+  // Twitch re-reporting the state it is already in isn't the viewer coming back to the panel,
+  // so it must not set the retry going again.
+  h.twitchCallbacks.visibilityChanged(true);
+  await h.settle();
+
+  assert.strictEqual(bitsRequests(h).length, before);
 });
 
 test('every unsettled receipt goes up together, not just the newest', async () => {

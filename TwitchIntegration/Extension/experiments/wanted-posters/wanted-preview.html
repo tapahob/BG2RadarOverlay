@@ -4,9 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wanted poster preview</title>
-<!-- GENERATED - do not edit by hand. The poster rules below are lifted verbatim out of
-     video_overlay.html so this preview cannot drift from what renders on stream; regenerate it
-     if you change them. Open this file directly in a browser, no server needed. -->
+<!-- The poster rules below were lifted verbatim out of the component's own stylesheet back when
+     the party list rendered as posters. That design is no longer shipped (see README.md here), so
+     this is now the only place they render - nothing upstream to drift from. Open this file
+     directly in a browser, no server needed. -->
 <style>
   body {
     margin: 0; min-height: 100vh; background: #241a12;
@@ -38,7 +39,7 @@
      crisp at any size and can be selected and read by a screen reader. */
   .member {
     position: relative;
-    background-image: url('../wanted-poster.svg')   /* one level up: preview lives in mock/ */;
+    background-image: url('wanted-poster.svg');
     background-size: 100% 100%;
     background-repeat: no-repeat;
     padding: 11px 14px 10px;

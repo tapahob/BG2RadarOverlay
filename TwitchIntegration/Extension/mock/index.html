@@ -34,11 +34,15 @@
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
+  /* A component gets its own box on the video rather than an iframe covering the whole player,
+     so the stand-in is sized and placed the way Twitch will place it. The real dimensions come
+     from the Dev Console's component settings; these are only representative. */
   #stage iframe {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    top: 6%;
+    right: 3%;
+    width: 28%;
+    height: 82%;
     border: none;
   }
 </style>
@@ -46,14 +50,15 @@
 <body>
   <h1>Extension mock preview</h1>
   <p class="hint">
-    Simulates the on-video icon exactly as it'll render on Twitch (no Twitch account/extension
-    registration needed). Configure it first via <a class="configLink" href="../config.html?mock=1" target="_blank">config.html</a>
+    Simulates the component as it'll render on Twitch (no Twitch account/extension registration
+    needed). Configure it first via <a class="configLink" href="../config.html?mock=1" target="_blank">config.html</a>
     (opens in a new tab, uses the same relay URL + stream key as the app's Twitch Integration
-    tab), then reload this page.
+    tab), then reload this page. Twitch supplies the show/hide control and the real box size, so
+    neither is simulated here - the panel simply sits open at a representative size.
   </p>
   <div id="stage">
     <div class="fakeVideoLabel">simulated video player</div>
-    <iframe src="../video_overlay.html?mock=1" title="Extension overlay"></iframe>
+    <iframe src="../video_component.html?mock=1" title="Extension component"></iframe>
   </div>
 </body>
 </html>

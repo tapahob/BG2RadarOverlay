@@ -42,7 +42,7 @@ Two suites, both fully mocked - neither needs Twitch, real Bits, or the VPS:
   point the relay at the stub - leave both unset in production.
 - `node TwitchIntegration/Extension/tests/pending-receipts.test.js` - the viewer-side half: what happens to a
   Bits receipt between Twitch taking the money and the relay crediting it. Loads
-  `video_overlay.js` into a stub browser (no DOM, no Twitch, no network).
+  `video_component.js` into a stub browser (no DOM, no Twitch, no network).
 
 ## Running the relay in Docker
 

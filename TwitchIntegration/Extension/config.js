@@ -44,7 +44,7 @@
   // twitch-ext.min.js loads fine even outside an actual Twitch iframe (it's just a public
   // script), so Twitch.ext.configuration existing is NOT a reliable signal - Twitch.ext.configuration.set()
   // would silently go nowhere outside Twitch's real postMessage bridge. Read/write
-  // localStorage directly instead, under the same key video_overlay.html's mock fallback
+  // localStorage directly instead, under the same key video_component.html's mock fallback
   // reads from, whenever this explicit flag is set.
   var isMock = new URLSearchParams(location.search).get('mock') === '1';
   if (isMock) {

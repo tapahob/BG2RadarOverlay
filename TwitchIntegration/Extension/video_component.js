@@ -8,20 +8,30 @@
   // currency is off.
   var tokenPrice = { bits: 0, points: 0, rewardName: '', maxBalance: 0 };
 
-  var iconEl = document.getElementById('icon');
-  var panelEl = document.getElementById('panel');
   var contentEl = document.getElementById('content');
 
-  iconEl.addEventListener('click', function () {
-    panelEl.classList.toggle('open');
-    if (panelEl.classList.contains('open')) {
+  // As a component the panel is always drawn - Twitch owns the control that shows and hides it,
+  // and hides the whole iframe rather than unloading it. So this is what the icon's click
+  // handler used to be: the moment the viewer can see the panel again is the moment its
+  // contents have to stop being whatever they were when it went away.
+  //
+  // Assumed visible until told otherwise. The callback only reports a *change*, so a component
+  // that is shown from the start and never hidden would otherwise never poll at all.
+  var isVisible = true;
+
+  if (window.Twitch && Twitch.ext && typeof Twitch.ext.onVisibilityChanged === 'function') {
+    Twitch.ext.onVisibilityChanged(function (visible) {
+      var wasVisible = isVisible;
+      isVisible = !!visible;
+      if (!isVisible || wasVisible) return;
+
       // Channel Points redemptions are credited server-side with nothing to notify this panel,
-      // and a Bits credit can have landed from another device - so the balance is re-read on
-      // open rather than trusted from whenever it was last fetched.
-      fetchBalance();
+      // and a Bits credit can have landed from another device - so both are re-read on becoming
+      // visible rather than trusted from whenever they were last fetched.
+      poll();
       redeemPendingReceipts();
-    }
-  });
+    });
+  }
 
   // The same "Relay Server URL" also gets typed into the Radar app's Options tab, which needs
   // the opposite scheme for its WebSocket connection (see TwitchRelayClient.normalizeToWebSocketScheme
@@ -57,7 +67,7 @@
     }
   }
 
-  // mock/index.html loads this file as `video_overlay.html?mock=1`. The real
+  // mock/index.html loads this file as `video_component.html?mock=1`. The real
   // twitch-ext.min.js loads fine even outside an actual Twitch iframe (it's just a public
   // script) and Twitch.ext.configuration.onChanged still exists as a function - it just
   // never fires outside Twitch's real postMessage bridge - so that alone isn't a reliable
@@ -114,13 +124,17 @@
   }
 
   function poll() {
+    // Nothing on screen to go stale while Twitch has the component hidden, so neither call is
+    // worth making - becoming visible again polls immediately rather than waiting out the
+    // interval.
+    if (!isVisible) return;
+
     fetchStatus();
     // A Channel Points purchase happens entirely outside this panel - the viewer redeems the
     // reward in Twitch's own points UI, and nothing tells us about it. Without re-reading the
     // balance the panel would go on showing the old one, and on saying "Not enough tokens" for
-    // a summon they have just paid for. Only while the panel is actually open: a closed panel
-    // has no balance on screen to be stale.
-    if (panelEl.classList.contains('open')) fetchBalance();
+    // a summon they have just paid for.
+    fetchBalance();
   }
 
   function fetchStatus() {
@@ -151,28 +165,13 @@
     var html = '';
     for (var i = 0; i < party.length; i++) {
       var m = party[i];
-      var meta = [m.race, m['class']].filter(Boolean).join(' \u00b7 ');
       html += '<div class="member">'
-        + '<div class="wanted">Wanted</div>'
         + '<div class="name">' + escapeHtml(m.name || '?') + '</div>'
-        + '<div class="meta">' + escapeHtml(meta || 'of unknown origin') + '</div>'
-        + '<div class="doa">Dead or Alive</div>'
-        + '<div class="bounty">'
-        +   '<span>Reward <span class="reward">' + bounty(m.currentHp) + '</span></span>'
-        +   '<span class="hp">HP ' + (m.currentHp != null ? m.currentHp : '?') + '</span>'
-        + '</div>'
+        + '<div class="meta">' + escapeHtml(m.race || '') + ' ' + escapeHtml(m['class'] || '') + '</div>'
+        + '<div class="hp">HP: ' + (m.currentHp != null ? m.currentHp : '?') + '</div>'
         + '</div>';
     }
     contentEl.innerHTML = html;
-  }
-
-  // The price on someone's head, scaled off how much of them is left to collect. Pure flavour -
-  // nothing reads this back - so it only has to look like a sum a frontier sheriff would post:
-  // rounded to something printable, and never zero, because a corpse is still worth hauling in.
-  function bounty(hp) {
-    if (hp == null || isNaN(Number(hp))) return '$???';
-    var amount = Math.max(50, Math.round(Number(hp) * 25 / 50) * 50);
-    return '$' + amount.toLocaleString();
   }
 
   // ---- Summon section ----

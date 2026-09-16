@@ -5,60 +5,32 @@
 <title>BG2 Radar Overlay</title>
 <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
 <style>
-  /* The whole iframe covers the video; only the icon/panel themselves should catch
-     clicks, everything else must stay click-through so viewers can still interact
-     with the video/player controls underneath. */
+  /* As a component, the iframe *is* the panel - Twitch sizes it, positions it and gives the
+     viewer its show/hide control, so there is no icon of our own to toggle and nothing here
+     needs to be click-through. Everything inside these bounds is ours. */
   html, body {
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
     background: transparent;
-    pointer-events: none;
     font-family: -apple-system, Segoe UI, Roboto, sans-serif;
     color: #efeff1;
   }
 
-  #icon {
-    position: absolute;
-    right: 16px;
-    bottom: 16px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(20, 16, 12, 0.85);
-    border: 2px solid #c9a24b;
-    cursor: pointer;
-    pointer-events: auto;
-    user-select: none;
-    overflow: hidden;
-  }
-
-  /* The artwork is square and fills the circle, so the hover cue has to be on the image
-     itself - a background colour behind it would never show. */
-  #icon img {
-    display: block;
+  /* Fills whatever the component is sized to rather than a fixed 280x380 box, so the
+     Dev Console's component dimensions are the single place the size is decided. */
+  #panel {
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-  }
-  #icon:hover img { filter: brightness(1.3); }
-
-  #panel {
-    position: absolute;
-    right: 16px;
-    bottom: 64px;
-    width: 280px;
-    max-height: 380px;
     background: rgba(20, 16, 12, 0.92);
     border: 2px solid #c9a24b;
     border-radius: 8px;
     padding: 10px;
-    pointer-events: auto;
-    display: none;
+    display: flex;
     flex-direction: column;
   }
-  #panel.open { display: flex; }
 
   /* min-height:0 is what actually makes this scroll: a flex item defaults to min-height:auto,
      which refuses to shrink below its content and would push the controls out of the panel
@@ -95,88 +67,14 @@
     letter-spacing: 0.05em;
   }
 
-  /* Each party member is a wanted poster nailed to the panel. The paper itself is an SVG
-     (wanted-poster.svg) - scalable, a few KB, and no web font to load, which matters because an
-     extension's CSP would block one anyway. Everything on top of it is plain CSS text so it stays
-     crisp at any size and can be selected and read by a screen reader. */
   .member {
-    position: relative;
-    background-image: url('wanted-poster.svg');
-    background-size: 100% 100%;
-    background-repeat: no-repeat;
-    padding: 11px 14px 10px;
-    margin-bottom: 9px;
-    color: #3b2a15;
-    font-family: Georgia, "Times New Roman", Times, serif;
-    text-align: center;
-    /* Posters slapped up in a hurry don't hang straight. Alternating a fraction of a degree
-       reads as hand-placed; any more and it looks like a mistake. */
-    transform: rotate(-0.5deg);
+    padding: 6px 0;
+    border-top: 1px solid rgba(201, 162, 75, 0.25);
   }
-  .member:nth-child(even) { transform: rotate(0.45deg); }
-  .member:last-child { margin-bottom: 2px; }
-
-  .member .wanted {
-    font-size: 15px;
-    font-weight: bold;
-    line-height: 1;
-    letter-spacing: 0.22em;
-    text-indent: 0.22em;          /* balances the trailing letter-space so it stays centred */
-    text-transform: uppercase;
-    color: #2a1c0c;
-  }
-
-  .member .name {
-    font-size: 15px;
-    font-weight: bold;
-    line-height: 1.15;
-    margin-top: 4px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #24170a;
-    overflow-wrap: anywhere;      /* a long name breaks rather than escaping the paper */
-  }
-
-  .member .meta {
-    font-size: 10px;
-    font-style: italic;
-    line-height: 1.2;
-    color: #6b5433;
-  }
-
-  /* "Dead or Alive" with a rule running out to each side, set like a real bill. */
-  .member .doa {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin: 5px 0 4px;
-    font-size: 8px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: #5a4223;
-  }
-  .member .doa::before,
-  .member .doa::after {
-    content: "";
-    flex: 1 1 auto;
-    height: 1px;
-    background: rgba(59, 42, 21, 0.45);
-  }
-
-  .member .bounty {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    font-size: 10px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-  .member .reward { font-weight: bold; font-size: 12px; color: #7a2f17; }
-  .member .hp { color: #4c5a26; font-weight: bold; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .member { transform: none; }
-  }
+  .member:first-of-type { border-top: none; }
+  .member .name { font-weight: bold; font-size: 13px; }
+  .member .meta { font-size: 11px; color: #d0c6a8; }
+  .member .hp { font-size: 11px; color: #9be89b; }
 
   #empty, #offline {
     font-size: 12px;
@@ -380,9 +278,6 @@
 </style>
 </head>
 <body>
-  <!-- Bundled next to this file rather than linked out of the repo's icons/ folder: only the
-       Extension/ directory is uploaded to Twitch, so a path outside it would 404 there. -->
-  <div id="icon" title="Party status"><img src="icon.png" alt="Party status"></div>
   <div id="panel">
     <!-- Everything that can grow without bound - a six-strong party, however many packs the
          streamer defined - scrolls. The controls below stay put, so the Summon button never
@@ -432,6 +327,6 @@
     </div>
   </div>
 
-<script src="video_overlay.js"></script>
+<script src="video_component.js"></script>
 </body>
 </html>

@@ -143,7 +143,7 @@ namespace BGOverlay
         /// <summary>
         /// The same "Relay Server URL" gets typed into two places that need opposite schemes for
         /// the same host: this WebSocket client (ws/wss) and the Twitch extension's fetch() calls
-        /// (http/https) - see video_overlay.js's own normalizeToHttpScheme. Rather than expect a
+        /// (http/https) - see video_component.js's own normalizeToHttpScheme. Rather than expect a
         /// streamer to remember which of the two identically-labelled fields wants which prefix,
         /// both sides now accept either and translate. ClientWebSocket.ConnectAsync throws
         /// "Only Websocket schemes are allowed: ws, wss" for anything else, which is exactly the
