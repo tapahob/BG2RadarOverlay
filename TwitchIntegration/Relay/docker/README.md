@@ -75,9 +75,12 @@ What that means in practice:
    looking like the stream isn't live.
 3. **Enable Bits** on the Monetization tab and add at least one Bits Product, if you want the Bits
    path.
-4. You do not need to go through Twitch's review to use it yourself. An extension in **Hosted Test**
-   can be installed on your own channel (and on the channels of anyone you add as a tester). Review
-   is only for listing it publicly.
+4. **Plan for Twitch review.** While the extension is in Local Test or Hosted Test, only accounts
+   on its testing allowlist can see it — your ordinary viewers get nothing on your stream. That
+   allowlist is capped (around 50 accounts), so it covers testing and not an audience. Reaching
+   real viewers means submitting for review and getting the extension **Released**, which takes
+   days and can come back with requested changes. You can build and verify everything else in
+   Hosted Test with yourself allowlisted while you wait.
 
 Everything else follows from that: the Extension Secret and client id/secret come from *your*
 extension, the OAuth Application is *yours*, and `RELAY_DOMAIN` is *your* domain. No value in your

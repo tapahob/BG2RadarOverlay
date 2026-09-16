@@ -259,9 +259,18 @@ you can't point your own relay at somebody else's published extension — the si
 match.</p>
 
 <p>Which means self-hosting is really two things: <strong>your own Twitch Extension</strong> (Part
-1) and <strong>your own relay server</strong> (Part 2). The good news is you do not need Twitch to
-review anything. An extension in <em>Hosted Test</em> can be installed on your own channel, and on
-the channels of anyone you add as a tester. Review is only needed to list it publicly.</p>
+1) and <strong>your own relay server</strong> (Part 2).</p>
+
+<div class="warn">
+<p><span class="label">Your viewers can't see a test extension.</span> While yours is in
+<em>Local Test</em> or <em>Hosted Test</em>, only accounts on its testing allowlist get the panel —
+everyone else sees nothing on your stream at all. The allowlist is small (Twitch caps it at around
+50 accounts), so it is fine for trying things out and useless for a live audience.</p>
+<p>To reach your actual viewers, the extension has to be submitted for Twitch review and
+<strong>Released</strong>. Budget for that: review takes days, not minutes, and Twitch can come
+back with changes they want. Everything else in this guide works while you wait — set the whole
+thing up in Hosted Test with yourself allowlisted, confirm it works end to end, then submit.</p>
+</div>
 
 <h2 id="need">What you need</h2>
 
@@ -682,6 +691,11 @@ instead. It brings up the relay alone, on a loopback port, with no Caddy of its 
 </ul>
 
 <h2 id="trouble">Troubleshooting</h2>
+
+<h3>It works for me, but my viewers don't see the panel at all</h3>
+<p>The extension is still in a test state. Only accounts on its testing allowlist can see it —
+which is why it looks fine to you. Submit it for review and get it
+<strong>Released</strong>; there is no setting that skips this.</p>
 
 <h3>The panel never loads anything, and nothing errors</h3>
 <p>Almost always the extension's URL-fetching allowlist (<a href="#s3">step 3</a>). Twitch blocks
