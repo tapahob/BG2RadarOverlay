@@ -1,0 +1,9 @@
+# Build output - stale artifacts from a host build must never end up in the image.
+bin/
+obj/
+
+# Not part of building the relay itself.
+docker/
+deploy/
+Dockerfile
+.dockerignore

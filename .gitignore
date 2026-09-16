@@ -343,3 +343,6 @@ publish_relay/
 # Upload bundle for the Twitch Dev Console (rebuild from TwitchExtension/ sources, not tracked -
 # it goes stale the moment any of those files change)
 TwitchExtension/config.zip
+
+# A filled-in relay .env holds three Twitch secrets - never commit one.
+TwitchIntegration/Relay/docker/.env

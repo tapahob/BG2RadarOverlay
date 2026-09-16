@@ -1,0 +1,61 @@
+# One relay plus a reverse proxy that gets it a real certificate. Start with:
+#
+#   cp .env.example .env    # fill it in
+#   docker compose up -d
+#
+# If you already run a reverse proxy on this host, delete the `caddy` service below and point
+# yours at the relay instead - see README.md, "Using your own reverse proxy".
+
+services:
+  relay:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: bg2-radar-twitch-relay:latest
+    restart: unless-stopped
+    environment:
+      # Signs every JWT the Extension deals with. Required for Bits and for spending tokens.
+      TWITCH_EXTENSION_SECRET: ${TWITCH_EXTENSION_SECRET:?set TWITCH_EXTENSION_SECRET in .env}
+
+      # Lets the relay read the token prices each streamer saved in config.html.
+      TWITCH_EXTENSION_CLIENT_ID: ${TWITCH_EXTENSION_CLIENT_ID:?set TWITCH_EXTENSION_CLIENT_ID in .env}
+      TWITCH_EXTENSION_CLIENT_SECRET: ${TWITCH_EXTENSION_CLIENT_SECRET:?set TWITCH_EXTENSION_CLIENT_SECRET in .env}
+
+      # A separate OAuth Application, only needed for Channel Points. Leave the two blank to run
+      # Bits-only; the Channel Points routes then report themselves as not configured rather than
+      # failing in some less obvious way.
+      TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}
+      TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:-}
+      # Derived rather than asked for separately: it has to match the Redirect URL registered on
+      # that Application exactly, and typing it twice is how the two drift apart.
+      TWITCH_OAUTH_REDIRECT_URI: https://${RELAY_DOMAIN:?set RELAY_DOMAIN in .env}/oauth/callback
+    volumes:
+      # Named volume, not a bind mount: it inherits the image's ownership so the relay (running as
+      # a non-root user) can write to it without anyone having to chown anything first.
+      - relay-data:/data
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      # 443 is not negotiable - Twitch refuses to deliver EventSub notifications to a callback on
+      # any other port. 80 is what the certificate challenge uses.
+      - "80:80"
+      - "443:443"
+    environment:
+      RELAY_DOMAIN: ${RELAY_DOMAIN:?set RELAY_DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live here. Losing it means re-issuing on every restart, which will run you
+      # into Let's Encrypt's rate limits.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - relay
+
+volumes:
+  relay-data:
+  caddy-data:
+  caddy-config:

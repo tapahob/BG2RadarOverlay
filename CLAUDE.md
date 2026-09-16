@@ -44,6 +44,21 @@ Two suites, both fully mocked - neither needs Twitch, real Bits, or the VPS:
   Bits receipt between Twitch taking the money and the relay crediting it. Loads
   `video_overlay.js` into a stub browser (no DOM, no Twitch, no network).
 
+## Running the relay in Docker
+
+`TwitchIntegration/Relay/Dockerfile` plus `TwitchIntegration/Relay/docker/` (compose, Caddy, an
+`.env` template and a setup guide) package the relay so anyone can host their own - the relay is
+already multi-tenant, so the only thing stopping other streamers from using it was having to stand
+a server up by hand. `docker/README.md` is written for those self-hosters, not for this repo's
+maintainer.
+
+The container puts `RELAY_DATA_DIR` on a named volume and runs as a non-root uid. The compose file
+also brings up Caddy on 80/443 for automatic certificates; everything sits on 443 because Twitch
+refuses to deliver EventSub notifications to a callback on any other port.
+
+This is an alternative to the bare-metal VPS deploy below, not a replacement for it - that one is
+still what `yunamaxwell.shit.vc` runs.
+
 ## TwitchRelay VPS
 
 `TwitchIntegration/Relay/` (the relay server, see `TwitchIntegration/TwitchRelayClient.cs`) is

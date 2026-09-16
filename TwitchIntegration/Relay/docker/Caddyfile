@@ -1,0 +1,15 @@
+# Terminates TLS for the relay and gets a real certificate automatically, which matters more here
+# than it looks: the Twitch Extension will only talk to an https:// relay, and Twitch's EventSub
+# refuses to deliver to a self-signed one.
+#
+# Everything is served on 443 because Twitch rejects a webhook callback on any other port - so
+# /eventsub/callback has to live here, and there is no reason for the rest not to.
+{$RELAY_DOMAIN} {
+	# Handles the WebSocket upgrade for /ws/ingest on its own; no extra directives needed.
+	reverse_proxy relay:8080
+}
+
+# Optional: add your address so Let's Encrypt can warn you about expiry problems.
+# {
+# 	email you@example.com
+# }
