@@ -1,138 +1,115 @@
-"""Procedurally generates the wanted-poster paper texture as a PNG.
+"""Generates the WANTED poster background as an SVG.
 
-Everything here is layered the way real foxed paper actually goes wrong: uneven pulp tone first,
-then fibres, then damp stains, then edge oxidation, then the torn boundary last so it cuts through
-all of it.
+Drawn by script rather than by hand because the effect depends on irregularity - a torn paper
+edge with hand-placed points looks like a decorative zigzag rather than torn paper. A seeded RNG gives the randomness while keeping the file reproducible: rerun it and
+you get the same poster back.
 """
-import numpy as np
-from PIL import Image, ImageFilter, ImageDraw
+import io
+import random
 
-W, H = 500, 260          # 2x the 250x130 CSS card, so it stays sharp on a retina display
-SEED = 20260916
-
-
-def fbm(w, h, rng, octaves=6, persistence=0.55, base=3):
-    """Fractal noise in 0..1, built by stacking smoothly upscaled random grids."""
-    total = np.zeros((h, w), np.float32)
-    amp, norm = 1.0, 0.0
-    for o in range(octaves):
-        res = base * (2 ** o)
-        gw = max(2, int(res * w / max(w, h)))
-        gh = max(2, int(res * h / max(w, h)))
-        grid = (rng.random((gh, gw)) * 255).astype(np.uint8)
-        layer = np.asarray(
-            Image.fromarray(grid, 'L').resize((w, h), Image.BICUBIC), np.float32) / 255.0
-        total += layer * amp
-        norm += amp
-        amp *= persistence
-    return total / norm
+W, H = 250.0, 110.0
+random.seed(20260916)
 
 
-def normalise(a):
-    lo, hi = float(a.min()), float(a.max())
-    return (a - lo) / (hi - lo) if hi > lo else a * 0
+def torn_edge_path():
+    """A closed path around the poster whose edges wobble like torn paper."""
+    pts = []
+
+    def side(x0, y0, x1, y1, steps, amp):
+        # Perpendicular jitter along the side, with the corners left almost clean so the poster
+        # still reads as a rectangle rather than a blob.
+        dx, dy = x1 - x0, y1 - y0
+        nx, ny = -dy, dx
+        length = (nx * nx + ny * ny) ** 0.5
+        nx, ny = nx / length, ny / length
+        for i in range(steps):
+            t = i / float(steps)
+            taper = min(t, 1 - t) * 2          # 0 at the corners, 1 mid-side
+            j = random.uniform(-amp, amp) * (0.25 + 0.75 * taper)
+            pts.append((x0 + dx * t + nx * j, y0 + dy * t + ny * j))
+
+    m = 2.5                                     # inset so the wobble stays inside the viewBox
+    side(m, m, W - m, m, 26, 1.7)               # top
+    side(W - m, m, W - m, H - m, 14, 1.9)       # right
+    side(W - m, H - m, m, H - m, 26, 1.7)       # bottom
+    side(m, H - m, m, m, 14, 1.9)               # left
+
+    d = "M %.2f %.2f " % pts[0]
+    d += " ".join("L %.2f %.2f" % p for p in pts[1:])
+    return d + " Z"
 
 
-def build():
-    rng = np.random.default_rng(SEED)
-
-    # ---- 1. Pulp tone -------------------------------------------------------
-    # Cheap 19th-century stock was never one flat colour: the tone drifts in broad patches.
-    tone = normalise(fbm(W, H, rng, octaves=5, persistence=0.62, base=2))
-
-    light = np.array([246, 228, 184], np.float32)   # bleached highs
-    dark = np.array([210, 173, 112], np.float32)    # dirtier lows
-    img = light * tone[..., None] + dark * (1.0 - tone[..., None])
-
-    # ---- 2. Fibres ----------------------------------------------------------
-    # Stretched noise: paper fibres lie along the direction the pulp was rolled.
-    fib = fbm(W // 2, H * 3, rng, octaves=4, persistence=0.5, base=8)
-    fib = np.asarray(Image.fromarray((normalise(fib) * 255).astype(np.uint8), 'L')
-                     .resize((W, H), Image.BILINEAR), np.float32) / 255.0
-    img += (fib[..., None] - 0.5) * 14.0
-
-    # ---- 3. Grain -----------------------------------------------------------
-    img += (rng.random((H, W, 1)).astype(np.float32) - 0.5) * 13.0
-
-    # ---- 4. Foxing ----------------------------------------------------------
-    # The rusty freckling old paper gets. Sparse, soft-edged, warmer than the paper.
-    stain_mask = np.zeros((H, W), np.float32)
-    blotch = fbm(W, H, rng, octaves=3, persistence=0.5, base=4)
-    yy0, xx0 = np.ogrid[:H, :W]
-    # A handful of larger damp marks...
-    for _ in range(14):
-        cx, cy = rng.uniform(0, W), rng.uniform(0, H)
-        r = rng.uniform(7, 18)
-        d = ((xx0 - cx) / r) ** 2 + ((yy0 - cy) / (r * rng.uniform(0.5, 1.0))) ** 2
-        stain_mask += np.clip(1.0 - d, 0, 1) ** 3.0 * rng.uniform(0.2, 0.5)
-    # ...and the fine rust-coloured freckling that actually reads as age.
-    for _ in range(320):
-        cx, cy = rng.uniform(0, W), rng.uniform(0, H)
-        r = rng.uniform(0.8, 3.2)
-        d = ((xx0 - cx) / r) ** 2 + ((yy0 - cy) / r) ** 2
-        stain_mask += np.clip(1.0 - d, 0, 1) ** 1.2 * rng.uniform(0.25, 0.7)
-    stain_mask = np.clip(stain_mask * (0.5 + 0.85 * blotch), 0, 1)
-    stain_colour = np.array([134, 82, 33], np.float32)
-    img = img * (1 - stain_mask[..., None] * 0.40) + stain_colour * stain_mask[..., None] * 0.40
-
-    # ---- 5. Edge oxidation --------------------------------------------------
-    # Air and handling darken the margins first.
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    ex = np.minimum(xx, W - 1 - xx) / (W * 0.5)
-    ey = np.minimum(yy, H - 1 - yy) / (H * 0.5)
-    edge = np.clip(np.minimum(ex, ey) * 1.7, 0, 1)
-    darken = (1.0 - edge) ** 4.5
-    darken *= 0.55 + 0.9 * fbm(W, H, rng, octaves=4, base=3)   # uneven, not a clean vignette
-    img *= (1.0 - np.clip(darken, 0, 1)[..., None] * 0.09)
-
-    img = np.clip(img, 0, 255)
-
-    # ---- 6. Printed rules ---------------------------------------------------
-    pil = Image.fromarray(img.astype(np.uint8), 'RGB')
-    ink = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(ink)
-    d.rectangle([26, 26, W - 27, H - 27], outline=(38, 25, 12, 240), width=5)
-    d.rectangle([36, 36, W - 37, H - 37], outline=(38, 25, 12, 175), width=2)
-    # Roughen the ink so it doesn't look laser-printed.
-    ink_a = np.asarray(ink.split()[3], np.float32) / 255.0
-    ink_a *= 0.80 + 0.42 * fbm(W, H, rng, octaves=5, base=12)
-    ink_a = np.clip(ink_a, 0, 1)
-    ink_rgb = np.array([38, 25, 12], np.float32)
-    arr = np.asarray(pil, np.float32)
-    arr = arr * (1 - ink_a[..., None]) + ink_rgb * ink_a[..., None]
-
-    # Nail holes, top corners.
-    for nx in (44, W - 44):
-        yy2, xx2 = np.ogrid[:H, :W]
-        d2 = ((xx2 - nx) / 4.0) ** 2 + ((yy2 - 42) / 4.0) ** 2
-        hole = np.clip(1.0 - d2, 0, 1) ** 0.7
-        arr = arr * (1 - hole[..., None] * 0.8) + np.array([40, 26, 12], np.float32) * hole[..., None] * 0.8
-
-    # ---- 7. Torn edge -------------------------------------------------------
-    # Two scales of noise eating into the distance-from-edge field. The coarse one makes the
-    # outline wander in and out over the width of the poster; the fine one gives it teeth.
-    # Punched-out circles were tried here and read as a hole punch - real tearing has no
-    # characteristic radius, which is exactly what layered noise gives you for free.
-    coarse = fbm(W, H, rng, octaves=2, persistence=0.5, base=2)
-    fine = fbm(W, H, rng, octaves=5, persistence=0.55, base=14)
-    dist = np.minimum(np.minimum(xx, W - 1 - xx), np.minimum(yy, H - 1 - yy))
-    threshold = 1.0 + coarse * 17.0 + fine * 7.0
-    alpha = np.clip((dist - threshold) / 1.1, 0, 1)
-    alpha = np.clip(alpha, 0, 1)
-
-    out = np.dstack([np.clip(arr, 0, 255), alpha * 255]).astype(np.uint8)
-    return Image.fromarray(out, 'RGBA')
+def creases():
+    """Two faint fold lines - one light, one dark, as a crease catches the light on one side."""
+    out = []
+    for x in (W * 0.34, W * 0.71):
+        jitter = random.uniform(-4, 4)
+        out.append(
+            '<path d="M %.1f 0 Q %.1f %.1f %.1f %.1f" stroke="#8a6633" stroke-width="0.7" '
+            'fill="none" opacity="0.13"/>' % (x, x + jitter, H / 2, x, H))
+        out.append(
+            '<path d="M %.1f 0 Q %.1f %.1f %.1f %.1f" stroke="#fff6e2" stroke-width="0.7" '
+            'fill="none" opacity="0.22"/>' % (x + 1.1, x + jitter + 1.1, H / 2, x + 1.1, H))
+    return "\n    ".join(out)
 
 
-if __name__ == '__main__':
-    import os
-    import sys
+svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W:.0f} {H:.0f}"
+     preserveAspectRatio="none" role="img" aria-label="Aged wanted poster paper">
+  <title>Wanted poster</title>
+  <defs>
+    <!-- Sun-bleached in the middle, dirtier towards the edges. -->
+    <radialGradient id="paper" cx="45%" cy="38%" r="78%">
+      <stop offset="0%"   stop-color="#f6e7c4"/>
+      <stop offset="55%"  stop-color="#ecd7ab"/>
+      <stop offset="100%" stop-color="#cdb184"/>
+    </radialGradient>
 
-    dest = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'wanted-poster.png')
+    <!-- Paper tooth. fractalNoise rather than turbulence: turbulence gives a marbled, wet look,
+         fractalNoise gives the flat speckle of cheap pulp. -->
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" seed="7" result="n"/>
+      <feColorMatrix in="n" type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.16"/>
+      </feComponentTransfer>
+    </filter>
 
-    # Quantised to 256 colours: 30 KB instead of 180 KB, and the paper grain hides the banding
-    # you would normally get away with nowhere else. FASTOCTREE because it is the only method
-    # Pillow will apply to an image with an alpha channel, and the torn edge needs one.
-    build().quantize(colors=256, method=Image.FASTOCTREE).save(dest, optimize=True)
-    print('wrote %s (%d bytes)' % (dest, os.path.getsize(dest)))
+    <!-- Softens the torn edge so it doesn't read as a crisp vector outline. -->
+    <filter id="edgeblur" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="0.35"/>
+    </filter>
+
+    <clipPath id="sheet">
+      <path d="{torn}"/>
+    </clipPath>
+  </defs>
+
+  <!-- Shadow cast onto whatever sits behind the poster. -->
+  <path d="{torn}" fill="#000" opacity="0.30" transform="translate(1.2 1.8)" filter="url(#edgeblur)"/>
+
+  <g clip-path="url(#sheet)">
+    <path d="{torn}" fill="url(#paper)" filter="url(#edgeblur)"/>
+    {creases}
+    <rect width="100%" height="100%" filter="url(#grain)" opacity="0.55"/>
+
+    <!-- Double rule, the way a real bill is set: heavy outer, hairline inner. -->
+    <rect x="5" y="5" width="{iw:.0f}" height="{ih:.0f}" fill="none" stroke="#3b2a15"
+          stroke-width="2.2" opacity="0.85"/>
+    <rect x="8.5" y="8.5" width="{iw2:.0f}" height="{ih2:.0f}" fill="none" stroke="#3b2a15"
+          stroke-width="0.6" opacity="0.6"/>
+
+    <!-- Nail holes, top corners only - the bottom of a poster curls away. -->
+    <circle cx="14" cy="13" r="1.5" fill="#2a1c0c" opacity="0.45"/>
+    <circle cx="14" cy="13" r="2.6" fill="none" stroke="#7a5a2e" stroke-width="0.5" opacity="0.3"/>
+    <circle cx="{nx:.0f}" cy="13" r="1.5" fill="#2a1c0c" opacity="0.45"/>
+    <circle cx="{nx:.0f}" cy="13" r="2.6" fill="none" stroke="#7a5a2e" stroke-width="0.5" opacity="0.3"/>
+  </g>
+</svg>
+'''.format(W=W, H=H, torn=torn_edge_path(), creases=creases(),
+           iw=W - 10, ih=H - 10, iw2=W - 17, ih2=H - 17, nx=W - 14)
+
+import os
+path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                    'wanted-poster.svg')
+io.open(path, 'w', encoding='utf-8', newline='\n').write(svg)
+print("written %s (%d bytes)" % (path, len(svg.encode('utf-8'))))
