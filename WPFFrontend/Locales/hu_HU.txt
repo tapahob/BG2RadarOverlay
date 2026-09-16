@@ -7,7 +7,7 @@
 Str_WaitingForGame=Várakozás a játékra
 
 # EnemyControl - karakterpanel
-EnemyControlWidth=500
+EnemyControlWidth=530
 Str_Level=Sz.{0}
 Str_Race=Faj: {0}
 Str_STR=ERŐ: {0}

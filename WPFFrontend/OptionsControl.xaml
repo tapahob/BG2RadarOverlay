@@ -40,12 +40,12 @@
              regardless of how wide OptionsControlWidth makes the (Star-sized) content columns
              for a given locale. -->
         <Label x:Name="CloseBtn" Grid.Row="0" Grid.RowSpan="3" Grid.Column="3" Grid.ColumnSpan="2" Content="X" FontSize="16" HorizontalAlignment="Right" VerticalAlignment="Top" FontFamily="Segoe Print" Margin="0,15,25,0" MouseDown="Label_MouseDown"/>
-        <Label Grid.Row="1" Grid.Column="1" FontSize="18" Content="{DynamicResource Str_Options}" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Grid.ColumnSpan="3"/>
+        <Label Grid.Row="1" Grid.Column="1" FontSize="18" d:Content="Options" Content="{DynamicResource Str_Options}" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Grid.ColumnSpan="3"/>
         <Label x:Name="Version" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="10" d:Content="Ver. 2.0.3.2" Content="{Binding Configuration.Version}" FontFamily="Segoe Print" HorizontalAlignment="Center" Margin="0,26,0,30" Grid.RowSpan="2" Width="80"/>
         <Border Grid.RowSpan="4" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
 
         <TabControl Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Background="Transparent" BorderThickness="0">
-            <TabItem Header="{DynamicResource Str_TabGeneral}">
+            <TabItem d:Header="General" Header="{DynamicResource Str_TabGeneral}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -69,45 +69,45 @@
                     </Grid.ColumnDefinitions>
                     <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="1" BorderThickness="1" BorderBrush="#FF151313"/>
                     <StackPanel Grid.Row="0" Grid.Column="1" Margin="5,5,5,5">
-                        <Label Style="{StaticResource BoldSmall}" Content="{DynamicResource Str_CharacterListFiltering}" HorizontalAlignment="Center"/>
-                        <CheckBox x:Name="HidePartyMembers" Content="{DynamicResource Str_HidePartyMembers}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" />
-                        <CheckBox x:Name="HideNeutrals" Content="{DynamicResource Str_HideNeutrals}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold"/>
-                        <CheckBox x:Name="HideAllies" VerticalContentAlignment="Center" Content="{DynamicResource Str_HideAllies}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                        <Label Style="{StaticResource BoldSmall}" d:Content="Character List Filtering" Content="{DynamicResource Str_CharacterListFiltering}" HorizontalAlignment="Center"/>
+                        <CheckBox x:Name="HidePartyMembers" d:Content="Hide Party Members" Content="{DynamicResource Str_HidePartyMembers}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" />
+                        <CheckBox x:Name="HideNeutrals" d:Content="Hide Neutrals" Content="{DynamicResource Str_HideNeutrals}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold"/>
+                        <CheckBox x:Name="HideAllies" VerticalContentAlignment="Center" d:Content="Hide Allies" Content="{DynamicResource Str_HideAllies}" FontFamily="Segoe Print" FontWeight="Bold"/>
                     </StackPanel>
                     <Border Grid.Row="0" Grid.Column="3" BorderThickness="1" BorderBrush="#FF151313"/>
                     <StackPanel Grid.Row="0" Grid.Column="3" Margin="5,5,5,5">
-                        <Label Content="{DynamicResource Str_BuffPanel}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
-                        <CheckBox x:Name="BigBuffIcons" VerticalContentAlignment="Center" Content="{DynamicResource Str_BigBuffIcons}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                        <Label d:Content="Buff Panel" Content="{DynamicResource Str_BuffPanel}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+                        <CheckBox x:Name="BigBuffIcons" VerticalContentAlignment="Center" d:Content="Big Buff icons" Content="{DynamicResource Str_BigBuffIcons}" FontFamily="Segoe Print" FontWeight="Bold"/>
                     </StackPanel>
                     <Border Grid.ColumnSpan="3" Grid.Row="1" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="2"/>
                     <StackPanel Grid.ColumnSpan="3" Grid.Row="2" Grid.Column="1" Margin="5,5,5,5">
-                        <Label Content="{DynamicResource Str_BorderlessMode}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
-                        <CheckBox x:Name="EnableBorderlessMode" VerticalContentAlignment="Center" Content="{DynamicResource Str_BorderlessOnStartup}" FontFamily="Segoe Print" FontWeight="Bold"/>
-                        <Button x:Name="ForceBorderless" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="{DynamicResource Str_ForceBorderlessNow}" FontFamily="Segoe Print" FontWeight="Bold" Click="ForceBorderless_Click"/>
+                        <Label d:Content="Borderless Mode" Content="{DynamicResource Str_BorderlessMode}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+                        <CheckBox x:Name="EnableBorderlessMode" VerticalContentAlignment="Center" d:Content="Borderless on startup" Content="{DynamicResource Str_BorderlessOnStartup}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                        <Button x:Name="ForceBorderless" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Force Borderless now!" Content="{DynamicResource Str_ForceBorderlessNow}" FontFamily="Segoe Print" FontWeight="Bold" Click="ForceBorderless_Click"/>
                     </StackPanel>
                     <Border Grid.Row="3" Grid.ColumnSpan="1" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="3"/>
                     <StackPanel Grid.ColumnSpan="1" Grid.Row="4" Grid.Column="1" Margin="5,5,5,5" Grid.RowSpan="2">
-                        <Label Content="{DynamicResource Str_Performance}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+                        <Label d:Content="Performance" Content="{DynamicResource Str_Performance}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal">
-                            <Label Content="{DynamicResource Str_RefreshRate}" Style="{StaticResource BoldSmall}"/>
+                            <Label d:Content="Refresh Rate (ms):" Content="{DynamicResource Str_RefreshRate}" Style="{StaticResource BoldSmall}"/>
                             <TextBox x:Name="RefreshRate" PreviewTextInput="TextBox_PreviewTextInput" MinWidth="50" Text="300" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25" Width="46" Margin="-5" />
                         </StackPanel>
                     </StackPanel>
                     <Border Grid.Row="3" Grid.ColumnSpan="1" Grid.Column="3" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="3"/>
                     <StackPanel Grid.ColumnSpan="1" Grid.Row="4" Grid.Column="3" Margin="5,5,5,5" Grid.RowSpan="2">
-                        <Label Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" Content="{DynamicResource Str_Fonts}"/>
+                        <Label Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" d:Content="Fonts" Content="{DynamicResource Str_Fonts}"/>
                         <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font1" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
                         <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font2" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
                         <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="9" x:Name="Font3" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="Save" Click="SelectFont" Margin="3"/>
                     </StackPanel>
                     <Border Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" BorderThickness="1" BorderBrush="#FF151313"/>
                     <StackPanel Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" Margin="5,5,5,5">
-                        <Label Content="{DynamicResource Str_Other}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+                        <Label d:Content="Other" Content="{DynamicResource Str_Other}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Vertical">
-                            <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" Content="{DynamicResource Str_UseShiftClick}" ToolTip="{DynamicResource Str_UseShiftClickTooltip}" FontFamily="Segoe Print" FontWeight="Bold"/>
-                            <CheckBox x:Name="DebugMode" VerticalContentAlignment="Center" Content="{DynamicResource Str_DebugMode}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                            <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" d:Content="Use Shift Click" Content="{DynamicResource Str_UseShiftClick}" ToolTip="{DynamicResource Str_UseShiftClickTooltip}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                            <CheckBox x:Name="DebugMode" VerticalContentAlignment="Center" d:Content="Debug Mode" Content="{DynamicResource Str_DebugMode}" FontFamily="Segoe Print" FontWeight="Bold"/>
                             <StackPanel Orientation="Horizontal">
-                                <Label Content="{DynamicResource Str_Locale}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+                                <Label d:Content="Locale:" Content="{DynamicResource Str_Locale}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                                 <ComboBox x:Name="Locale" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Margin="5, -5, 0, 0" d:SelectedItem="en_US" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Width="77">
                                     <d:ComboBoxItem Content="en_US" Height="23"/>
                                 </ComboBox>
@@ -115,92 +115,100 @@
                                      but game-text-derived names (creatures/items, read from the game's own
                                      lang/ folder) are cached at startup and only pick up a locale change on
                                      the next restart - make that explicit instead of leaving it a surprise. -->
-                                <Label Content="{DynamicResource Str_LocaleRestartNote}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                <Label d:Content="Applies fully after Radar restart" Content="{DynamicResource Str_LocaleRestartNote}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0"/>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="8" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
+                    <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="8" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Save" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="{DynamicResource Str_TabTwitchIntegration}">
+            <TabItem d:Header="Twitch Integration" Header="{DynamicResource Str_TabTwitchIntegration}">
                 <StackPanel Margin="10" MinHeight="450">
-                    <Label Content="{DynamicResource Str_TwitchIntegration}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+                    <Label d:Content="Twitch Integration" Content="{DynamicResource Str_TwitchIntegration}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
 
-                    <CheckBox x:Name="TwitchIntegrationEnabled" Content="{DynamicResource Str_TwitchEnable}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Margin="0,10,0,0"/>
+                    <CheckBox x:Name="TwitchIntegrationEnabled" d:Content="Enable Twitch Integration" Content="{DynamicResource Str_TwitchEnable}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Margin="0,10,0,0"/>
 
                     <!-- Everything below only matters once integration is on - disabled as a
                          group whenever the checkbox above is unchecked, re-enabled the instant
                          it's checked again (see updateTwitchControlsEnabled in the code-behind). -->
                     <StackPanel x:Name="TwitchControlsPanel">
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label Content="{DynamicResource Str_TwitchRelayUrl}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="TwitchRelayUrl" Width="220" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
+                        <Label d:Content="Relay Server URL:" Content="{DynamicResource Str_TwitchRelayUrl}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
+                        <TextBox x:Name="TwitchRelayUrl" Width="220" d:Text="https://relay.example.com" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label Content="{DynamicResource Str_TwitchChannel}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="TwitchBroadcasterLogin" Width="180" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
+                        <Label d:Content="Twitch Channel:" Content="{DynamicResource Str_TwitchChannel}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
+                        <TextBox x:Name="TwitchBroadcasterLogin" Width="180" d:Text="yunamaxwell" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
                     </StackPanel>
-                    <TextBlock Text="{DynamicResource Str_TwitchChannelHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="122,2,0,0"/>
+                    <TextBlock d:Text="Your channel's login (as in twitch.tv/&lt;this&gt;) - lets a relay shared by several streamers tell your stream key apart from theirs." Text="{DynamicResource Str_TwitchChannelHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="122,2,0,0"/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label Content="{DynamicResource Str_TwitchStreamKey}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="TwitchStreamKey" Width="180" IsReadOnly="True" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                        <Button x:Name="GenerateStreamKey" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="GenerateStreamKey_Click" Margin="5,0,0,0"/>
+                        <Label d:Content="Stream Key:" Content="{DynamicResource Str_TwitchStreamKey}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
+                        <TextBox x:Name="TwitchStreamKey" Width="150" d:Text="3f9a2c7e18b4400e9f5d6a1c2b3e4f50" IsReadOnly="True" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
+                        <Button x:Name="GenerateStreamKey" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Connect" FontFamily="Segoe Print" FontWeight="Bold" Click="GenerateStreamKey_Click" Margin="5,0,0,0"/>
                         <!-- Only shown once a key exists, because the button beside it has become
                              Connect by then and rotating the key would otherwise be unreachable -
                              the key box is read-only, so there is no way to clear it by hand. -->
-                        <Button x:Name="RegenerateStreamKey" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="RegenerateStreamKey_Click" Margin="5,0,0,0"/>
+                        <Button x:Name="RegenerateStreamKey" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="New Key" FontFamily="Segoe Print" FontWeight="Bold" Click="RegenerateStreamKey_Click" Margin="5,0,0,0"/>
                     </StackPanel>
 
                     <!-- Authorizes spawning creatures in-game - shown only in Debug Mode so it
                          isn't casually visible/streamable (see updateControlKeyVisibility). -->
                     <StackPanel x:Name="TwitchControlKeyRow" Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label Content="{DynamicResource Str_TwitchControlKey}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="TwitchControlKey" Width="180" IsReadOnly="True" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
+                        <Label d:Content="Control key:" Content="{DynamicResource Str_TwitchControlKey}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
+                        <TextBox x:Name="TwitchControlKey" Width="180" d:Text="7c1e4b90fa2d4c8e8b6f3a9d0e1c2b4a" IsReadOnly="True" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label Content="{DynamicResource Str_TwitchStatus}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <Label x:Name="TwitchStatus" Style="{StaticResource BoldSmall}" VerticalAlignment="Center"/>
+                        <Label d:Content="Status:" Content="{DynamicResource Str_TwitchStatus}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
+                        <Label x:Name="TwitchStatus" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" d:Content="Connected"/>
                     </StackPanel>
 
-                    <Label Content="{DynamicResource Str_TwitchPacksSection}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-                    <TextBlock Text="{DynamicResource Str_TwitchPacksHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,0,0,6"/>
+                    <Label d:Content="Summon packs" Content="{DynamicResource Str_TwitchPacksSection}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                    <TextBlock d:Text="Packs viewers can pick from on stream. The name is what they see; the level range decides when a pack is offered. Requires EEex plus M_BG2RDR.lua in the game's override folder." Text="{DynamicResource Str_TwitchPacksHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,0,0,6"/>
 
-                    <ListBox x:Name="PackList" Height="140" BorderThickness="1" BorderBrush="#FF151313" Background="Transparent" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" SelectionChanged="PackList_SelectionChanged"/>
+                    <ListBox x:Name="PackList" Height="140" BorderThickness="1" BorderBrush="#FF151313" Background="Transparent" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" SelectionChanged="PackList_SelectionChanged">
+                        <d:ListBox.ItemsSource>
+                            <x:Array Type="sys:String" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                                <sys:String>Gnoll Ambush (Lv 1-3, 50 tokens)</sys:String>
+                                <sys:String>Ogre Warband (Lv 4-7, 120 tokens)</sys:String>
+                                <sys:String>Vampire Trio (Lv 8-12, 300 tokens)</sys:String>
+                            </x:Array>
+                        </d:ListBox.ItemsSource>
+                    </ListBox>
 
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Label Content="{DynamicResource Str_TwitchPackName}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="PackName" Width="170" MaxLength="24" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
+                        <Label d:Content="Name (shown to viewers):" Content="{DynamicResource Str_TwitchPackName}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
+                        <TextBox x:Name="PackName" Width="170" MaxLength="24" d:Text="Gnoll Ambush" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Label Content="{DynamicResource Str_TwitchPackLevels}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
+                        <Label d:Content="Levels:" Content="{DynamicResource Str_TwitchPackLevels}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
                         <TextBox x:Name="PackLevelFrom" Width="40" Text="1" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                        <Label Content="{DynamicResource Str_TwitchPackTo}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center"/>
+                        <Label d:Content="to" Content="{DynamicResource Str_TwitchPackTo}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center"/>
                         <TextBox x:Name="PackLevelTo" Width="40" Text="3" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Label Content="{DynamicResource Str_TwitchPackCost}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
+                        <Label d:Content="Summon cost:" Content="{DynamicResource Str_TwitchPackCost}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
                         <TextBox x:Name="PackCost" Width="70" Text="0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                        <Label Content="{DynamicResource Str_TwitchPackCostUnit}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center"/>
+                        <Label d:Content="tokens (0 = free)" Content="{DynamicResource Str_TwitchPackCostUnit}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center"/>
                     </StackPanel>
 
-                    <Label Content="{DynamicResource Str_TwitchPackCreatures}" Style="{StaticResource BoldSmall}" Margin="0,6,0,0"/>
-                    <TextBox x:Name="PackEntries" Height="60" AcceptsReturn="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent"/>
+                    <Label d:Content="Creatures (one &quot;RESREF amount&quot; per line):" Content="{DynamicResource Str_TwitchPackCreatures}" Style="{StaticResource BoldSmall}" Margin="0,6,0,0"/>
+                    <TextBox x:Name="PackEntries" Height="60" AcceptsReturn="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" d:Text="GNOLL01&#x0a;GNOLL02&#x0a;GNOLL03" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent"/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Button x:Name="PackSave" IsEnabled="False" Content="{DynamicResource Str_TwitchPackSave}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="PackSave_Click"/>
-                        <Button x:Name="PackDelete" IsEnabled="False" Content="{DynamicResource Str_TwitchPackDelete}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="PackDelete_Click" Margin="5,0,0,0"/>
-                        <Button x:Name="PackNew" Content="{DynamicResource Str_TwitchPackNew}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="PackNew_Click" Margin="5,0,0,0"/>
-                        <Button x:Name="TestSummon" IsEnabled="False" Content="{DynamicResource Str_TwitchSummonButton}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="TestSummon_Click" Margin="5,0,0,0"/>
+                        <Button x:Name="PackSave" IsEnabled="False" d:Content="Save pack" Content="{DynamicResource Str_TwitchPackSave}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="PackSave_Click"/>
+                        <Button x:Name="PackDelete" IsEnabled="False" d:Content="Delete" Content="{DynamicResource Str_TwitchPackDelete}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="PackDelete_Click" Margin="5,0,0,0"/>
+                        <Button x:Name="PackNew" d:Content="New" Content="{DynamicResource Str_TwitchPackNew}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="PackNew_Click" Margin="5,0,0,0"/>
+                        <Button x:Name="TestSummon" IsEnabled="False" d:Content="Test summon" Content="{DynamicResource Str_TwitchSummonButton}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="TestSummon_Click" Margin="5,0,0,0"/>
                     </StackPanel>
-                    <TextBlock x:Name="SummonResult" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,6,0,0"/>
+                    <TextBlock x:Name="SummonResult" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,6,0,0" d:Text="Queued: Gnoll Ambush (Lv 1-3)"/>
                     </StackPanel>
 
-                    <Button x:Name="SaveTwitch" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,20,0,0" HorizontalAlignment="Left" Width="120"/>
+                    <Button x:Name="SaveTwitch" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Save" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,20,0,0" HorizontalAlignment="Stretch"/>
                 </StackPanel>
             </TabItem>
         </TabControl>

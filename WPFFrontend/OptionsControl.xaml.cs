@@ -192,13 +192,33 @@ namespace WPFFrontend
         }
 
         private void Save_Click(object sender, System.Windows.RoutedEventArgs e)
-        {            
+        {
+            // Pull the tab's current values across first rather than trusting that each field's
+            // own TextChanged has already run - the stream key and control key in particular have
+            // no such handler, being read-only and only ever set by newStreamKey().
+            updateConfig(null, null);
             Configuration.SaveConfig();
             this.Label_MouseDown(null, null);
         }
 
+        /// <summary>
+        /// Guards against a reentrancy bug: several TextChanged/Click handlers below sync a
+        /// single field into Configuration live, but Init() sets every field from Configuration
+        /// in one go. Setting an earlier field (e.g. TwitchBroadcasterLogin.Text) whose new value
+        /// differs from what's currently displayed fires its handler immediately, mid-Init() -
+        /// which then reads every *other* field's Text, including ones Init() hasn't gotten to
+        /// yet, so it reads their stale pre-Init value and writes that back into Configuration.
+        /// For TwitchStreamKey/TwitchControlKey (no live handler of their own, only ever synced
+        /// via this shared updateConfig) that stale value can be "", silently blanking a real key
+        /// the moment the Options panel is opened - and a Save from there persists the blank.
+        /// </summary>
+        private bool suppressConfigSync = false;
+
         private void updateConfig(object sender, object args)
         {
+            if (suppressConfigSync)
+                return;
+
             Configuration.HidePartyMembers    = (bool)this.HidePartyMembers.IsChecked;
             Configuration.HideNeutrals        = (bool)this.HideNeutrals.IsChecked;
             Configuration.HideAllies          = (bool)this.HideAllies.IsChecked;
@@ -211,6 +231,7 @@ namespace WPFFrontend
             Configuration.TwitchIntegrationEnabled = (bool)this.TwitchIntegrationEnabled.IsChecked;
             Configuration.TwitchRelayUrl       = this.TwitchRelayUrl.Text;
             Configuration.TwitchStreamKey      = this.TwitchStreamKey.Text;
+            Configuration.TwitchControlKey     = this.TwitchControlKey.Text;
             // Twitch logins are canonically lowercase and case-insensitive - normalizing here
             // means what's persisted always matches what the relay resolves via Helix, rather
             // than depending on Twitch's lookup happening to tolerate whatever case she typed.
@@ -501,19 +522,31 @@ namespace WPFFrontend
 
         public void Init()
         {
-            this.HidePartyMembers.IsChecked     = Configuration.HidePartyMembers;
-            this.HideNeutrals.IsChecked         = Configuration.HideNeutrals;
-            this.HideAllies.IsChecked           = Configuration.HideAllies;
-            this.EnableBorderlessMode.IsChecked = Configuration.Borderless;
-            this.RefreshRate.Text               = Configuration.RefreshTimeMS.ToString();
-            this.BigBuffIcons.IsChecked         = Configuration.BigBuffIcons;
-            this.UseShiftClick.IsChecked        = Configuration.UseShiftClick;
-            this.DebugMode.IsChecked            = Configuration.DebugMode;
-            this.TwitchIntegrationEnabled.IsChecked = Configuration.TwitchIntegrationEnabled;
-            this.TwitchRelayUrl.Text            = Configuration.TwitchRelayUrl;
-            this.TwitchBroadcasterLogin.Text    = Configuration.TwitchBroadcasterLogin;
-            this.TwitchStreamKey.Text           = Configuration.TwitchStreamKey;
-            this.TwitchControlKey.Text          = Configuration.TwitchControlKey;
+            // See suppressConfigSync above - without this, populating these fields from
+            // Configuration can itself fire their live TextChanged/Click sync handlers
+            // mid-populate and write other, not-yet-populated fields' stale Text back into
+            // Configuration before this method gets to them.
+            suppressConfigSync = true;
+            try
+            {
+                this.HidePartyMembers.IsChecked     = Configuration.HidePartyMembers;
+                this.HideNeutrals.IsChecked         = Configuration.HideNeutrals;
+                this.HideAllies.IsChecked           = Configuration.HideAllies;
+                this.EnableBorderlessMode.IsChecked = Configuration.Borderless;
+                this.RefreshRate.Text               = Configuration.RefreshTimeMS.ToString();
+                this.BigBuffIcons.IsChecked         = Configuration.BigBuffIcons;
+                this.UseShiftClick.IsChecked        = Configuration.UseShiftClick;
+                this.DebugMode.IsChecked            = Configuration.DebugMode;
+                this.TwitchIntegrationEnabled.IsChecked = Configuration.TwitchIntegrationEnabled;
+                this.TwitchRelayUrl.Text            = Configuration.TwitchRelayUrl;
+                this.TwitchBroadcasterLogin.Text    = Configuration.TwitchBroadcasterLogin;
+                this.TwitchStreamKey.Text           = Configuration.TwitchStreamKey;
+                this.TwitchControlKey.Text          = Configuration.TwitchControlKey;
+            }
+            finally
+            {
+                suppressConfigSync = false;
+            }
             updateControlKeyVisibility();
             updateStreamKeyButtons();
             updateTwitchControlsEnabled();

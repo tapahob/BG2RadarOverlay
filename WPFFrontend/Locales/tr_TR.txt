@@ -7,7 +7,7 @@
 Str_WaitingForGame=Oyun bekleniyor
 
 # EnemyControl - karakter paneli
-EnemyControlWidth=480
+EnemyControlWidth=510
 Str_Level=Sv.{0}
 Str_Race=Irk: {0}
 Str_STR=GÜÇ: {0}

@@ -7,7 +7,7 @@
 Str_WaitingForGame=Warte auf Spiel
 
 # EnemyControl - Charakterpanel
-EnemyControlWidth=500
+EnemyControlWidth=530
 Str_Level=St.{0}
 Str_Race=Rasse: {0}
 Str_STR=STK: {0}

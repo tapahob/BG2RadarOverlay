@@ -7,7 +7,7 @@
 Str_WaitingForGame=Ожидание запуска игры
 
 # EnemyControl - панель персонажа
-EnemyControlWidth=550
+EnemyControlWidth=580
 Str_Level=Ур.{0}
 Str_Race=Раса: {0}
 Str_STR=СИЛ: {0}

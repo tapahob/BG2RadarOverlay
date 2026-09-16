@@ -7,7 +7,7 @@
 Str_WaitingForGame=Oczekiwanie na grę
 
 # EnemyControl - panel postaci
-EnemyControlWidth=490
+EnemyControlWidth=520
 Str_Level=Poz.{0}
 Str_Race=Rasa: {0}
 Str_STR=SIŁ: {0}

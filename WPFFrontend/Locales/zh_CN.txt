@@ -11,7 +11,7 @@ Str_WaitingForGame=等待游戏
 # omit it (or leave it blank/invalid) to keep the control's default width. 450 below is that
 # default, spelled out here so translators have something to compare against and widen if
 # their text needs more room.
-EnemyControlWidth=450
+EnemyControlWidth=480
 Str_Level=等级{0}
 Str_Race=种族：{0}
 Str_STR=力量：{0}

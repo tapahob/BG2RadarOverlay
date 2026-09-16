@@ -7,7 +7,7 @@
 Str_WaitingForGame=게임 대기 중
 
 # EnemyControl - 캐릭터 패널
-EnemyControlWidth=470
+EnemyControlWidth=500
 Str_Level=Lv{0}
 Str_Race=종족: {0}
 Str_STR=근력: {0}

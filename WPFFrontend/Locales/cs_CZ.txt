@@ -7,7 +7,7 @@
 Str_WaitingForGame=Čekání na hru
 
 # EnemyControl - panel postavy
-EnemyControlWidth=500
+EnemyControlWidth=530
 Str_Level=Úr.{0}
 Str_Race=Rasa: {0}
 Str_STR=SÍL: {0}

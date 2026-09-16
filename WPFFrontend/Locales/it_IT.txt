@@ -7,7 +7,7 @@
 Str_WaitingForGame=In attesa del gioco
 
 # EnemyControl - pannello del personaggio
-EnemyControlWidth=500
+EnemyControlWidth=530
 Str_Level=Liv.{0}
 Str_Race=Razza: {0}
 Str_STR=FOR: {0}

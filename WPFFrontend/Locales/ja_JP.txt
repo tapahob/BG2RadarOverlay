@@ -7,7 +7,7 @@
 Str_WaitingForGame=ゲーム起動待ち
 
 # EnemyControl - キャラクターパネル
-EnemyControlWidth=470
+EnemyControlWidth=500
 Str_Level=Lv{0}
 Str_Race=種族: {0}
 Str_STR=筋力: {0}
