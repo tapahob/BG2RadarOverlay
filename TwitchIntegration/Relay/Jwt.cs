@@ -57,8 +57,17 @@ public static class Jwt
         using (doc)
         {
             var root = doc.RootElement;
-            if (root.TryGetProperty("exp", out var expEl) && expEl.TryGetInt64(out var expUnix)
-                && DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expUnix)
+            if (root.ValueKind != JsonValueKind.Object)
+                return null;
+
+            // `exp` is *required*, not just honoured when present. Every token this relay accepts
+            // (onAuthorized, Bits receipt) is issued by Twitch and always carries one, and a
+            // signed token with no expiry would be valid forever - which is exactly what turns a
+            // receipt a viewer's browser still holds into an unlimited free top-up once the
+            // replay guard's entry for it has aged out.
+            if (!root.TryGetProperty("exp", out var expEl) || !expEl.TryGetInt64(out var expUnix))
+                return null;
+            if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expUnix + clockSkewSeconds)
                 return null;
 
             // Clone: doc is disposed at the end of this block, and a JsonElement isn't valid to
@@ -67,6 +76,24 @@ public static class Jwt
             return root.Clone();
         }
     }
+
+    /// <summary>
+    /// The `exp` of an already-verified payload, as UTC - what the replay guard files a spent
+    /// Bits transaction id under, so a receipt's dedup entry always outlives the receipt itself.
+    /// </summary>
+    public static DateTime? TryGetExpiry(JsonElement payload)
+    {
+        if (payload.ValueKind != JsonValueKind.Object
+            || !payload.TryGetProperty("exp", out var expEl)
+            || !expEl.TryGetInt64(out var expUnix))
+            return null;
+        return DateTimeOffset.FromUnixTimeSeconds(expUnix).UtcDateTime;
+    }
+
+    // A minute of tolerance for clock drift between this VPS and Twitch - small enough that it
+    // never meaningfully extends a token's life, large enough that a slightly fast clock here
+    // doesn't reject a receipt a viewer just paid real Bits for.
+    private const long clockSkewSeconds = 60;
 
     private static byte[] base64UrlDecode(string input)
     {

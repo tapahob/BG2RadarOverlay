@@ -7,4 +7,10 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Top-level statements put Program in the global namespace as an internal class;
+         WebApplicationFactory in the tests needs to name it as its entry point. -->
+    <InternalsVisibleTo Include="TwitchRelay.Tests" />
+  </ItemGroup>
+
 </Project>

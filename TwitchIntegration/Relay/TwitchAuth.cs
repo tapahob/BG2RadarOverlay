@@ -3,6 +3,21 @@ using System.Text.Json;
 namespace TwitchRelay;
 
 /// <summary>
+/// Where Twitch lives. Real Twitch unless overridden, and the override exists so the payment
+/// paths can be exercised end to end against a stub - crediting Bits and reading a streamer's
+/// prices both go through Helix, and there is otherwise no way to test either without spending
+/// real Bits on a real channel. Read once at startup; leave both unset in production.
+/// </summary>
+public static class TwitchEndpoints
+{
+    public static readonly string Helix =
+        (Environment.GetEnvironmentVariable("TWITCH_HELIX_BASE_URL") ?? "https://api.twitch.tv/helix").TrimEnd('/');
+
+    public static readonly string Id =
+        (Environment.GetEnvironmentVariable("TWITCH_ID_BASE_URL") ?? "https://id.twitch.tv").TrimEnd('/');
+}
+
+/// <summary>
 /// Persists each broadcaster's OAuth tokens for the Channel Points / EventSub path - one entry
 /// per streamer who has completed GET /oauth/authorize -> /oauth/callback, keyed by their numeric
 /// Twitch id (stable, unlike a stream key they can regenerate). Every streamer this relay serves
@@ -75,7 +90,7 @@ public sealed class TokenStore
 
             // Twitch access tokens live a few hours; this relay process can easily outlive that,
             // so refreshing has to happen automatically here rather than only at startup.
-            using var response = await http.PostAsync("https://id.twitch.tv/oauth2/token", new FormUrlEncodedContent(new Dictionary<string, string>
+            using var response = await http.PostAsync(TwitchEndpoints.Id + "/oauth2/token", new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["client_id"] = clientId,
                 ["client_secret"] = clientSecret,
@@ -109,13 +124,8 @@ public sealed class TokenStore
         }
     }
 
-    private async Task persistAsync(Dictionary<string, StoredTokens> all)
-    {
-        var dir = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(dir))
-            Directory.CreateDirectory(dir);
-        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(all));
-    }
+    private Task persistAsync(Dictionary<string, StoredTokens> all)
+        => AtomicFile.WriteAllTextAsync(path, JsonSerializer.Serialize(all));
 
     private async Task<Dictionary<string, StoredTokens>> loadAsync()
     {
@@ -135,6 +145,9 @@ public sealed class TokenStore
         }
         catch (JsonException)
         {
+            // Moved aside rather than silently replaced - losing these means every streamer has
+            // to run /oauth/authorize again, so the broken copy is worth keeping.
+            AtomicFile.Quarantine(path);
             cached = new Dictionary<string, StoredTokens>();
         }
         return cached;
@@ -177,10 +190,7 @@ public sealed class WebhookSecretStore
             // Twitch requires 10-100 bytes for a webhook secret; 32 random bytes hex-encoded
             // (64 chars) sits comfortably inside that.
             cached = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
-            var dir = Path.GetDirectoryName(path);
-            if (!string.IsNullOrEmpty(dir))
-                Directory.CreateDirectory(dir);
-            await File.WriteAllTextAsync(path, cached);
+            await AtomicFile.WriteAllTextAsync(path, cached);
             return cached;
         }
         finally
@@ -204,7 +214,7 @@ public static class TwitchApi
     /// </summary>
     public static async Task<string?> GetAppAccessTokenAsync(HttpClient http, string clientId, string clientSecret)
     {
-        using var response = await http.PostAsync("https://id.twitch.tv/oauth2/token", new FormUrlEncodedContent(new Dictionary<string, string>
+        using var response = await http.PostAsync(TwitchEndpoints.Id + "/oauth2/token", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["client_id"] = clientId,
             ["client_secret"] = clientSecret,
@@ -220,7 +230,7 @@ public static class TwitchApi
 
     public static async Task<string?> ResolveBroadcasterIdAsync(HttpClient http, string accessToken, string clientId)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.twitch.tv/helix/users");
+        using var request = new HttpRequestMessage(HttpMethod.Get, TwitchEndpoints.Helix + "/users");
         request.Headers.Add("Authorization", "Bearer " + accessToken);
         request.Headers.Add("Client-Id", clientId);
 
@@ -234,68 +244,132 @@ public static class TwitchApi
     }
 
     /// <summary>
-    /// Whether this broadcaster already has a live (or pending-verification) redemption
-    /// subscription pointed at our callback URL - shared by the idempotent create below and by
-    /// config.html's "is Channel Points authorized yet" status check, so a streamer can see
-    /// whether they still need to click Authorize without it ever creating a duplicate.
+    /// A redemption being created - a viewer spending their points. This is what credits tokens.
     /// </summary>
-    public static async Task<string?> FindActiveRedemptionSubscriptionStatusAsync(
+    public const string RedemptionAddType = "channel.channel_points_custom_reward_redemption.add";
+
+    /// <summary>
+    /// A redemption changing state afterwards - accepted, or refunded out of the streamer's
+    /// request queue. Only the refund matters here, and it is why this second subscription exists
+    /// at all: without it, points handed back to a viewer leave the tokens they bought in place.
+    /// </summary>
+    public const string RedemptionUpdateType = "channel.channel_points_custom_reward_redemption.update";
+
+    public static readonly string[] RedemptionTypes = { RedemptionAddType, RedemptionUpdateType };
+
+    public sealed record ExistingSubscription(string Id, string Type, string Status);
+
+    /// <summary>
+    /// Every redemption subscription this relay already has for a broadcaster, keyed by type.
+    /// Both the setup flow and config.html's status check read this - one to know what still
+    /// needs creating, the other to tell the streamer whether they are done.
+    /// </summary>
+    public static async Task<Dictionary<string, ExistingSubscription>?> FindRedemptionSubscriptionsAsync(
         HttpClient http, string appAccessToken, string clientId, string broadcasterId, string callbackUrl)
     {
-        using var listRequest = new HttpRequestMessage(HttpMethod.Get,
-            "https://api.twitch.tv/helix/eventsub/subscriptions?type=channel.channel_points_custom_reward_redemption.add");
-        listRequest.Headers.Add("Authorization", "Bearer " + appAccessToken);
-        listRequest.Headers.Add("Client-Id", clientId);
+        var found = new Dictionary<string, ExistingSubscription>();
 
-        using var listResponse = await http.SendAsync(listRequest);
-        if (!listResponse.IsSuccessStatusCode)
-            return null;
-
-        using var listDoc = JsonDocument.Parse(await listResponse.Content.ReadAsStringAsync());
-        foreach (var sub in listDoc.RootElement.GetProperty("data").EnumerateArray())
+        foreach (var type in RedemptionTypes)
         {
-            var condBroadcaster = sub.GetProperty("condition").TryGetProperty("broadcaster_user_id", out var b) ? b.GetString() : null;
-            var transportCallback = sub.GetProperty("transport").TryGetProperty("callback", out var c) ? c.GetString() : null;
-            var status = sub.TryGetProperty("status", out var s) ? s.GetString() : null;
+            using var listRequest = new HttpRequestMessage(HttpMethod.Get,
+                TwitchEndpoints.Helix + "/eventsub/subscriptions?type=" + Uri.EscapeDataString(type));
+            listRequest.Headers.Add("Authorization", "Bearer " + appAccessToken);
+            listRequest.Headers.Add("Client-Id", clientId);
 
-            if (condBroadcaster == broadcasterId && transportCallback == callbackUrl
-                && status is "enabled" or "webhook_callback_verification_pending")
+            using var listResponse = await http.SendAsync(listRequest);
+            if (!listResponse.IsSuccessStatusCode)
+                return null; // can't tell - the caller must not read that as "nothing exists"
+
+            using var listDoc = JsonDocument.Parse(await listResponse.Content.ReadAsStringAsync());
+            if (!listDoc.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+                continue;
+
+            foreach (var sub in data.EnumerateArray())
             {
-                return status;
+                var subType = sub.TryGetProperty("type", out var t) ? t.GetString() : null;
+                var condBroadcaster = sub.TryGetProperty("condition", out var cond)
+                    && cond.TryGetProperty("broadcaster_user_id", out var b) ? b.GetString() : null;
+                var transportCallback = sub.TryGetProperty("transport", out var transport)
+                    && transport.TryGetProperty("callback", out var c) ? c.GetString() : null;
+                var status = sub.TryGetProperty("status", out var st) ? st.GetString() : null;
+                var id = sub.TryGetProperty("id", out var i) ? i.GetString() : null;
+
+                if (subType == type && condBroadcaster == broadcasterId && transportCallback == callbackUrl
+                    && id is not null && status is "enabled" or "webhook_callback_verification_pending")
+                {
+                    found[type] = new ExistingSubscription(id, type, status);
+                }
             }
         }
-        return null;
+
+        return found;
+    }
+
+    private static async Task<bool> deleteSubscriptionAsync(
+        HttpClient http, string appAccessToken, string clientId, string subscriptionId)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Delete,
+            TwitchEndpoints.Helix + "/eventsub/subscriptions?id=" + Uri.EscapeDataString(subscriptionId));
+        request.Headers.Add("Authorization", "Bearer " + appAccessToken);
+        request.Headers.Add("Client-Id", clientId);
+
+        using var response = await http.SendAsync(request);
+        return response.IsSuccessStatusCode;
     }
 
     /// <summary>
-    /// Idempotent: lists what's already subscribed and only creates a new one if nothing matches
-    /// this broadcaster + callback URL yet, so re-running /oauth/authorize (or a relay restart
-    /// that redoes setup) doesn't pile up duplicate subscriptions - Twitch would otherwise deliver
-    /// every redemption two, three, N times over.
+    /// Makes this broadcaster's redemption subscriptions match what the relay currently holds -
+    /// both event types, on the current callback, signed with the current webhook secret.
+    ///
+    /// Existing ones are deleted and re-created rather than left alone, and that is the point:
+    /// Twitch never discloses the secret a subscription was created with, so there is no way to
+    /// check whether it still matches ours. If this relay's secret was ever lost and regenerated,
+    /// every delivery fails its signature check here while Twitch goes on reporting the
+    /// subscription as enabled - and leaving a healthy-looking subscription in place is exactly
+    /// what made that unrecoverable. Re-authorizing is a deliberate act by the streamer, so it is
+    /// the right place to make repair the default rather than something they have to know to ask
+    /// for. Duplicates are impossible either way: whatever was there is gone first.
     /// </summary>
-    public static async Task<(bool Ok, string Status)> EnsureRedemptionSubscriptionAsync(
+    public static async Task<(bool Ok, string Status)> EnsureRedemptionSubscriptionsAsync(
         HttpClient http, string accessToken, string clientId,
         string broadcasterId, string callbackUrl, string webhookSecret)
     {
-        var existingStatus = await FindActiveRedemptionSubscriptionStatusAsync(http, accessToken, clientId, broadcasterId, callbackUrl);
-        if (existingStatus is not null)
-            return (true, "already subscribed (" + existingStatus + ")");
+        var existing = await FindRedemptionSubscriptionsAsync(http, accessToken, clientId, broadcasterId, callbackUrl);
+        if (existing is null)
+            return (false, "could not read existing subscriptions from Twitch");
 
-        var body = JsonSerializer.Serialize(new
+        var replaced = 0;
+        foreach (var subscription in existing.Values)
         {
-            type = "channel.channel_points_custom_reward_redemption.add",
-            version = "1",
-            condition = new { broadcaster_user_id = broadcasterId },
-            transport = new { method = "webhook", callback = callbackUrl, secret = webhookSecret }
-        });
+            if (await deleteSubscriptionAsync(http, accessToken, clientId, subscription.Id))
+                replaced++;
+        }
 
-        using var createRequest = new HttpRequestMessage(HttpMethod.Post, "https://api.twitch.tv/helix/eventsub/subscriptions");
-        createRequest.Headers.Add("Authorization", "Bearer " + accessToken);
-        createRequest.Headers.Add("Client-Id", clientId);
-        createRequest.Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        foreach (var type in RedemptionTypes)
+        {
+            var body = JsonSerializer.Serialize(new
+            {
+                type,
+                version = "1",
+                condition = new { broadcaster_user_id = broadcasterId },
+                transport = new { method = "webhook", callback = callbackUrl, secret = webhookSecret }
+            });
 
-        using var createResponse = await http.SendAsync(createRequest);
-        var responseText = await createResponse.Content.ReadAsStringAsync();
-        return (createResponse.IsSuccessStatusCode, createResponse.IsSuccessStatusCode ? "created" : $"failed ({(int)createResponse.StatusCode}): {responseText}");
+            using var createRequest = new HttpRequestMessage(HttpMethod.Post, TwitchEndpoints.Helix + "/eventsub/subscriptions");
+            createRequest.Headers.Add("Authorization", "Bearer " + accessToken);
+            createRequest.Headers.Add("Client-Id", clientId);
+            createRequest.Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+
+            using var createResponse = await http.SendAsync(createRequest);
+            if (!createResponse.IsSuccessStatusCode)
+            {
+                var responseText = await createResponse.Content.ReadAsStringAsync();
+                return (false, $"{type} failed ({(int)createResponse.StatusCode}): {responseText}");
+            }
+        }
+
+        return (true, replaced > 0
+            ? $"re-created ({replaced} replaced, {RedemptionTypes.Length} now active)"
+            : $"created ({RedemptionTypes.Length} active)");
     }
 }

@@ -14,9 +14,39 @@ output DLL.
 
 Look for screenshots in the folder at the `%SCREENSHOTS%` environment variable.
 
+## Twitch Integration layout
+
+Everything Twitch-specific lives under `TwitchIntegration/`:
+
+- `Relay/` - the ASP.NET relay deployed to the VPS. The **project and assembly are still named
+  `TwitchRelay`** even though the folder isn't: the systemd unit runs `/opt/twitch-relay/TwitchRelay.dll`,
+  so renaming the assembly would break the running deployment for no benefit.
+- `Relay.Tests/` - `TwitchRelay.Tests.csproj`, same reasoning (the relay's `InternalsVisibleTo`
+  names that assembly).
+- `Extension/` - the Twitch Extension front-end. **Only the contents of this folder** are zipped
+  and uploaded to Twitch, so nothing in the page may reference a path above it.
+- `TwitchRelayClient.cs`, `SpawnPack.cs` - the overlay-side halves, compiled into the main
+  BGOverlay project (which lists sources explicitly, so `BGOverlay.csproj` names these paths).
+
+`GameSpawnBridge.cs` and `EEexMod/` deliberately stay at the root: they're the game/EEex side of
+the bridge, used by the app whether or not Twitch is switched on.
+
+## Tests
+
+Two suites, both fully mocked - neither needs Twitch, real Bits, or the VPS:
+
+- `dotnet test TwitchIntegration/Relay.Tests` - the relay's payment paths end to end. `FakeTwitch` stands in
+  for Helix and mints the JWTs Twitch would (it holds the same extension secret the relay is
+  configured with, so a receipt it signs is genuine as far as the relay can tell); `RelayHarness`
+  runs the relay in-process against it. `TWITCH_HELIX_BASE_URL` / `TWITCH_ID_BASE_URL` are what
+  point the relay at the stub - leave both unset in production.
+- `node TwitchIntegration/Extension/tests/pending-receipts.test.js` - the viewer-side half: what happens to a
+  Bits receipt between Twitch taking the money and the relay crediting it. Loads
+  `video_overlay.js` into a stub browser (no DOM, no Twitch, no network).
+
 ## TwitchRelay VPS
 
-`TwitchRelay/` (the relay server for the Twitch integration, see `TwitchRelayClient.cs`) is
+`TwitchIntegration/Relay/` (the relay server, see `TwitchIntegration/TwitchRelayClient.cs`) is
 deployed on a separate Ubuntu VPS, not on this machine.
 
 - Connect: the `TWITCH_IP` env var holds the SSH *arguments* - `<host> -l <user>`, with no `ssh`
@@ -29,7 +59,7 @@ deployed on a separate Ubuntu VPS, not on this machine.
   `sshpass` is *not* installed and Git Bash has no package manager to install it with. What works
   is Python + paramiko (already installed): connect with `password=os.environ["TWITCH_PWD"]`, run
   commands with `exec_command`, copy files with `open_sftp()`.
-- Redeploying: `dotnet publish TwitchRelay/TwitchRelay.csproj -c Release -o publish_relay`, stop
+- Redeploying: `dotnet publish TwitchIntegration/Relay/TwitchRelay.csproj -c Release -o publish_relay`, stop
   the service, SFTP the published files over (skip `TwitchRelay.pdb` and `web.config` - debug
   symbols and an IIS-only file), `chown -R www-data:www-data /opt/twitch-relay`, start again.
 - Reading command output in Python: decode with `errors="replace"` and
@@ -37,7 +67,7 @@ deployed on a separate Ubuntu VPS, not on this machine.
   console's cp1251 codec can't encode, which otherwise kills the script *after* it has already
   deployed.
 - Deploy layout on the VPS: app in `/opt/twitch-relay`, run via the systemd unit at
-  `TwitchRelay/deploy/twitch-relay.service` (`sudo systemctl status/restart twitch-relay`). It
+  `TwitchIntegration/Relay/deploy/twitch-relay.service` (`sudo systemctl status/restart twitch-relay`). It
   listens on `localhost:5080`; Caddy fronts it on port 8443 with a real certificate, so the public
   base URL is `https://<host>:8443` - that is what the overlay and the extension config use.
   Twitch's EventSub, though, rejects a webhook callback on a non-standard port - `/oauth/callback`
@@ -45,9 +75,13 @@ deployed on a separate Ubuntu VPS, not on this machine.
   route added to this VPS's *other*, pre-existing Caddy instance (a third-party VPN admin panel
   that already owns 443 for this hostname) - everything else on that port still falls through to
   that panel's own routing untouched. `TWITCH_OAUTH_REDIRECT_URI` must point at the port-443 form.
-- Per-viewer/per-restart data (OAuth tokens, the EventSub webhook secret, token balances) is
-  written under `<app dir>/data/` - a plain-file store, not a database. Back it up before wiping
-  the deploy directory, or viewers lose whatever token balance they'd bought.
+- Per-viewer/per-restart data (OAuth tokens, the EventSub webhook secret, token balances, spent
+  Bits transaction ids) is written under `<app dir>/data/` - a plain-file store, not a database.
+  Set `RELAY_DATA_DIR` to somewhere outside the deploy directory (the systemd unit is the place
+  for it) so a redeploy can't take it with it; otherwise back it up before wiping, or viewers lose
+  whatever token balance they'd bought. Losing `used-bits-transactions.json` specifically is worse
+  than losing balances: it is what stops a receipt a viewer's browser still holds from being
+  cashed in a second time.
 
 ## Summon tokens: Channel Points / Bits economy
 
@@ -95,6 +129,39 @@ up in the Dev Console, since two of the three are both just called "Secret":
   it doesn't) - visiting `<relay base URL>/oauth/authorize` directly works the same way, the button
   is just a convenience wrapper around it.
 
+**Max Tokens per Viewer** (config.html, `maxTokenBalance`, 0 = no limit) caps how many tokens one
+viewer may hold, so nobody can bank a stockpile and spend a whole run at once. It binds Channel
+Points only: a redemption credits just what fits under the ceiling and nothing once a viewer is at
+it, because points are earned by watching and a redemption that won't fit costs them nothing real.
+Bits always credit in full even when that carries someone past the ceiling - the money is taken by
+Twitch before the relay ever sees the receipt, so refusing part of a purchase would mean charging
+for tokens never handed over. Tokens held over the ceiling spend normally; points simply resume
+crediting once the viewer is back under. A refund takes back what a redemption *actually* credited,
+which for a partly-capped one is less than its nominal value.
+
+The two currencies are verified in completely different ways, which is worth keeping straight.
+**Channel Points** never involves the viewer's browser at all: Twitch POSTs the redemption to
+`/eventsub/callback`, a public URL, and an HMAC over (message id + timestamp + body) using the
+relay's own webhook secret is the entire authentication - plus a ten-minute freshness window, since
+the signature covers the timestamp and would otherwise stay valid forever. Which broadcaster it
+belongs to comes from the event itself (`broadcaster_user_id`), so nothing has to assume there is
+only one streamer.
+
+That webhook secret lives in `<data dir>/eventsub-secret.txt` and is handed to Twitch when the
+subscription is created. **Losing it breaks Channel Points silently and permanently**: the relay
+generates a new one, every already-registered subscription keeps signing with the old one, every
+redemption fails its signature check, and re-running `/oauth/authorize` won't fix it because the
+subscription already exists and its secret can't be changed. Recovering means deleting the
+subscription at Twitch's end first. This is the main reason `RELAY_DATA_DIR` is worth setting.
+
+**Bits** is the opposite: a purchase is credited by the extension posting the receipt Twitch handed it, together with the
+viewer's own `onAuthorized` token - the receipt proves a purchase happened, the token proves which
+channel it happened on (the extension secret is relay-wide, so a receipt alone cannot say). The
+receipt is kept in the viewer's `localStorage` until the relay confirms and retried on the next
+panel open, because Twitch hands it over exactly once and a failed POST would otherwise lose a
+paid-for purchase outright; the relay keys credits on the transaction id and answers
+`duplicate: true` rather than crediting twice, which is what lets that retry be safe.
+
 Bits needs no broadcaster authorization at all - only the Extension Secret above, since a purchase
 is verified from a signed receipt the extension frontend already holds, not looked up separately.
 
@@ -105,7 +172,12 @@ Setting up each currency in the Dev Console (per streamer, on their own channel)
 - **Channel Points**: create exactly one Custom Reward whose title matches what's typed into
   config.html's "Token Reward Name" field (case-insensitive) - that's the only reward the relay
   treats as a token purchase; every other reward on the channel is ignored. Then do the
-  `/oauth/authorize` step above, once, as that channel's broadcaster.
+  `/oauth/authorize` step above, once, as that channel's broadcaster. Turn **"Skip Reward Requests
+  Queue"** on for that reward: the relay credits tokens the moment the redemption event arrives,
+  and there is no claw-back if the redemption is *later* refunded from the queue (that would need
+  a second EventSub subscription on the `.update` event, plus a policy for what to do when the
+  tokens have already been spent - neither exists today). With the queue skipped, the points are
+  final at redemption time and the two can't disagree.
 
 None of this needs a code change to add/rename packs, change prices, or onboard another streamer -
 config.html's saved values and each streamer's live pack list are both read fresh (config.html on

@@ -6,7 +6,7 @@
   // Set from config.html's saved bitsPerToken/pointsPerToken/rewardName - what one summon token
   // costs in each currency, and which Custom Reward sells them for Channel Points. 0 means that
   // currency is off.
-  var tokenPrice = { bits: 0, points: 0, rewardName: '' };
+  var tokenPrice = { bits: 0, points: 0, rewardName: '', maxBalance: 0 };
 
   var iconEl = document.getElementById('icon');
   var panelEl = document.getElementById('panel');
@@ -14,6 +14,13 @@
 
   iconEl.addEventListener('click', function () {
     panelEl.classList.toggle('open');
+    if (panelEl.classList.contains('open')) {
+      // Channel Points redemptions are credited server-side with nothing to notify this panel,
+      // and a Bits credit can have landed from another device - so the balance is re-read on
+      // open rather than trusted from whenever it was last fetched.
+      fetchBalance();
+      redeemPendingReceipts();
+    }
   });
 
   // The same "Relay Server URL" also gets typed into the Radar app's Options tab, which needs
@@ -39,7 +46,8 @@
       tokenPrice = {
         bits: Number(parsed.bitsPerToken) || 0,
         points: Number(parsed.pointsPerToken) || 0,
-        rewardName: parsed.rewardName || ''
+        rewardName: parsed.rewardName || '',
+        maxBalance: Number(parsed.maxTokenBalance) || 0
       };
       startPolling();
       updateSendState();
@@ -84,6 +92,9 @@
       // handler re-running is what picks that up, not a separate callback.
       viewerHasIdentity = !!auth.userId;
       if (viewerHasIdentity) fetchBalance();
+      // A purchase whose credit never landed - from this session or a previous one - gets
+      // another go as soon as there is a token to authorize it with.
+      redeemPendingReceipts();
       renderSummonState();
     });
   }
@@ -98,8 +109,18 @@
 
   function startPolling() {
     if (pollTimer) clearInterval(pollTimer);
+    poll();
+    pollTimer = setInterval(poll, 5000);
+  }
+
+  function poll() {
     fetchStatus();
-    pollTimer = setInterval(fetchStatus, 5000);
+    // A Channel Points purchase happens entirely outside this panel - the viewer redeems the
+    // reward in Twitch's own points UI, and nothing tells us about it. Without re-reading the
+    // balance the panel would go on showing the old one, and on saying "Not enough tokens" for
+    // a summon they have just paid for. Only while the panel is actually open: a closed panel
+    // has no balance on screen to be stale.
+    if (panelEl.classList.contains('open')) fetchBalance();
   }
 
   function fetchStatus() {
@@ -331,28 +352,121 @@
     }
   }
 
+  // ---- Unredeemed receipts ----
+  //
+  // Twitch has already taken the viewer's Bits by the time onTransactionComplete fires. The
+  // receipt it hands over is the only proof of that purchase, and it exists nowhere else - not
+  // on the relay, not on Twitch's side in any form we can ask for. So posting it once and
+  // hoping was a way to lose a purchase outright: a dropped connection, a relay restarting, or
+  // the viewer closing the panel a second after paying, and the Bits are spent with nothing
+  // credited and no way to ever recover it.
+  //
+  // It is written down first and only cleared once the relay confirms. Retrying is safe because
+  // the relay keys credits on the transaction id and refuses to honour one twice - a receipt
+  // that did land the first time comes back as `duplicate`, which settles it just as well.
+  var pendingKey = 'bg2ext_pending_receipts';
+
+  function readPending() {
+    try {
+      var raw = localStorage.getItem(pendingKey);
+      var list = raw ? JSON.parse(raw) : [];
+      return Object.prototype.toString.call(list) === '[object Array]' ? list : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writePending(list) {
+    try {
+      if (list.length === 0) localStorage.removeItem(pendingKey);
+      else localStorage.setItem(pendingKey, JSON.stringify(list));
+    } catch (e) {
+      // Private browsing, or storage disabled. The in-flight POST below still runs; there is
+      // just nothing to retry from if it fails.
+    }
+  }
+
+  function rememberReceipt(receipt) {
+    var list = readPending();
+    if (list.indexOf(receipt) === -1) {
+      list.push(receipt);
+      writePending(list);
+    }
+  }
+
+  var redeeming = false;
+
+  // Posts whatever is still owed. Called after a purchase, and again whenever the panel opens or
+  // identity arrives, so a credit that failed to land gets another chance without the viewer
+  // having to know anything went wrong.
+  function redeemPendingReceipts() {
+    if (redeeming || !relayUrl || !streamKey || !authToken) return;
+    var list = readPending();
+    if (list.length === 0) return;
+
+    redeeming = true;
+    fetch(relayUrl + '/api/bits-purchase/' + encodeURIComponent(streamKey), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // authToken travels with the receipts, not instead of them. A receipt is signed with the
+      // extension's secret, which is the same on every channel the extension runs on, so it
+      // alone can't say which streamer was being watched - onAuthorized's channel_id can, and
+      // the relay refuses to credit a purchase whose channel it can't pin down.
+      body: JSON.stringify({ receipts: list, authToken: authToken })
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('relay returned ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        // Settled either way: credited now, or credited on an earlier attempt. Only now is it
+        // safe to drop the receipts - they are unrecoverable once forgotten.
+        var remaining = readPending();
+        for (var i = 0; i < list.length; i++) {
+          var at = remaining.indexOf(list[i]);
+          if (at !== -1) remaining.splice(at, 1);
+        }
+        writePending(remaining);
+
+        if (typeof data.balance === 'number') balance = data.balance;
+        sendResultEl.textContent = data.duplicate
+          ? 'Tokens already credited.'
+          : 'Bought ' + (data.credited || 0) + ' token(s).';
+        renderSummonState();
+      })
+      .catch(function () {
+        // Kept for the next attempt rather than dropped on the floor.
+        sendResultEl.textContent = 'Paid - waiting to confirm the credit. It will retry on its own.';
+      })
+      .then(function () { redeeming = false; }, function () { redeeming = false; });
+  }
+
   // Registered once, globally - Twitch calls this whenever any Bits transaction on this
   // extension completes, not per-useBits() call. Every product here exists to buy tokens, so
   // any completed transaction is treated as one.
   if (!isMock && window.Twitch && Twitch.ext && Twitch.ext.bits && typeof Twitch.ext.bits.onTransactionComplete === 'function') {
     Twitch.ext.bits.onTransactionComplete(function (transaction) {
-      if (!relayUrl || !streamKey || !transaction || !transaction.transactionReceipt) return;
+      if (!transaction || !transaction.transactionReceipt) return;
+      // Written down before anything is attempted, and before any check that could return
+      // early - an unsent receipt is still worth keeping, and the panel opening later will
+      // find it. The Bits are already gone by this point either way.
+      rememberReceipt(transaction.transactionReceipt);
       sendResultEl.textContent = 'Payment received, crediting tokens…';
-      fetch(relayUrl + '/api/bits-purchase/' + encodeURIComponent(streamKey), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ receipts: [transaction.transactionReceipt] })
-      })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          if (typeof data.balance === 'number') balance = data.balance;
-          sendResultEl.textContent = 'Bought ' + (data.credited || 0) + ' token(s).';
-          renderSummonState();
-        })
-        .catch(function () {
-          sendResultEl.textContent = 'Paid, but the relay did not confirm the credit - check your balance.';
-        });
+      redeemPendingReceipts();
     });
+
+    if (typeof Twitch.ext.bits.onTransactionCancelled === 'function') {
+      Twitch.ext.bits.onTransactionCancelled(function () {
+        sendResultEl.textContent = 'Purchase cancelled.';
+      });
+    }
+  }
+
+  // The streamer's ceiling on how many tokens one viewer may hold. Bits ignore it - they are
+  // real money and always credit - so this only ever changes what we say about Channel Points,
+  // which stop crediting at the limit and would otherwise be spent for nothing.
+  function atTokenLimit() {
+    return tokenPrice.maxBalance > 0 && balance >= tokenPrice.maxBalance;
   }
 
   function renderBuyTokens(shortfall) {
@@ -370,8 +484,13 @@
     }
 
     if (tokenPrice.points > 0 && tokenPrice.rewardName) {
-      pointsInstructionsEl.textContent = 'Or redeem "' + tokenPrice.rewardName + '" on the Channel Points panel ('
-        + tokenPrice.points.toLocaleString() + ' points per token).';
+      // Redeeming happens on Twitch's own panel, where we cannot stop it - so the only thing
+      // that keeps a viewer from spending points for nothing is telling them plainly first.
+      pointsInstructionsEl.textContent = atTokenLimit()
+        ? 'You are at this channel\'s ' + tokenPrice.maxBalance.toLocaleString()
+          + ' token limit - redeeming "' + tokenPrice.rewardName + '" won\'t add any more until you spend some.'
+        : 'Or redeem "' + tokenPrice.rewardName + '" on the Channel Points panel ('
+          + tokenPrice.points.toLocaleString() + ' points per token).';
     } else {
       pointsInstructionsEl.textContent = '';
     }
@@ -438,7 +557,9 @@
     shareIdentityEl.hidden = true;
     packsEl.style.opacity = '';
     packsEl.style.pointerEvents = '';
-    balanceEl.textContent = 'Balance: ' + balance.toLocaleString() + ' tok';
+    balanceEl.textContent = atTokenLimit()
+      ? 'Balance: ' + balance.toLocaleString() + ' tok (at the ' + tokenPrice.maxBalance.toLocaleString() + ' limit)'
+      : 'Balance: ' + balance.toLocaleString() + ' tok';
 
     if (count === 0) {
       buyTokensEl.hidden = true;

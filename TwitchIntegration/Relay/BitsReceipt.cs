@@ -18,7 +18,23 @@ public static class BitsReceipt
         public string Sku { get; init; } = "";
         public int Amount { get; init; }
         public string UserId { get; init; } = "";
+        /// <summary>
+        /// When this receipt stops being accepted at all - the replay guard keeps its spent
+        /// transaction id at least this long, so there is never a window where a receipt still
+        /// verifies but the record of it having already been cashed in has been pruned.
+        /// </summary>
+        public DateTime ExpiresAtUtc { get; init; }
+        /// <summary>
+        /// Whose channel the purchase was made on, when Twitch includes it - empty if this
+        /// receipt shape doesn't carry one, which is why /api/bits-purchase binds the purchase to
+        /// a channel via the viewer's own onAuthorized token as well and doesn't rely on this
+        /// alone. Never trust a receipt to be for *this* streamer just because it verifies: the
+        /// extension's signing secret is one value shared by every channel the extension runs on.
+        /// </summary>
+        public string ChannelId { get; init; } = "";
     }
+
+    private const int maxBitsPerTransaction = 10_000;
 
     public static Verified? TryVerify(string jwt, byte[] secret)
     {
@@ -51,9 +67,30 @@ public static class BitsReceipt
             }
         }
 
-        if (transactionId.Length == 0 || amount <= 0)
+        // Twitch caps a single Bits transaction at 10,000; anything beyond that is not a
+        // purchase shape Twitch can actually produce, and an unbounded amount summed across a
+        // batch of receipts is an integer-overflow lever besides.
+        if (transactionId.Length == 0 || amount <= 0 || amount > maxBitsPerTransaction)
             return null;
 
-        return new Verified { TransactionId = transactionId, Sku = sku, Amount = amount, UserId = userId };
+        var expiresAt = Jwt.TryGetExpiry(root);
+        if (expiresAt is null)
+            return null;
+
+        var channelId = "";
+        if (root.TryGetProperty("channel_id", out var chanEl) && chanEl.ValueKind == JsonValueKind.String)
+            channelId = chanEl.GetString() ?? "";
+        else if (data.TryGetProperty("channelId", out var chanEl2) && chanEl2.ValueKind == JsonValueKind.String)
+            channelId = chanEl2.GetString() ?? "";
+
+        return new Verified
+        {
+            TransactionId = transactionId,
+            Sku = sku,
+            Amount = amount,
+            UserId = userId,
+            ExpiresAtUtc = expiresAt.Value,
+            ChannelId = channelId
+        };
     }
 }

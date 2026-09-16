@@ -16,7 +16,7 @@ namespace BGOverlay
     }
 
     /// <summary>
-    /// Push-only client for the (self-hosted) relay server under TwitchRelay/ - phase 0 of the
+    /// Push-only client for the (self-hosted) relay server under TwitchIntegration/Relay/ - phase 0 of the
     /// Twitch integration. Maintains a background WebSocket connection to
     /// Configuration.TwitchRelayUrl and periodically sends a JSON snapshot of the current party,
     /// so a relay-hosted backend can show it to viewers later (phase 1) or trigger effects back
@@ -76,6 +76,21 @@ namespace BGOverlay
                 var token = cts.Token;
                 Task.Factory.StartNew(() => runAsync(relayUrl, streamKey, controlKey, broadcasterLogin, token),
                     token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            }
+        }
+
+        /// <summary>
+        /// Drops any live session so the next UpdateConfig builds a new one even though nothing
+        /// in the configuration changed. UpdateConfig deliberately no-ops when the settings it is
+        /// handed match the running connection, which is right for being called every frame but
+        /// leaves the Connect button with nothing to do - this is what gives it an effect, and
+        /// what lets it cut short the reconnect backoff after a failure.
+        /// </summary>
+        public void Reconnect()
+        {
+            lock (gate)
+            {
+                stopLocked();
             }
         }
 

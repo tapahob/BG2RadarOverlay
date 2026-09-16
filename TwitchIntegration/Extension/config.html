@@ -75,6 +75,19 @@
     Channel Points per token above is not 0.
   </div>
 
+  <label for="maxTokenBalance">Max Tokens per Viewer</label>
+  <input id="maxTokenBalance" type="number" min="0" step="1" placeholder="0 = no limit" autocomplete="off">
+  <div class="hint">
+    The most tokens any one viewer may sit on, so nobody can bank a huge stockpile and spend the
+    whole run at once. They can always keep earning once they spend back under it. Leave at 0 for
+    no limit.
+    <br><br>
+    This holds back <em>Channel Points</em> only: a redemption that would take a viewer over the
+    limit credits only what fits, and nothing at all once they are at it. Bits are real money, so
+    a Bits purchase always credits in full even if that carries them past the limit - the summon
+    panel just stops offering them more until they are back under.
+  </div>
+
   <div class="hint" style="margin-top: -4px;">
     However a viewer buys them, tokens are spent on packs from right inside the summon panel - one
     purchase however many packs they pick. Each pack's own summon cost (set on the Twitch

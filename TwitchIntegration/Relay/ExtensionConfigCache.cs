@@ -8,6 +8,12 @@ public sealed class TokenPriceConfig
     public int BitsPerToken { get; init; }
     public int PointsPerToken { get; init; }
     public string RewardName { get; init; } = "";
+
+    /// <summary>
+    /// The most tokens one viewer may hold on this channel, or 0 for no ceiling. Only Channel
+    /// Points are held to it - see the note where it is applied in Program.cs.
+    /// </summary>
+    public int MaxTokenBalance { get; init; }
 }
 
 /// <summary>
@@ -28,6 +34,8 @@ public sealed class ExtensionConfigCache
     private readonly string extensionClientId;
     private readonly string extensionClientSecret;
     private readonly TimeSpan ttl;
+    private readonly string helixBaseUrl;
+    private readonly string idBaseUrl;
 
     private readonly SemaphoreSlim tokenGate = new(1, 1);
     private string? appAccessToken;
@@ -50,6 +58,8 @@ public sealed class ExtensionConfigCache
         this.extensionClientId = extensionClientId;
         this.extensionClientSecret = extensionClientSecret;
         this.ttl = ttl;
+        helixBaseUrl = TwitchEndpoints.Helix;
+        idBaseUrl = TwitchEndpoints.Id;
     }
 
     /// <summary>
@@ -72,7 +82,7 @@ public sealed class ExtensionConfigCache
             return null;
 
         using var request = new HttpRequestMessage(HttpMethod.Get,
-            "https://api.twitch.tv/helix/users?login=" + Uri.EscapeDataString(login));
+            helixBaseUrl + "/users?login=" + Uri.EscapeDataString(login));
         request.Headers.Add("Authorization", "Bearer " + token);
         request.Headers.Add("Client-Id", extensionClientId);
 
@@ -110,7 +120,7 @@ public sealed class ExtensionConfigCache
             return entry?.Config; // stale-but-something beats nothing if Twitch hiccups
 
         using var request = new HttpRequestMessage(HttpMethod.Get,
-            "https://api.twitch.tv/helix/extensions/configurations"
+            helixBaseUrl + "/extensions/configurations"
             + "?extension_id=" + Uri.EscapeDataString(extensionClientId)
             + "&broadcaster_id=" + Uri.EscapeDataString(broadcasterId)
             + "&segment=broadcaster");
@@ -134,11 +144,20 @@ public sealed class ExtensionConfigCache
 
             using var contentDoc = JsonDocument.Parse(contentJson);
             var contentRoot = contentDoc.RootElement;
+            if (contentRoot.ValueKind != JsonValueKind.Object)
+                return entry?.Config;
+
+            // readInt, not GetInt32: config.html's saved content is whatever the broadcaster's
+            // browser wrote, and GetInt32 throws - with something other than a JsonException, so
+            // the catch below wouldn't hold it - on a fractional or oversized number. A price of
+            // zero or less reads as "this currency isn't priced", which every caller already
+            // handles; it must never reach the divisions in Program.cs.
             var config = new TokenPriceConfig
             {
-                BitsPerToken = contentRoot.TryGetProperty("bitsPerToken", out var b) && b.ValueKind == JsonValueKind.Number ? b.GetInt32() : 0,
-                PointsPerToken = contentRoot.TryGetProperty("pointsPerToken", out var p) && p.ValueKind == JsonValueKind.Number ? p.GetInt32() : 0,
-                RewardName = contentRoot.TryGetProperty("rewardName", out var r) ? (r.GetString() ?? "") : ""
+                BitsPerToken = readInt(contentRoot, "bitsPerToken"),
+                PointsPerToken = readInt(contentRoot, "pointsPerToken"),
+                RewardName = contentRoot.TryGetProperty("rewardName", out var r) && r.ValueKind == JsonValueKind.String ? (r.GetString() ?? "") : "",
+                MaxTokenBalance = readInt(contentRoot, "maxTokenBalance")
             };
             pricesByBroadcasterId[broadcasterId] = new PriceEntry { Config = config, CachedAtUtc = DateTime.UtcNow };
             return config;
@@ -149,6 +168,10 @@ public sealed class ExtensionConfigCache
         }
     }
 
+    private static int readInt(JsonElement root, string name)
+        => root.TryGetProperty(name, out var el) && el.ValueKind == JsonValueKind.Number
+           && el.TryGetInt32(out var value) && value > 0 ? value : 0;
+
     private async Task<string?> ensureAppAccessTokenAsync(HttpClient http)
     {
         await tokenGate.WaitAsync();
@@ -157,7 +180,7 @@ public sealed class ExtensionConfigCache
             if (appAccessToken is not null && DateTime.UtcNow < appAccessTokenExpiresUtc)
                 return appAccessToken;
 
-            using var response = await http.PostAsync("https://id.twitch.tv/oauth2/token", new FormUrlEncodedContent(new Dictionary<string, string>
+            using var response = await http.PostAsync(idBaseUrl + "/oauth2/token", new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["client_id"] = extensionClientId,
                 ["client_secret"] = extensionClientSecret,
@@ -168,8 +191,9 @@ public sealed class ExtensionConfigCache
 
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             var root = doc.RootElement;
-            appAccessToken = root.GetProperty("access_token").GetString();
-            var expiresIn = root.TryGetProperty("expires_in", out var e) ? e.GetInt32() : 3600;
+            appAccessToken = root.TryGetProperty("access_token", out var atEl) ? atEl.GetString() : null;
+            var expiresIn = root.TryGetProperty("expires_in", out var e) && e.ValueKind == JsonValueKind.Number
+                && e.TryGetInt32(out var parsedExpiry) ? parsedExpiry : 3600;
             appAccessTokenExpiresUtc = DateTime.UtcNow.AddSeconds(Math.Max(0, expiresIn - 60));
             return appAccessToken;
         }

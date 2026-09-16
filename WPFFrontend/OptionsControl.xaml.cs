@@ -79,9 +79,16 @@ namespace WPFFrontend
         private void initTwitchStatusPolling()
         {
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            timer.Tick += (s, e) => updateTwitchStatusLabel();
+            timer.Tick += (s, e) =>
+            {
+                updateTwitchStatusLabel();
+                // Captions are set in code rather than bound to a DynamicResource, so this is
+                // also what picks up a language change while the tab is open.
+                updateStreamKeyButtons();
+            };
             timer.Start();
             updateTwitchStatusLabel();
+            updateStreamKeyButtons();
         }
 
         /// <summary>
@@ -117,6 +124,17 @@ namespace WPFFrontend
                 TwitchRelayStatus.Error      => "Str_TwitchStatusError",
                 _                            => "Str_TwitchStatusDisabled",
             };
+            // "Disabled" is also what an enabled-but-unconfigured integration reports, and after
+            // pressing Connect that reads as though the button switched the whole thing off.
+            // Name the missing piece instead - the relay URL is the one setting with no default
+            // and nothing else to hint at it.
+            if (Configuration.TwitchIntegrationEnabled
+                && TwitchRelayClient.Instance.Status == TwitchRelayStatus.Disabled
+                && string.IsNullOrWhiteSpace(Configuration.TwitchRelayUrl))
+            {
+                key = "Str_TwitchStatusNoRelayUrl";
+            }
+
             this.TwitchStatus.Content = RadarLocalization.Get(key);
 
             // A queue that isn't draining means the game isn't consuming requests - almost
@@ -387,7 +405,38 @@ namespace WPFFrontend
             Configuration.SaveConfig();
         }
 
+        /// <summary>
+        /// One button with two jobs, depending on whether there is a key yet: with none, it mints
+        /// one and connects; with one already saved, it is a plain Connect that reuses it.
+        ///
+        /// Reusing the existing key is the important half. The key is copied into the Twitch
+        /// Extension's config, which Twitch serves to viewers' browsers - so a key that changed
+        /// every time someone wanted to reconnect would silently break every viewer's panel until
+        /// the streamer remembered to go and paste the new one in. Rotating it is still possible,
+        /// but it is now a deliberate act (see RegenerateStreamKey_Click) rather than the side
+        /// effect of pressing the only button on the row.
+        /// </summary>
         private void GenerateStreamKey_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(this.TwitchStreamKey.Text))
+                newStreamKey();
+
+            connectToRelay();
+        }
+
+        /// <summary>
+        /// Deliberately throws the current stream key away and starts over - for a key that has
+        /// leaked, or one being moved to a different channel. Every viewer's extension panel goes
+        /// dark until the streamer pastes the new key into config.html, which is why it is not
+        /// what the main button does.
+        /// </summary>
+        private void RegenerateStreamKey_Click(object sender, RoutedEventArgs e)
+        {
+            newStreamKey();
+            connectToRelay();
+        }
+
+        private void newStreamKey()
         {
             // Lowercase hex only (no dashes) - Configuration.getProperty() lowercases every
             // persisted value on load, so anything with uppercase characters would get mangled
@@ -401,6 +450,53 @@ namespace WPFFrontend
             Configuration.TwitchControlKey = Guid.NewGuid().ToString("N");
             this.TwitchControlKey.Text = Configuration.TwitchControlKey;
             updateConfig(null, null);
+
+            // Written out now rather than left for the Save button. A key only lives in the
+            // config file: it is already in the streamer's extension config and in the relay's
+            // routing table by the time they think to press Save, and losing it on exit would
+            // leave viewers pointed at a stream key this overlay no longer claims.
+            Configuration.SaveConfig();
+            updateStreamKeyButtons();
+        }
+
+        /// <summary>
+        /// Brings the relay connection up against whatever is configured right now, without
+        /// waiting for the next ProcessHacker.MainLoop tick to notice - that loop only runs while
+        /// the game is attached, and a streamer setting this up beforehand should still see the
+        /// status move.
+        /// </summary>
+        private void connectToRelay()
+        {
+            // Pull the tab's current values across first rather than trusting that each field's
+            // own TextChanged has already run - the stream key in particular has no such handler,
+            // being read-only and only ever set by newStreamKey().
+            updateConfig(null, null);
+            Configuration.SaveConfig();
+
+            TwitchRelayClient.Instance.Reconnect();
+            TwitchRelayClient.Instance.UpdateConfig(
+                Configuration.TwitchIntegrationEnabled,
+                Configuration.TwitchRelayUrl,
+                Configuration.TwitchStreamKey,
+                Configuration.TwitchControlKey,
+                Configuration.TwitchBroadcasterLogin);
+
+            updateTwitchStatusLabel();
+            updateStreamKeyButtons();
+        }
+
+        /// <summary>
+        /// Generate with no key yet, Connect once there is one - plus the separate rotate button,
+        /// which only makes sense in the second state.
+        /// </summary>
+        private void updateStreamKeyButtons()
+        {
+            var hasKey = !string.IsNullOrWhiteSpace(this.TwitchStreamKey.Text);
+
+            this.GenerateStreamKey.Content = RadarLocalization.Get(
+                hasKey ? "Str_TwitchConnect" : "Str_TwitchGenerateKey");
+            this.RegenerateStreamKey.Content = RadarLocalization.Get("Str_TwitchNewKey");
+            this.RegenerateStreamKey.Visibility = hasKey ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public void Init()
@@ -419,6 +515,7 @@ namespace WPFFrontend
             this.TwitchStreamKey.Text           = Configuration.TwitchStreamKey;
             this.TwitchControlKey.Text          = Configuration.TwitchControlKey;
             updateControlKeyVisibility();
+            updateStreamKeyButtons();
             updateTwitchControlsEnabled();
 
             spawnPacks = SpawnPack.Deserialize(Configuration.SpawnPacks);

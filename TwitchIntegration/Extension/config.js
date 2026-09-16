@@ -34,6 +34,7 @@
       document.getElementById('bitsPerToken').value = saved.bitsPerToken || '';
       document.getElementById('pointsPerToken').value = saved.pointsPerToken || '';
       document.getElementById('rewardName').value = saved.rewardName || '';
+      document.getElementById('maxTokenBalance').value = saved.maxTokenBalance || '';
     } catch (e) {
       // Malformed/legacy content - leave the form blank rather than fail to load.
     }
@@ -100,9 +101,23 @@
           eventsubStatusEl.textContent = 'Channel Points is not set up on this relay deployment.';
           return;
         }
+        // Deliveries turned away for a bad signature mean the relay and Twitch disagree about
+        // the webhook secret - everything looks healthy from Twitch's side, and redemptions
+        // simply stop crediting. Re-authorizing re-creates the subscriptions with the current
+        // secret, so the advice is the same button either way.
+        var rejected = data.rejectedDeliveries > 0
+          ? ' (' + data.rejectedDeliveries + ' signed delivery/deliveries were rejected recently - if redemptions aren’t crediting, re-authorize.)'
+          : '';
+
         if (data.authorized) {
-          eventsubStatusEl.textContent = '✅ Channel Points is authorized and active.';
-          authorizeBtn.style.display = 'none';
+          eventsubStatusEl.textContent = '✅ Channel Points is authorized and active.' + rejected;
+          authorizeBtn.style.display = rejected ? '' : 'none';
+        } else if (data.redemptionsCredit && !data.refundsClawBack) {
+          // Set up before refunds were handled: redemptions still buy tokens, but points handed
+          // back out of the request queue leave the tokens they bought in place.
+          eventsubStatusEl.textContent = '⚠️ Authorized, but needs re-authorizing to pick up refunds - '
+            + 'until you do, refunding a redemption won’t take its tokens back.' + rejected;
+          authorizeBtn.style.display = '';
         } else {
           eventsubStatusEl.textContent = '⚠️ Not authorized yet - viewers’ Channel Points redemptions won’t be picked up until you do this.';
           authorizeBtn.style.display = '';
@@ -143,6 +158,7 @@
     var bitsPerToken = nonNegativeIntOrZero(document.getElementById('bitsPerToken').value);
     var pointsPerToken = nonNegativeIntOrZero(document.getElementById('pointsPerToken').value);
     var rewardName = document.getElementById('rewardName').value.trim();
+    var maxTokenBalance = nonNegativeIntOrZero(document.getElementById('maxTokenBalance').value);
 
     if (pointsPerToken > 0 && !rewardName) {
       statusEl.style.color = '#eb0400';
@@ -160,7 +176,8 @@
         controlKey: document.getElementById('controlKey').value.trim(),
         bitsPerToken: bitsPerToken,
         pointsPerToken: pointsPerToken,
-        rewardName: rewardName
+        rewardName: rewardName,
+        maxTokenBalance: maxTokenBalance
       }));
     } else {
       // Belt and braces: the button is disabled otherwise, but a click queued right before
@@ -172,7 +189,8 @@
           streamKey: streamKey,
           bitsPerToken: bitsPerToken,
           pointsPerToken: pointsPerToken,
-          rewardName: rewardName
+          rewardName: rewardName,
+          maxTokenBalance: maxTokenBalance
         }));
       } catch (e) {
         statusEl.style.color = '#eb0400';
