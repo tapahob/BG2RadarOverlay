@@ -56,6 +56,13 @@ The container puts `RELAY_DATA_DIR` on a named volume and runs as a non-root uid
 also brings up Caddy on 80/443 for automatic certificates; everything sits on 443 because Twitch
 refuses to deliver EventSub notifications to a callback on any other port.
 
+Nothing in the repo is pinned to a particular relay: `TWITCH_OAUTH_REDIRECT_URI` comes from the
+environment (compose derives it from `RELAY_DOMAIN`) and the EventSub callback is derived from
+that in turn. A self-hoster does have to run their own **Extension** as well, though - the
+extension secret signs JWTs for every channel that extension serves, so it can't be shared, and
+their relay domain has to be in that extension's URL-fetching allowlist or Twitch's CSP blocks
+every call from the panel silently. `docker/README.md` spells this out.
+
 `docker-compose.existing-proxy.yml` is the variant for a host that already terminates TLS - the
 relay alone, on a loopback port, no Caddy. That is what `yunamaxwell.shit.vc` now runs, since
 another Caddy there owns 443 for the VPN admin panel.

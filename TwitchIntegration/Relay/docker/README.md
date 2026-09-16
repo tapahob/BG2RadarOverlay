@@ -16,7 +16,9 @@ prices, and tokens are all tracked per channel from there.
 - A machine with Docker and a public IP, that can hold ports **80 and 443**.
 - A **domain name pointing at it**. Not optional: the Twitch Extension will only talk to an
   `https://` relay, and Twitch won't deliver Channel Points events to a self-signed certificate.
-- A Twitch Extension of your own in the [Developer Console](https://dev.twitch.tv/console).
+- A Twitch Extension of your own in the [Developer Console](https://dev.twitch.tv/console) — see
+  [Nothing points back at anyone else](#nothing-points-back-at-anyone-else) for why it has to be
+  yours and not the published one.
 
 Port 443 specifically is not negotiable — Twitch refuses to deliver EventSub notifications to a
 callback on any other port. If something else on the host already owns 443, see
@@ -49,6 +51,35 @@ Then point things at it:
 - **The overlay**, Options → Twitch Integration → *Relay Server URL*: `https://your-domain.example.com`
 - **The extension's config page**, *Relay Server URL*: the same thing.
 
+## Nothing points back at anyone else
+
+Hosting your own relay means hosting your own **Extension** as well. The two are a pair, and it is
+worth understanding why before you start, because it is the part that costs real effort.
+
+`TWITCH_EXTENSION_SECRET` signs every JWT that extension deals with, on every channel it runs on.
+Whoever holds it can mint a token for any of those channels. So nobody can hand you theirs, and
+you can't point your relay at somebody else's published extension — the signatures simply wouldn't
+match.
+
+What that means in practice:
+
+1. **Create your own Extension** in the Developer Console and upload the contents of
+   `TwitchIntegration/Extension/` as its files. Set the Video Overlay path to `video_overlay.html`
+   and the config path to `config.html`.
+2. **Add your relay domain to the extension's URL fetching allowlist** (Manage → Capabilities →
+   *Allowlist for URL Fetching Domains*). Without it, Twitch's Content Security Policy blocks every
+   request the panel makes to your relay — and it fails *silently*, so the panel just sits there
+   looking like the stream isn't live.
+3. **Enable Bits** on the Monetization tab and add at least one Bits Product, if you want the Bits
+   path.
+4. You do not need to go through Twitch's review to use it yourself. An extension in **Hosted Test**
+   can be installed on your own channel (and on the channels of anyone you add as a tester). Review
+   is only for listing it publicly.
+
+Everything else follows from that: the Extension Secret and client id/secret come from *your*
+extension, the OAuth Application is *yours*, and `RELAY_DOMAIN` is *your* domain. No value in your
+`.env` refers to anyone else's deployment, and nothing in this repository is pinned to one.
+
 ## Where the credentials come from
 
 Three different Twitch credentials are involved and two of them are both called "Secret", so this
@@ -60,6 +91,10 @@ Extension itself and are shared by everyone using your relay.
 | `TWITCH_EXTENSION_SECRET` | Dev Console → Extensions → Manage → **Secret** (base64) | Signs every JWT the extension deals with. Needed for Bits and for spending tokens. |
 | `TWITCH_EXTENSION_CLIENT_ID` / `_SECRET` | The **same Manage page**, different fields | Lets the relay read the token prices each streamer saved in their config page. |
 | `TWITCH_CLIENT_ID` / `_SECRET` | Dev Console → register a new **Application** (not another Extension) | Channel Points only. Leave blank for Bits-only. |
+
+Register the Application under your own account — don't ask to be added to someone else's. A single
+Application can hold several redirect URLs, so sharing one is technically possible, but it would
+mean sharing its client secret, and registering your own takes a minute.
 
 If you register the Application, set its **OAuth Redirect URL** to exactly
 `https://your-domain.example.com/oauth/callback`. The relay builds the same URL from
@@ -154,8 +189,17 @@ free. `docker compose logs caddy` will say which.
 **The overlay says Error.** Check the URL matches what's in `.env`, and that the overlay's Twitch
 Integration tab has a stream key. `docker compose logs relay` shows connection attempts.
 
+**The panel never loads anything, and nothing errors.** Almost always the extension's *Allowlist
+for URL Fetching Domains* — add your relay domain to it. Twitch's CSP blocks the request before it
+leaves the browser, so the panel just waits forever. The browser console will show a CSP violation.
+
 **Bits purchases fail.** Usually `TWITCH_EXTENSION_SECRET` — check it's the base64 *Secret* from the
-Manage page, not the client secret from the same page.
+Manage page, not the client secret from the same page. If the extension is one you built yourself,
+also check it's the secret from *your* extension.
+
+**OAuth says the redirect doesn't match.** The Application's registered *OAuth Redirect URL* has to
+equal `https://<RELAY_DOMAIN>/oauth/callback` character for character — including `https://`, no
+trailing slash, and no port.
 
 **Channel Points redemptions don't credit.** Check the config page shows Channel Points as
 authorized; if it reports rejected deliveries, re-authorize. Also confirm the reward's title
