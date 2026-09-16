@@ -95,17 +95,22 @@
     letter-spacing: 0.05em;
   }
 
-  /* Each party member is a wanted poster nailed to the panel. The paper itself is an SVG
-     (wanted-poster.svg) - scalable, a few KB, and no web font to load, which matters because an
-     extension's CSP would block one anyway. Everything on top of it is plain CSS text so it stays
-     crisp at any size and can be selected and read by a screen reader. */
+  /* Each party member is a wanted poster nailed to the panel. The paper is a pre-rendered
+     texture (wanted-poster.png, 250x130 at 2x) - procedurally generated, see
+     tools/generate-poster.py. The lettering stays CSS text rather than being baked into the
+     image: it keeps names selectable and legible to a screen reader, and an extension's CSP
+     blocks web fonts anyway, so there is nothing to gain from rasterising it.
+
+     The padding clears the printed rules drawn into the texture - keep them in step if the
+     artwork's frame insets change. */
   .member {
     position: relative;
-    background-image: url('wanted-poster.svg');
+    background-image: url('wanted-poster.png');
     background-size: 100% 100%;
     background-repeat: no-repeat;
-    padding: 11px 14px 10px;
-    margin-bottom: 9px;
+    min-height: 130px;
+    padding: 21px 24px 18px;
+    margin-bottom: 7px;
     color: #3b2a15;
     font-family: Georgia, "Times New Roman", Times, serif;
     text-align: center;
