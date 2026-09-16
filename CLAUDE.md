@@ -56,8 +56,9 @@ The container puts `RELAY_DATA_DIR` on a named volume and runs as a non-root uid
 also brings up Caddy on 80/443 for automatic certificates; everything sits on 443 because Twitch
 refuses to deliver EventSub notifications to a callback on any other port.
 
-This is an alternative to the bare-metal VPS deploy below, not a replacement for it - that one is
-still what `yunamaxwell.shit.vc` runs.
+`docker-compose.existing-proxy.yml` is the variant for a host that already terminates TLS - the
+relay alone, on a loopback port, no Caddy. That is what `yunamaxwell.shit.vc` now runs, since
+another Caddy there owns 443 for the VPN admin panel.
 
 ## TwitchRelay VPS
 
@@ -74,9 +75,22 @@ deployed on a separate Ubuntu VPS, not on this machine.
   `sshpass` is *not* installed and Git Bash has no package manager to install it with. What works
   is Python + paramiko (already installed): connect with `password=os.environ["TWITCH_PWD"]`, run
   commands with `exec_command`, copy files with `open_sftp()`.
-- Redeploying: `dotnet publish TwitchIntegration/Relay/TwitchRelay.csproj -c Release -o publish_relay`, stop
-  the service, SFTP the published files over (skip `TwitchRelay.pdb` and `web.config` - debug
-  symbols and an IIS-only file), `chown -R www-data:www-data /opt/twitch-relay`, start again.
+- **The relay now runs in Docker on that VPS**, not as the `twitch-relay` systemd unit. The repo
+  is checked out at `/opt/bg2radar-relay`; redeploying is `git pull && docker compose -f
+  docker-compose.existing-proxy.yml up -d --build` from `TwitchIntegration/Relay/docker`. The
+  container binds `127.0.0.1:5080` - the same address both Caddys already proxy to - so neither
+  Caddy config had to change, and it runs as uid 33 (www-data) to match the existing owner of
+  `/var/lib/twitch-relay`, so the data needed no chown.
+- Rollback is still available: the `twitch-relay` unit and `/opt/twitch-relay` are intact, just
+  disabled. `docker compose -f docker-compose.existing-proxy.yml down && systemctl enable --now
+  twitch-relay`.
+- `docker kill` will **not** trigger `restart: unless-stopped` - Docker treats it as a manual stop,
+  same as `docker stop`, and the container stays down. A real crash does restart it (verified).
+  Don't use `docker kill` to test resilience.
+- The old bare-metal recipe, if ever needed: `dotnet publish
+  TwitchIntegration/Relay/TwitchRelay.csproj -c Release -o publish_relay`, stop the service, SFTP
+  the published files over (skip `TwitchRelay.pdb` and `web.config` - debug symbols and an
+  IIS-only file), `chown -R www-data:www-data /opt/twitch-relay`, start again.
 - Reading command output in Python: decode with `errors="replace"` and
   `sys.stdout.reconfigure(encoding="utf-8")`. `systemctl status` prints a U+25CF bullet that the
   console's cp1251 codec can't encode, which otherwise kills the script *after* it has already
