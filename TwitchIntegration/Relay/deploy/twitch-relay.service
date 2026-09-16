@@ -10,6 +10,11 @@ RestartSec=5
 User=www-data
 Environment=ASPNETCORE_URLS=http://localhost:5080
 Environment=ASPNETCORE_ENVIRONMENT=Production
+# Outside WorkingDirectory on purpose - a redeploy replaces /opt/twitch-relay, and everything
+# that has to outlive one lives here: token balances viewers paid real Bits for, each streamer's
+# OAuth tokens, spent transaction ids, and the EventSub webhook secret. Losing that secret breaks
+# Channel Points silently and permanently (see CLAUDE.md).
+Environment=RELAY_DATA_DIR=/var/lib/twitch-relay
 
 [Install]
 WantedBy=multi-user.target
