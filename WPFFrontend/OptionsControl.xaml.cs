@@ -188,6 +188,50 @@ namespace WPFFrontend
         }
 
         /// <summary>
+        /// Shows whether the game-side half of the spawn bridge is in place. Read from disk
+        /// rather than remembered, since the override folder belongs to the game and anything
+        /// could have changed it - a game update, a mod manager, the streamer.
+        /// </summary>
+        private void updateEEexModStatus()
+        {
+            string key;
+            switch (EEexModInstaller.GetStatus())
+            {
+                case EEexModStatus.NoGameFolder: key = "Str_TwitchModNoGame";    break;
+                case EEexModStatus.NotInstalled: key = "Str_TwitchModMissing";   break;
+                case EEexModStatus.Outdated:     key = "Str_TwitchModOutdated";  break;
+                default:                         key = "Str_TwitchModInstalled"; break;
+            }
+
+            this.EEexModStatusLabel.Content = RadarLocalization.Get(key);
+        }
+
+        private void InstallEEexMod_Click(object sender, RoutedEventArgs e)
+        {
+            string error;
+            if (EEexModInstaller.TryInstall(out error))
+            {
+                // The game reads override/ when it loads, so a copy made while it is running
+                // changes nothing until the next start. Saying so here saves the streamer
+                // wondering why the summon they just paid for did nothing.
+                this.EEexModResult.Text = string.Format(
+                    CultureInfo.InvariantCulture,
+                    RadarLocalization.Get("Str_TwitchModInstallOk"),
+                    EEexModInstaller.FileNames.Length,
+                    EEexModInstaller.OverrideFolder);
+            }
+            else
+            {
+                this.EEexModResult.Text = string.Format(
+                    CultureInfo.InvariantCulture,
+                    RadarLocalization.Get("Str_TwitchModInstallFailed"),
+                    error);
+            }
+
+            updateEEexModStatus();
+        }
+
+        /// <summary>
         /// The Control Key authorizes spawning creatures directly in-game, bypassing any
         /// token/Bits/Channel Points check - it's for local mock testing only (see the hint next
         /// to it in the extension's config.html), so it stays out of sight unless Debug Mode is
@@ -654,6 +698,7 @@ namespace WPFFrontend
             updateControlKeyVisibility();
             updateStreamKeyButtons();
             updateTwitchControlsEnabled();
+            updateEEexModStatus();
 
             spawnPacks = SpawnPack.Deserialize(Configuration.SpawnPacks);
 
@@ -665,6 +710,10 @@ namespace WPFFrontend
 
         public void Show()
         {
+            // Cheap, and the answer can have changed since the panel was last open - the game
+            // may have been modded, updated, or detected for the first time in between.
+            updateEEexModStatus();
+
             if (this.hidden == false)
             {                
                 OptionsControl_MouseUp(null, null);

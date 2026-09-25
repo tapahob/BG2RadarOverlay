@@ -80,6 +80,7 @@
     <Compile Include="NativeStructs\CDerivedStats.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Diagnostics\CycleProfiler.cs" />
+    <Compile Include="EEexModInstaller.cs" />
     <Compile Include="GameSpawnBridge.cs" />
     <Compile Include="TwitchIntegration\SpawnPack.cs" />
     <Compile Include="GlobalMouseHook.cs" />
@@ -107,6 +108,18 @@
     <Compile Include="Readers\TLKReader.cs" />
     <Compile Include="TwitchIntegration\TwitchRelayClient.cs" />
     <Compile Include="WinAPIBindings.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The game-side half of the spawn bridge, carried inside the assembly so the Install
+         button works from a single-file publish, where there is no folder next to the .exe to
+         read them out of. LogicalName is spelled out so the lookup in EEexModInstaller does not
+         depend on how MSBuild would otherwise derive a name from the folder. -->
+    <EmbeddedResource Include="EEexMod\M_BG2RDR.lua">
+      <LogicalName>BGOverlay.EEexMod.M_BG2RDR.lua</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="EEexMod\BG2RDR.menu">
+      <LogicalName>BGOverlay.EEexMod.BG2RDR.menu</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

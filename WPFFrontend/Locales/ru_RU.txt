@@ -840,3 +840,11 @@ Str_DiagOfWhich=скан памяти, из них:
 Str_DiagSlotArray=Массив слотов
 Str_DiagRefreshPhase=Обновление
 Str_DiagBuildPhase=Новые
+
+Str_TwitchInstallMod=Установить файлы в игру
+Str_TwitchModInstalled=установлено
+Str_TwitchModOutdated=доступно обновление
+Str_TwitchModMissing=не установлено
+Str_TwitchModNoGame=игра ещё не найдена
+Str_TwitchModInstallOk=Скопировано файлов: {0}, в {1}. Перезапустите игру, чтобы они загрузились. Сам EEex нужно установить отдельно.
+Str_TwitchModInstallFailed=Не удалось установить: {0}

@@ -168,6 +168,15 @@
                     <Label d:Content="Summon packs" Content="{DynamicResource Str_TwitchPacksSection}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" Margin="0,20,0,0"/>
                     <TextBlock d:Text="Packs viewers can pick from on stream. The name is what they see; the level range decides when a pack is offered. Requires EEex plus M_BG2RDR.lua in the game's override folder." Text="{DynamicResource Str_TwitchPacksHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,0,0,6"/>
 
+                    <!-- Installs the game-side half of the bridge into the detected game's
+                         override folder. EEex itself is a separate mod and is not installed
+                         here - the status text beside the button says so. -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button x:Name="InstallEEexMod" d:Content="Install game files" Content="{DynamicResource Str_TwitchInstallMod}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="InstallEEexMod_Click"/>
+                        <Label x:Name="EEexModStatusLabel" Style="{StaticResource BoldSmall}" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0" d:Content="Installed"/>
+                    </StackPanel>
+                    <TextBlock x:Name="EEexModResult" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,0,0,6" d:Text="Copied 2 files into the game's override folder. Restart the game to load them."/>
+
                     <ListBox x:Name="PackList" Height="140" BorderThickness="1" BorderBrush="#FF151313" Background="Transparent" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" SelectionChanged="PackList_SelectionChanged">
                         <d:ListBox.ItemsSource>
                             <x:Array Type="sys:String" xmlns:sys="clr-namespace:System;assembly=mscorlib">

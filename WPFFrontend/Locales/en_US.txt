@@ -846,3 +846,11 @@ Str_DiagOfWhich=memory scan, of which:
 Str_DiagSlotArray=Slot array
 Str_DiagRefreshPhase=Refresh
 Str_DiagBuildPhase=Build new
+
+Str_TwitchInstallMod=Install game files
+Str_TwitchModInstalled=installed
+Str_TwitchModOutdated=an update is available
+Str_TwitchModMissing=not installed
+Str_TwitchModNoGame=no game detected yet
+Str_TwitchModInstallOk=Copied {0} files into {1}. Restart the game to load them. EEex itself has to be installed separately.
+Str_TwitchModInstallFailed=Could not install: {0}
