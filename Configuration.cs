@@ -19,7 +19,41 @@ namespace BGOverlay
         public static IntPtr hProc { get; set; }
         public static bool HidePartyMembers { get; set; }
         public static bool ShowTraps { get; set; }
-        public static int RefreshTimeMS { get; set; }
+        /// <summary>
+        /// Floor for <see cref="RefreshTimeMS"/>. Zero turns ProcessHacker.MainLoop into a spin
+        /// loop that burns a core doing nothing useful - well past the point where a faster tick
+        /// buys anything, since a single iteration already costs more than this.
+        /// </summary>
+        public const int MinRefreshTimeMS = 50;
+
+        /// <summary>
+        /// Ceiling for <see cref="RefreshTimeMS"/>. Five seconds of staleness is already far
+        /// beyond usable; anything higher just looks like the radar has frozen.
+        /// </summary>
+        public const int MaxRefreshTimeMS = 5000;
+
+        private static int refreshTimeMS = 100;
+
+        /// <summary>
+        /// How long MainLoop waits between iterations. Both of the places this is assigned from
+        /// take it from free text - the Options box, and a config.cfg the user may have edited by
+        /// hand - so the clamp lives on the setter rather than at each call site, and neither can
+        /// hand the loop a value that spins the CPU or stalls the display.
+        /// </summary>
+        public static int RefreshTimeMS
+        {
+            get { return refreshTimeMS; }
+            set
+            {
+                if (value < MinRefreshTimeMS)
+                    refreshTimeMS = MinRefreshTimeMS;
+                else if (value > MaxRefreshTimeMS)
+                    refreshTimeMS = MaxRefreshTimeMS;
+                else
+                    refreshTimeMS = value;
+            }
+        }
+
         public static bool HideNeutrals { get; set; }
         public static bool HideAllies { get; set; }
         public static IntPtr HWndPtr { get; set; }
@@ -70,7 +104,7 @@ namespace BGOverlay
             HideNeutrals        = false;
             HideAllies          = false;
             ShowTraps           = false;
-            RefreshTimeMS       = 300;
+            RefreshTimeMS       = 100;
             Locale              = "en_US";            
             BigBuffIcons        = true;
             Font1               = "Segoe Print";
@@ -193,7 +227,12 @@ namespace BGOverlay
                 Locale              = getProperty("Locale", "en_US");
                 Borderless          = getProperty("Borderless", "true").Equals("true");
                 HidePartyMembers    = getProperty("HidePartyMembers", "false").Equals("true");
-                RefreshTimeMS       = int.Parse(getProperty("RefreshTimeMs", "300"));
+                // TryParse, not Parse: config.cfg is a plain text file people edit, and a
+                // typo here used to take the whole app down before the window ever appeared.
+                int refreshMs;
+                RefreshTimeMS = int.TryParse(getProperty("RefreshTimeMs", "100"), out refreshMs)
+                    ? refreshMs
+                    : 100;
                 ShowTraps           = getProperty("ShowTraps", "false").Equals("true");
                 HideNeutrals        = getProperty("HideNeutrals", "false").Equals("true");
                 HideAllies          = getProperty("HideAllies", "false").Equals("true");

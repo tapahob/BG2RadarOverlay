@@ -61,7 +61,7 @@
                     <ImageBrush Stretch="UniformToFill" ImageSource="/pexels-photo-235985.jpeg"/>
                 </Border.Background>
                 <Label x:Name="WaitingForGameLabel" Padding="4,0,4,0" Foreground="Black" FontWeight="Bold"
-                       FontFamily="Segoe Print" FontSize="12" VerticalContentAlignment="Center" d:Content="Waiting for game..."/>
+                       FontFamily="Segoe Print" FontSize="12" VerticalContentAlignment="Center" d:Content="Waiting for game ⠹"/>
             </Border>
             <StackPanel x:Name="StackPanel" Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Left" Width="380"
                         Visibility="Collapsed"

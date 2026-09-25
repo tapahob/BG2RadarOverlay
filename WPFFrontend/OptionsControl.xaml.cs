@@ -1,6 +1,8 @@
 ﻿using BGOverlay;
+using BGOverlay.Diagnostics;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -67,6 +69,7 @@ namespace WPFFrontend
                 : $"{Configuration.Font3}, {Configuration.FontSize3Small}";
             initLocale();
             initTwitchStatusPolling();
+            initDiagnosticsPolling();
         }
 
         /// <summary>
@@ -89,6 +92,99 @@ namespace WPFFrontend
             timer.Start();
             updateTwitchStatusLabel();
             updateStreamKeyButtons();
+        }
+
+        /// <summary>
+        /// Refreshes the Diagnostics tab from CycleProfiler. Twice a second rather than once,
+        /// because this is the tab someone opens while changing the refresh rate and the numbers
+        /// should visibly answer them; and only while the options are actually on screen, so a
+        /// closed panel costs nothing but the timer tick itself.
+        /// </summary>
+        private void initDiagnosticsPolling()
+        {
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            timer.Tick += (s, e) =>
+            {
+                if (this.Visibility == Visibility.Visible)
+                    updateDiagnostics();
+            };
+            timer.Start();
+        }
+
+        private void updateDiagnostics()
+        {
+            var stats = CycleProfiler.Instance.Snapshot();
+
+            if (stats.Samples == 0)
+            {
+                // Before the first cycle completes - the game may not be hooked yet.
+                this.DiagWindow.Content = RadarLocalization.Get("Str_DiagNoData");
+                return;
+            }
+
+            this.DiagCycleLast.Content = ms(stats.CycleLast);
+            this.DiagCycleAvg.Content  = ms(stats.CycleAvg);
+            this.DiagCycleP95.Content  = ms(stats.CycleP95);
+            this.DiagCycleMax.Content  = ms(stats.CycleMax);
+
+            this.DiagWorkLast.Content = ms(stats.WorkLast);
+            this.DiagWorkAvg.Content  = ms(stats.WorkAvg);
+            this.DiagWorkP95.Content  = ms(stats.WorkP95);
+            this.DiagWorkMax.Content  = ms(stats.WorkMax);
+
+            this.DiagScan.Content   = ms(stats.ScanAvg);
+            this.DiagPrune.Content  = ms(stats.PruneAvg);
+            this.DiagFilter.Content = ms(stats.FilterAvg);
+            this.DiagTwitch.Content = ms(stats.TwitchAvg);
+            this.DiagUi.Content     = ms(stats.UiAvg);
+            this.DiagSleep.Content  = ms(stats.SleepAvg);
+
+            this.DiagSlotRead.Content = ms(stats.SlotReadAvg);
+            this.DiagRefresh.Content  = ms(stats.RefreshAvg);
+            this.DiagBuild.Content    = ms(stats.BuildAvg);
+
+            this.DiagBusy.Content = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0:F1}% " + RadarLocalization.Get("Str_DiagOfOneCore"),
+                stats.BusyPercent);
+
+            // The requested rate is what the refresh-rate box implies if the work were free.
+            // Showing both is the point: MainLoop sleeps *after* working, so the real period is
+            // always the sleep plus the tick's own cost, and the gap between the two numbers is
+            // exactly how much the radar costs in wall-clock terms.
+            var requestedHz = Configuration.RefreshTimeMS > 0
+                ? 1000.0 / Configuration.RefreshTimeMS
+                : 0.0;
+            this.DiagRate.Content = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0:F2} Hz ({1} {2:F2})",
+                stats.EffectiveHz,
+                RadarLocalization.Get("Str_DiagRateSet"),
+                requestedHz);
+
+            this.DiagEntities.Content = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0} {1}, {2} {3}, {4} {5}",
+                stats.Slots,  RadarLocalization.Get("Str_DiagSlots"),
+                stats.Built,  RadarLocalization.Get("Str_DiagNew"),
+                stats.Reused, RadarLocalization.Get("Str_DiagKept"));
+
+            this.DiagWindow.Content = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0} {1}",
+                stats.Samples,
+                RadarLocalization.Get("Str_DiagCycles"));
+        }
+
+        private static string ms(double value)
+        {
+            return value.ToString(value < 10 ? "F2" : "F1", CultureInfo.InvariantCulture);
+        }
+
+        private void DiagReset_Click(object sender, RoutedEventArgs e)
+        {
+            CycleProfiler.Instance.Reset();
+            updateDiagnostics();
         }
 
         /// <summary>
@@ -223,7 +319,15 @@ namespace WPFFrontend
             Configuration.HideNeutrals        = (bool)this.HideNeutrals.IsChecked;
             Configuration.HideAllies          = (bool)this.HideAllies.IsChecked;
             Configuration.Borderless          = (bool)this.EnableBorderlessMode.IsChecked;
-            Configuration.RefreshTimeMS       = int.Parse(this.RefreshRate.Text);
+            // This runs on every keystroke, so the box is routinely mid-edit: empty while a
+            // value is being retyped, or briefly "5" on the way to "50". int.Parse threw
+            // FormatException on the empty box and took the overlay down with it - there is no
+            // DispatcherUnhandledException handler - so an unparseable box now leaves the last
+            // good value alone instead. Out-of-range values are clamped by the setter, and the
+            // box itself is rewritten from Configuration the next time Init() populates it.
+            int refreshMs;
+            if (int.TryParse(this.RefreshRate.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out refreshMs))
+                Configuration.RefreshTimeMS   = refreshMs;
             Configuration.BigBuffIcons        = (bool)this.BigBuffIcons.IsChecked;
             Configuration.UseShiftClick       = (bool)this.UseShiftClick.IsChecked;
             Configuration.DebugMode           = (bool)this.DebugMode.IsChecked;

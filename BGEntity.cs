@@ -21,6 +21,18 @@ namespace BGOverlay
         public List<CGameEffect> TimedEffects { get; private set; }
         public List<Tuple<string, Bitmap, uint>> SpellProtection { get; private set; }
         public bool Loaded { get; private set; }
+
+        /// <summary>
+        /// True when this slot's target is not a creature at all: the struct wasn't readable, or
+        /// its type tag says it is something else entirely. That is a verdict about the address,
+        /// so the scan can stop re-asking about it every tick.
+        ///
+        /// Deliberately not set for the other ways a build gives up - no resource name yet, a
+        /// position still at its default. Those describe a creature the game hasn't finished
+        /// setting up, which is exactly the case that must be retried on the next pass rather
+        /// than remembered: a creature a viewer just paid to summon starts out looking like one.
+        /// </summary>
+        public bool NotACreature { get; private set; }
         public int Id { get; private set; }
         public int X { get; private set; }
         public int Y { get; private set; }
@@ -462,9 +474,9 @@ namespace BGOverlay
                 : proficiency.ToString().Replace("_", " ");
         }
 
-        public BGEntity(ResourceManager resourceManager, IntPtr entityIdPtr)
+        public BGEntity(ResourceManager resourceManager, IntPtr entityIdPtr, IntPtr knownBase)
         {
-            init(resourceManager, entityIdPtr);
+            init(resourceManager, entityIdPtr, knownBase);
         }
 
         /// <summary>
@@ -472,7 +484,12 @@ namespace BGOverlay
         /// </summary>
         /// <param name="resourceManager"></param>
         /// <param name="entityIdPtr"></param>
-        private void init(ResourceManager resourceManager, IntPtr entityIdPtr)
+        /// <param name="knownBase">
+        /// The creature's base address, where the caller already has it - the entity scan reads
+        /// the whole slot array into a local buffer, so the pointer this would otherwise chase is
+        /// sitting in memory it already owns. IntPtr.Zero to chase it here instead.
+        /// </param>
+        private void init(ResourceManager resourceManager, IntPtr entityIdPtr, IntPtr knownBase)
         {
             this.entityIdPtr     = entityIdPtr;
             this.resourceManager = resourceManager;
@@ -480,20 +497,50 @@ namespace BGOverlay
             this.SpellProtection = new List<Tuple<string, Bitmap, uint>>();
             try
             {
+                // Most of the scanned slot range is not the entity array at all, so most calls
+                // reach this method only to be thrown away by the Type check below. That reject
+                // used to cost four syscalls - two to chase and read Id, two more for Type - and
+                // with tens of thousands of them per tick it was the entire cost of the scan.
+                //
+                // Now: the caller hands over the base address it already has, one block read
+                // copies the head of CGameAIBase, and Type is answered from that buffer. A
+                // rejected slot costs one syscall, and the fields below come out of the same
+                // copy rather than chasing the same pointer another twenty times.
+                var entityBase = knownBase != IntPtr.Zero
+                    ? knownBase
+                    : WinAPIBindings.ReadPointer(entityIdPtr);
+
+                if (entityBase == IntPtr.Zero)
+                {
+                    this.NotACreature = true;
+                    return;
+                }
+
                 // 1020 bytes CGameAIBase
-                this.Id   = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x48 }));
-                this.Type = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x8 }));
+                var window = _entityWindow ?? (_entityWindow = new byte[EntityWindowSize]);
+                if (!WinAPIBindings.ReadInto(entityBase, window, EntityWindowSize))
+                {
+                    this.NotACreature = true;
+                    return;
+                }
+
+                this.Type = window[OffType];
 
                 if (Type != 49)
+                {
+                    this.NotACreature = true;
                     return;
+                }
 
-                this.X = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC }));
-                this.Y = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC + 4 }));
+                this.Id = BitConverter.ToInt32(window, OffId);
+
+                this.X = BitConverter.ToInt32(window, OffX);
+                this.Y = BitConverter.ToInt32(window, OffY);
 
                 if (X < 0 || Y < 0)
                     return;
 
-                var rawCreResRef = WinAPIBindings.ReadResRef(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x540 }));
+                var rawCreResRef = WinAPIBindings.ReadResRef(IntPtr.Add(entityBase, 0x540));
                 // The struct offset for this field is reverse-engineered and can be a byte
                 // or two off, silently dropping leading characters with no garbage left
                 // behind to detect. Resolving against the authoritative CRE list parsed
@@ -505,13 +552,13 @@ namespace BGOverlay
                     : null;
                 this.CreResourceFilename = resolvedCreName ?? (rawCreResRef + ".CRE");
 
-                IntPtr cGameAreaPtr = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
-                this.EnemyAlly      = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
-                this.RACE           = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
-                this.CLASS          = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
+                IntPtr cGameAreaPtr = IntPtr.Add(entityBase, OffAreaPtr);
+                this.EnemyAlly      = window[OffEnemyAlly];
+                this.RACE           = (RACE)window[OffRace];
+                this.CLASS          = (CLASS)window[OffClass];
                 // try to get kit
-                ushort mageSpecUpper = WinAPIBindings.ReadUInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x23C }));
-                ushort mageSpec = WinAPIBindings.ReadUInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x23E }));
+                ushort mageSpecUpper = BitConverter.ToUInt16(window, OffKitUpper);
+                ushort mageSpec = BitConverter.ToUInt16(window, OffKitLower);
                 this.Kit = (CREReader.KIT)((mageSpec << 16) | mageSpecUpper);
                 var kit5DebugStr = ((mageSpec << 16) | mageSpecUpper).ToString("X8");
 
@@ -530,14 +577,14 @@ namespace BGOverlay
                 this.MousePosY1            = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
                 this.ViewportHeight        = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
                 this.ViewportWidth         = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
-                this.Name2                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3928, 0x0 }), 64);
-                this.Name1                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x30, 0x0 }), 8);
-                this.CurrentHP             = WinAPIBindings.ReadInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
-                this.timedEffectsPointer   = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4A00 });
-                this.equipedEffectsPointer = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x49B0 });
+                this.Name2                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(IntPtr.Add(entityBase, 0x3928), 0x0), 64);
+                this.Name1                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(IntPtr.Add(entityBase, 0x30), 0x0), 8);
+                this.CurrentHP             = BitConverter.ToInt16(window, OffCurrentHP);
+                this.timedEffectsPointer   = IntPtr.Add(entityBase, 0x4A00);
+                this.equipedEffectsPointer = IntPtr.Add(entityBase, 0x49B0);
                 this.curSpellPtr           = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
-                this.equipmentPtr          = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xFC0 });
-                this.isInvisible           = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
+                this.equipmentPtr          = IntPtr.Add(entityBase, 0xFC0);
+                this.isInvisible           = WinAPIBindings.ReadInt32(IntPtr.Add(entityBase, 0x4928));
                 this.Loaded                = true;
 
                 if (Configuration.DebugMode)
@@ -603,35 +650,54 @@ namespace BGOverlay
         {
             try
             {
-                var currentId = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x48 }));
-                if (currentId != this.Id)
+                // One syscall for the creature's base address, one for the block of struct that
+                // holds everything below. This used to be a FindDMAAddy + scalar read per field -
+                // two syscalls each, eighteen fields, for every creature on every tick - and with
+                // a few hundred actors loaded that arithmetic is the whole cost of the scan.
+                var entityBase = WinAPIBindings.ReadPointer(entityIdPtr);
+                if (entityBase == IntPtr.Zero)
+                    return null;
+
+                var window = _entityWindow ?? (_entityWindow = new byte[EntityWindowSize]);
+                if (!WinAPIBindings.ReadInto(entityBase, window, EntityWindowSize))
+                    return null;
+
+                if (BitConverter.ToInt32(window, OffId) != this.Id)
                     return null;
 
                 var copy = new BGEntity(this);
 
-                copy.X = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC }));
-                copy.Y = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0xC + 4 }));
+                copy.X = BitConverter.ToInt32(window, OffX);
+                copy.Y = BitConverter.ToInt32(window, OffY);
 
                 if (copy.X < 0 || copy.Y < 0)
                     return null;
 
-                IntPtr cGameAreaPtr  = WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x18 });
-                copy.EnemyAlly       = WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x38 }));
-                copy.RACE            = (RACE)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3A }));
-                copy.CLASS           = (CLASS)WinAPIBindings.ReadByte(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x3B }));
-                ushort mageSpecUpper = WinAPIBindings.ReadUInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x23C }));
-                ushort mageSpec      = WinAPIBindings.ReadUInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x23E }));
+                copy.EnemyAlly       = window[OffEnemyAlly];
+                copy.RACE            = (RACE)window[OffRace];
+                copy.CLASS           = (CLASS)window[OffClass];
+                ushort mageSpecUpper = BitConverter.ToUInt16(window, OffKitUpper);
+                ushort mageSpec      = BitConverter.ToUInt16(window, OffKitLower);
                 copy.Kit             = (CREReader.KIT)((mageSpec << 16) | mageSpecUpper);
+                copy.CurrentHP       = BitConverter.ToInt16(window, OffCurrentHP);
 
-                copy.updateTime();
-                copy.MousePosX      = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 }));
-                copy.MousePosY      = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x254 + 4 }));
-                copy.MousePosX1     = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 }));
-                copy.MousePosY1     = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
-                copy.ViewportHeight = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
-                copy.ViewportWidth  = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
-                copy.CurrentHP      = WinAPIBindings.ReadInt16(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x560 + 0x1C }));
-                copy.isInvisible    = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(entityIdPtr, new int[] { 0x4928 }));
+                // Far enough past the rest of the struct that pulling the gap along with it would
+                // cost more than this one extra read saves.
+                copy.isInvisible = WinAPIBindings.ReadInt32(IntPtr.Add(entityBase, OffIsInvisible));
+
+                // Mouse position, viewport and game time belong to the area and the game, not to
+                // this creature: every actor in the same area was reading identical values out of
+                // the same two structs, once each, every tick. Read once per tick instead - keyed
+                // by pointer, so actors in different areas still get their own.
+                copy.GameTime = gameTimeFor(cInfGamePtr);
+
+                var area            = areaViewFor(pointerAt(window, OffAreaPtr));
+                copy.MousePosX      = area.MousePosX;
+                copy.MousePosY      = area.MousePosY;
+                copy.MousePosX1     = area.MousePosX1;
+                copy.MousePosY1     = area.MousePosY1;
+                copy.ViewportHeight = area.ViewportHeight;
+                copy.ViewportWidth  = area.ViewportWidth;
 
                 copy.Loaded = true;
                 return copy;
@@ -642,6 +708,125 @@ namespace BGOverlay
                 return null;
             }
         }
+
+        #region Per-tick read path
+
+        // Offsets into CGameAIBase, exactly as the per-field reads above used to spell them -
+        // the block read changes how many syscalls fetch these bytes, never which bytes.
+        private const int OffType        = 0x08;
+        private const int OffX           = 0x0C;
+        private const int OffY           = 0x0C + 4;
+        private const int OffAreaPtr     = 0x18;
+        private const int OffEnemyAlly   = 0x38;
+        private const int OffRace        = 0x3A;
+        private const int OffClass       = 0x3B;
+        private const int OffId          = 0x48;
+        private const int OffCurrentHP   = 0x560 + 0x1C;
+        private const int OffKitUpper    = 0x560 + 0x23C;
+        private const int OffKitLower    = 0x560 + 0x23E;
+        private const int OffIsInvisible = 0x4928;
+
+        /// <summary>Enough of CGameAIBase to cover every offset above except OffIsInvisible.</summary>
+        private const int EntityWindowSize = OffKitLower + 2;
+
+        // Offsets into CGameArea, and the slice of it worth copying in one go.
+        private const int OffMousePosX     = 0x254;
+        private const int OffMousePosY     = 0x254 + 4;
+        private const int OffMousePosX1    = 0x5C8 + 0x60;
+        private const int OffMousePosY1    = 0x5C8 + 0x60 + 0x4;
+        private const int OffViewportWidth = 0x5C8 + 0x78 + 0x8;
+        private const int OffViewportHeight= 0x5C8 + 0x78 + 0xC;
+        private const int AreaWindowStart  = OffMousePosX;
+        private const int AreaWindowSize   = OffViewportHeight + 4 - AreaWindowStart;
+
+        private const int OffGameTime = 0x3FA0;
+
+        /// <summary>The area-wide values every creature in one area shares.</summary>
+        private struct AreaView
+        {
+            public int MousePosX, MousePosY, MousePosX1, MousePosY1, ViewportWidth, ViewportHeight;
+        }
+
+        // Thread-static and reused: the scan runs on one dedicated thread, and a fresh two-kilobyte
+        // array per creature per tick would hand the GC more garbage than the syscalls saved here.
+        [ThreadStatic] private static byte[] _entityWindow;
+        [ThreadStatic] private static byte[] _areaWindow;
+
+        // Null except on the thread that called BeginTick, which is deliberate: a caller that
+        // isn't driving the scan (the UI thread reading a right-clicked creature, say) gets a
+        // straight-through read rather than a cached value from whenever the loop last ticked.
+        [ThreadStatic] private static Dictionary<long, AreaView> _areaCache;
+        [ThreadStatic] private static Dictionary<long, uint> _gameTimeCache;
+
+        /// <summary>
+        /// Opens a tick's worth of caching on the calling thread. ProcessHacker.MainLoop calls
+        /// this at the top of every pass; nothing else should, since holding these across ticks
+        /// would freeze the mouse cursor and the clock.
+        /// </summary>
+        public static void BeginTick()
+        {
+            if (_areaCache == null)
+                _areaCache = new Dictionary<long, AreaView>();
+            else
+                _areaCache.Clear();
+
+            if (_gameTimeCache == null)
+                _gameTimeCache = new Dictionary<long, uint>();
+            else
+                _gameTimeCache.Clear();
+        }
+
+        private static IntPtr pointerAt(byte[] buffer, int offset)
+        {
+            return IntPtr.Size == 4
+                ? new IntPtr(BitConverter.ToInt32(buffer, offset))
+                : new IntPtr(BitConverter.ToInt64(buffer, offset));
+        }
+
+        private static AreaView areaViewFor(IntPtr areaBase)
+        {
+            var key = areaBase.ToInt64();
+
+            AreaView cached;
+            if (_areaCache != null && _areaCache.TryGetValue(key, out cached))
+                return cached;
+
+            var buffer = _areaWindow ?? (_areaWindow = new byte[AreaWindowSize]);
+            var view   = new AreaView();
+
+            if (WinAPIBindings.ReadInto(IntPtr.Add(areaBase, AreaWindowStart), buffer, AreaWindowSize))
+            {
+                view.MousePosX      = BitConverter.ToInt32(buffer, OffMousePosX      - AreaWindowStart);
+                view.MousePosY      = BitConverter.ToInt32(buffer, OffMousePosY      - AreaWindowStart);
+                view.MousePosX1     = BitConverter.ToInt32(buffer, OffMousePosX1     - AreaWindowStart);
+                view.MousePosY1     = BitConverter.ToInt32(buffer, OffMousePosY1     - AreaWindowStart);
+                view.ViewportWidth  = BitConverter.ToInt32(buffer, OffViewportWidth  - AreaWindowStart);
+                view.ViewportHeight = BitConverter.ToInt32(buffer, OffViewportHeight - AreaWindowStart);
+            }
+
+            if (_areaCache != null)
+                _areaCache[key] = view;
+
+            return view;
+        }
+
+        private static uint gameTimeFor(IntPtr cInfGamePtr)
+        {
+            var key = cInfGamePtr.ToInt64();
+
+            uint cached;
+            if (_gameTimeCache != null && _gameTimeCache.TryGetValue(key, out cached))
+                return cached;
+
+            var value = WinAPIBindings.ReadUInt32(WinAPIBindings.FindDMAAddy(cInfGamePtr, OffGameTime));
+
+            if (_gameTimeCache != null)
+                _gameTimeCache[key] = value;
+
+            return value;
+        }
+
+        #endregion
 
         /// <summary>
         /// Reads this creature's class level straight from memory, returning it instead of
@@ -680,7 +865,7 @@ namespace BGOverlay
 
         private void updateTime()
         {
-            this.GameTime = WinAPIBindings.ReadUInt32(WinAPIBindings.FindDMAAddy(cInfGamePtr, new int[] { 0x3FA0 }));
+            this.GameTime = gameTimeFor(cInfGamePtr);
         }
 
         public void LoadDerivedStats()

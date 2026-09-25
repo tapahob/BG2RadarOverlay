@@ -53,7 +53,7 @@
                         <RowDefinition Height="100"/>
                         <RowDefinition Height="16"/>
                         <RowDefinition Height="50"/>
-                        <RowDefinition Height="70"/>
+                        <RowDefinition Height="100"/>
                         <RowDefinition Height="15"/>
                         <RowDefinition Height="145"/>
                         <RowDefinition Height="15"/>
@@ -90,7 +90,7 @@
                         <Label d:Content="Performance" Content="{DynamicResource Str_Performance}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal">
                             <Label d:Content="Refresh Rate (ms):" Content="{DynamicResource Str_RefreshRate}" Style="{StaticResource BoldSmall}"/>
-                            <TextBox x:Name="RefreshRate" PreviewTextInput="TextBox_PreviewTextInput" MinWidth="50" Text="300" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25" Width="46" Margin="-5" />
+                            <TextBox x:Name="RefreshRate" PreviewTextInput="TextBox_PreviewTextInput" MinWidth="50" Text="100" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25" Width="46" Margin="-5" />
                         </StackPanel>
                     </StackPanel>
                     <Border Grid.Row="3" Grid.ColumnSpan="1" Grid.Column="3" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="3"/>
@@ -210,6 +210,135 @@
 
                     <Button x:Name="SaveTwitch" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Save" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,20,0,0" HorizontalAlignment="Stretch"/>
                 </StackPanel>
+            </TabItem>
+            <TabItem d:Header="Diagnostics" Header="{DynamicResource Str_TabDiagnostics}">
+                <!-- Read-only readout of CycleProfiler, refreshed on a DispatcherTimer while
+                     this control is visible (same pattern as the Twitch status label). Values
+                     are set from code rather than bound, so there is nothing for the profiler
+                     to push onto the UI thread from the loop it is measuring. -->
+                <Grid Margin="0,8,0,35">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Row="0" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313"/>
+                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="5,5,5,5">
+                        <Label Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" d:Content="One iteration (ms)" Content="{DynamicResource Str_DiagIteration}"/>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.5*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Row="0" Grid.Column="1" Style="{StaticResource BoldSmall}" FontSize="10" HorizontalAlignment="Right" d:Content="Last" Content="{DynamicResource Str_DiagLast}"/>
+                            <Label Grid.Row="0" Grid.Column="2" Style="{StaticResource BoldSmall}" FontSize="10" HorizontalAlignment="Right" d:Content="Avg" Content="{DynamicResource Str_DiagAvg}"/>
+                            <Label Grid.Row="0" Grid.Column="3" Style="{StaticResource BoldSmall}" FontSize="10" HorizontalAlignment="Right" d:Content="95th" Content="{DynamicResource Str_DiagP95}"/>
+                            <Label Grid.Row="0" Grid.Column="4" Style="{StaticResource BoldSmall}" FontSize="10" HorizontalAlignment="Right" d:Content="Max" Content="{DynamicResource Str_DiagMax}"/>
+
+                            <Label Grid.Row="1" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Cycle" Content="{DynamicResource Str_DiagCycle}"/>
+                            <Label x:Name="DiagCycleLast" Grid.Row="1" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="356.2"/>
+                            <Label x:Name="DiagCycleAvg" Grid.Row="1" Grid.Column="2" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="354.8"/>
+                            <Label x:Name="DiagCycleP95" Grid.Row="1" Grid.Column="3" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="381.0"/>
+                            <Label x:Name="DiagCycleMax" Grid.Row="1" Grid.Column="4" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="470.3"/>
+
+                            <Label Grid.Row="2" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Work" Content="{DynamicResource Str_DiagWork}"/>
+                            <Label x:Name="DiagWorkLast" Grid.Row="2" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="49.1"/>
+                            <Label x:Name="DiagWorkAvg" Grid.Row="2" Grid.Column="2" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="47.6"/>
+                            <Label x:Name="DiagWorkP95" Grid.Row="2" Grid.Column="3" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="72.4"/>
+                            <Label x:Name="DiagWorkMax" Grid.Row="2" Grid.Column="4" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="163.9"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <Border Grid.Row="2" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313"/>
+                    <StackPanel Grid.Row="2" Grid.Column="1" Margin="5,5,5,5">
+                        <Label Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" d:Content="Where the time goes (avg ms)" Content="{DynamicResource Str_DiagBreakdown}"/>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="0.55*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="0.55*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Row="0" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Memory scan" Content="{DynamicResource Str_DiagPhaseScan}"/>
+                            <Label x:Name="DiagScan" Grid.Row="0" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="38.4"/>
+                            <Label Grid.Row="1" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Pool prune" Content="{DynamicResource Str_DiagPhasePrune}"/>
+                            <Label x:Name="DiagPrune" Grid.Row="1" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="0.2"/>
+                            <Label Grid.Row="2" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Filter + sort" Content="{DynamicResource Str_DiagPhaseFilter}"/>
+                            <Label x:Name="DiagFilter" Grid.Row="2" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="1.1"/>
+
+                            <Label Grid.Row="0" Grid.Column="2" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Twitch" Content="{DynamicResource Str_DiagPhaseTwitch}"/>
+                            <Label x:Name="DiagTwitch" Grid.Row="0" Grid.Column="3" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="0.0"/>
+                            <Label Grid.Row="1" Grid.Column="2" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="UI update" Content="{DynamicResource Str_DiagPhaseUi}"/>
+                            <Label x:Name="DiagUi" Grid.Row="1" Grid.Column="3" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="7.9"/>
+                            <Label Grid.Row="2" Grid.Column="2" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Sleep" Content="{DynamicResource Str_DiagPhaseSleep}"/>
+                            <Label x:Name="DiagSleep" Grid.Row="2" Grid.Column="3" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="307.2"/>
+
+                            <!-- The memory scan interleaves three different jobs slot by slot, so
+                                 they accumulate within it rather than splitting it into phases. -->
+                            <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4" Style="{StaticResource BoldSmall}" FontSize="10" Opacity="0.75" d:Content="memory scan, of which:" Content="{DynamicResource Str_DiagOfWhich}"/>
+                            <Label Grid.Row="4" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" Margin="12,0,0,0" d:Content="Slot array" Content="{DynamicResource Str_DiagSlotArray}"/>
+                            <Label x:Name="DiagSlotRead" Grid.Row="4" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="2.1"/>
+                            <Label Grid.Row="4" Grid.Column="2" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Refresh" Content="{DynamicResource Str_DiagRefreshPhase}"/>
+                            <Label x:Name="DiagRefresh" Grid.Row="4" Grid.Column="3" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="8.4"/>
+                            <Label Grid.Row="5" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" Margin="12,0,0,0" d:Content="Build new" Content="{DynamicResource Str_DiagBuildPhase}"/>
+                            <Label x:Name="DiagBuild" Grid.Row="5" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" HorizontalAlignment="Right" d:Content="0.9"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <Border Grid.Row="4" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313"/>
+                    <StackPanel Grid.Row="4" Grid.Column="1" Margin="5,5,5,5">
+                        <Label Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" d:Content="Cost" Content="{DynamicResource Str_DiagCost}"/>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.15*"/>
+                                <ColumnDefinition Width="2*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Row="0" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Busy" Content="{DynamicResource Str_DiagBusy}"/>
+                            <Label x:Name="DiagBusy" Grid.Row="0" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" d:Content="13.4% of one core"/>
+                            <Label Grid.Row="1" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Real rate" Content="{DynamicResource Str_DiagRealRate}"/>
+                            <Label x:Name="DiagRate" Grid.Row="1" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" d:Content="2.82 Hz (set: 3.33)"/>
+                            <Label Grid.Row="2" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Entities" Content="{DynamicResource Str_DiagEntities}"/>
+                            <Label x:Name="DiagEntities" Grid.Row="2" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" d:Content="47 slots, 2 new, 45 kept"/>
+                            <Label Grid.Row="3" Grid.Column="0" Style="{StaticResource BoldSmall}" FontSize="11" d:Content="Window" Content="{DynamicResource Str_DiagWindow}"/>
+                            <Label x:Name="DiagWindow" Grid.Row="3" Grid.Column="1" FontFamily="Segoe Print" FontSize="11" d:Content="128 cycles"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <Button x:Name="DiagReset" Grid.Row="6" Grid.Column="1" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313"
+                            d:Content="Reset measurements" Content="{DynamicResource Str_DiagReset}" FontFamily="Segoe Print" FontWeight="Bold" Click="DiagReset_Click"/>
+                </Grid>
             </TabItem>
         </TabControl>
     </Grid>

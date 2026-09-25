@@ -79,6 +79,7 @@
     <Compile Include="Readers\BIFFReader.cs" />
     <Compile Include="NativeStructs\CDerivedStats.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="Diagnostics\CycleProfiler.cs" />
     <Compile Include="GameSpawnBridge.cs" />
     <Compile Include="TwitchIntegration\SpawnPack.cs" />
     <Compile Include="GlobalMouseHook.cs" />

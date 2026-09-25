@@ -117,6 +117,41 @@ namespace WinApiBindings
             return ptr;
         }
 
+        /// <summary>
+        /// Single-hop overload of <see cref="FindDMAAddy(IntPtr, int[])"/>. Almost every caller
+        /// passes exactly one offset, and the array form allocated a throwaway int[1] for each of
+        /// them - tens of thousands per tick across the entity scan.
+        /// </summary>
+        public static IntPtr FindDMAAddy(IntPtr ptr, int offset)
+        {
+            return IntPtr.Add(ReadPointer(ptr), offset);
+        }
+
+        /// <summary>Reads the pointer stored at <paramref name="ptr"/>.</summary>
+        public static IntPtr ReadPointer(IntPtr ptr)
+        {
+            IntPtr hProc = Configuration.hProc;
+            var buffer = GetScratchBuffer(IntPtr.Size);
+            ReadScratch(hProc, ptr, buffer, IntPtr.Size);
+            return IntPtr.Size == 4
+                ? new IntPtr(BitConverter.ToInt32(buffer, 0))
+                : new IntPtr(BitConverter.ToInt64(buffer, 0));
+        }
+
+        /// <summary>
+        /// Reads a block into a buffer the caller owns and reuses, for the case where one struct
+        /// is about to be picked apart field by field: a single syscall copying two kilobytes
+        /// costs far less than twenty syscalls copying four bytes each, and the difference is the
+        /// entity scan's whole cost.
+        ///
+        /// Returns false if the range isn't fully readable - the caller decides what that means
+        /// (for a creature that vanished mid-tick, it means fall back to a full rebuild).
+        /// </summary>
+        public static bool ReadInto(IntPtr ptr, byte[] buffer, int size)
+        {
+            return ReadScratch(Configuration.hProc, ptr, buffer, size);
+        }
+
         public static UInt32 ReadUInt32(IntPtr ptr)
         {
             IntPtr hProc = Configuration.hProc;

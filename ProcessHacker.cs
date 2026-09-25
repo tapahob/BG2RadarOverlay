@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using BGOverlay.Diagnostics;
 using WinApiBindings;
 
 namespace BGOverlay
@@ -50,13 +51,45 @@ namespace BGOverlay
         private readonly ConcurrentQueue<int> pendingEntityInvalidations = new ConcurrentQueue<int>();
 
         private const int SlotSize       = 16;
+
+        // A user-mode heap address on Windows is neither in the first 64 KB (reserved, never
+        // mapped) nor above the 47-bit user address limit. Slot bytes that fall outside that
+        // range are not a pointer at all, whatever else they might be.
+        private const long MinPlausibleAddress = 0x10000;
+        private const long MaxPlausibleAddress = 0x7FFFFFFFFFFF;
+
+        // Slot position -> the pointer that was in it when a build last found no creature there.
+        // Most of the scanned range is not the entity array, and those thousands of slots used to
+        // be re-discovered from scratch on every pass: built, rejected, forgotten, repeat. Keyed
+        // on the pointer value rather than the slot alone so the entry invalidates itself the
+        // moment the slot points somewhere new - which is also what makes an area change take
+        // care of itself, with nothing here needing to know what an area is.
+        private readonly Dictionary<int, long> deadSlots = new Dictionary<int, long>();
+
+        private long tickCounter;
+
+        // A remembered slot is still re-checked once every this many ticks, staggered by its own
+        // position so a slice of them comes up on each pass rather than all at once. Nothing is
+        // written off permanently on the strength of one look, and the steady-state cost is a
+        // fraction of the builds it replaces.
+        private const int DeadSlotRetryTicks = 8;
+
         private const int ScanChunkSlots = 4096; // 64KB/chunk - far fewer syscalls than one-per-slot, small enough to stay a plain gen0 allocation.
 
         public void MainLoop()
         {
+            CycleProfiler.Instance.BeginCycle();
+
+            // Opens this tick's read caches for the area-wide and game-wide values every entity
+            // would otherwise re-read for itself. Must be on this thread - see BGEntity.BeginTick.
+            BGEntity.BeginTick();
+
+            tickCounter++;
+
             if (cacheInvalidationRequested)
             {
                 entityPool.Clear();
+                deadSlots.Clear();
                 cacheInvalidationRequested = false;
             }
 
@@ -75,6 +108,7 @@ namespace BGOverlay
                 NearestEnemies.Clear();
                 TextEntries.Clear();
                 entityPool.Clear();
+                deadSlots.Clear();
                 ProcessDestroyed?.Invoke(Proc.ProcessName, Proc.Id);
                 this.Init();
             }
@@ -87,6 +121,9 @@ namespace BGOverlay
             var marginOfError = 500;
 
             // First i = 32016
+            int entitiesBuilt  = 0;
+            int entitiesReused = 0;
+
             int startOffset        = 2000 * 16;
             int endOffsetExclusive = length * 16 + marginOfError;
             int chunkBytes         = ScanChunkSlots * SlotSize;
@@ -109,6 +146,7 @@ namespace BGOverlay
                     Logger.Error("Error reading actor list chunk!", ex);
                     continue;
                 }
+                CycleProfiler.Instance.AddSlotRead();
 
                 for (int offset = 0; offset + 4 <= bytesToRead; offset += SlotSize)
                 {
@@ -131,14 +169,61 @@ namespace BGOverlay
                         if (entityPool.TryGetValue(index, out var template))
                         {
                             newEntity = template.RefreshedCopy();
+                            if (newEntity != null)
+                                entitiesReused++;
+                            CycleProfiler.Instance.AddRefresh();
                         }
 
                         if (newEntity == null)
                         {
-                            var entityPtr = WinAPIBindings.FindDMAAddy(test + i + 0x8);
-                            newEntity = new BGEntity(ResourceManager, entityPtr);
+                            var entityPtr = test + i + 0x8;
+
+                            // The creature's address is sitting in the chunk already copied out
+                            // of the game - the slot's pointer field is these eight bytes. Taking
+                            // it here rather than letting BGEntity chase it saves a syscall per
+                            // candidate slot, and a value that isn't even a plausible address is
+                            // thrown out without touching the game at all. Between that and the
+                            // dead-slot cache below, the thousands of slots in this range that
+                            // are not the entity array cost nothing per pass instead of a full
+                            // build each.
+                            IntPtr knownBase = IntPtr.Zero;
+                            long rawBase = 0;
+
+                            if (offset + SlotSize <= bytesToRead)
+                            {
+                                // Unsigned on the 32-bit path: a high address would come back
+                                // as a negative int and be rejected as implausible.
+                                rawBase = IntPtr.Size == 8
+                                    ? BitConverter.ToInt64(chunk, offset + 0x8)
+                                    : BitConverter.ToUInt32(chunk, offset + 0x8);
+
+                                if (rawBase < MinPlausibleAddress || rawBase > MaxPlausibleAddress)
+                                    continue;
+
+                                knownBase = new IntPtr(rawBase);
+
+                                // Asked and answered: this slot pointed here last time and there
+                                // was no creature at the other end. Costs nothing to check, since
+                                // the pointer it compares came out of the chunk already copied.
+                                long deadPointer;
+                                if (deadSlots.TryGetValue(i, out deadPointer)
+                                    && deadPointer == rawBase
+                                    && (tickCounter + i / SlotSize) % DeadSlotRetryTicks != 0)
+                                    continue;
+                            }
+
+                            entitiesBuilt++;
+                            newEntity = new BGEntity(ResourceManager, entityPtr, knownBase);
+                            CycleProfiler.Instance.AddBuild();
+
                             if (!newEntity.Loaded)
+                            {
+                                if (newEntity.NotACreature && rawBase != 0)
+                                    deadSlots[i] = rawBase;
                                 continue;
+                            }
+
+                            deadSlots.Remove(i);
                             entityPool[index] = newEntity;
                         }
 
@@ -173,6 +258,8 @@ namespace BGOverlay
                 }
             }
 
+            CycleProfiler.Instance.MarkScan();
+
             // Drop pooled entities whose slot didn't show up this pass (the creature died,
             // left the area, or the slot went back to the empty sentinel) so the pool tracks
             // only currently active entities instead of growing without bound.
@@ -183,6 +270,8 @@ namespace BGOverlay
                     entityPool.Remove(k);
             }
 
+            CycleProfiler.Instance.MarkPrune();
+
             entityList = entityListTemp;
 
             if (!entityList.Any())
@@ -191,6 +280,8 @@ namespace BGOverlay
             }
             this.NearestEnemies = entityListTemp.Where(y => clip(y)).ToList();
             TextEntries         = new ObservableCollection<string>(NearestEnemies.Select(x => x.ToString()));
+
+            CycleProfiler.Instance.MarkFilter();
 
             // allEntities (not entityListTemp/NearestEnemies) - those are already filtered by
             // the HidePartyMembers/HideNeutrals/HideAllies radar display options, which have
@@ -210,7 +301,24 @@ namespace BGOverlay
                 GameSpawnBridge.Instance.Pump();
             }
 
-            Thread.Sleep(Configuration.RefreshTimeMS);
+            CycleProfiler.Instance.MarkTwitch();
+            CycleProfiler.Instance.NoteEntities(seenIndexes.Count, entitiesBuilt, entitiesReused, NearestEnemies.Count);
+
+            // RefreshTimeMS is a period, not an extra delay. Sleeping the full amount *after*
+            // doing the work made every cycle (work + RefreshTimeMS) longer than the setting by
+            // however long that tick happened to take, so "300" quietly meant 350 in a crowded
+            // area and 310 in an empty one. Subtracting what this iteration already spent keeps
+            // the rate the box asks for wherever the machine can manage it, and degrades to
+            // running flat out where it can't, rather than compounding.
+            //
+            // One caveat this doesn't cover: MainWindow's enemy-control and list updates run
+            // after this returns, still inside the same cycle, so they land on top of the period.
+            // The Diagnostics tab shows the real rate next to the requested one for that reason.
+            var sleepMs = Configuration.RefreshTimeMS - (int)CycleProfiler.Instance.ElapsedThisCycleMs();
+            if (sleepMs > 0)
+                Thread.Sleep(sleepMs);
+
+            CycleProfiler.Instance.MarkSleep();
         }
 
         public void Init()

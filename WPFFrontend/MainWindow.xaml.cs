@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using BGOverlay;
+using BGOverlay.Diagnostics;
 using BGOverlay.Input;
 using FontFamily = System.Windows.Media.FontFamily;
 
@@ -36,8 +37,17 @@ namespace WPFFrontend
         // continuation rather than directly in the constructor body.
         private OptionsControl _options;
 
-        private DispatcherTimer _waitingForGameDotsTimer;
-        private int _waitingForGameDotsCount;
+        private DispatcherTimer _waitingForGameSpinnerTimer;
+        private int _waitingForGameSpinnerFrame;
+
+        /// <summary>
+        /// Frames of the "waiting for game" spinner - a trail of Braille dots chasing itself
+        /// around the cell. All frames are one glyph of the same width, so the label doesn't
+        /// jitter as it cycles. Segoe Print has no Braille block, so WPF falls back to
+        /// Segoe UI Symbol for this one character.
+        /// </summary>
+        private static readonly string[] WaitingForGameSpinnerFrames =
+            { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" };
 
         internal void deleteEnemyControlByTag(int tag)
         {
@@ -122,6 +132,11 @@ namespace WPFFrontend
                             updateControls(item);
                         }
                         syncEnemyList(_processHacker.NearestEnemies);
+
+                        // Closes the iteration the MainLoop() above opened. These two calls
+                        // marshal onto the UI thread and block until it has caught up, so they
+                        // belong in the cycle's cost even though they aren't ProcessHacker's.
+                        CycleProfiler.Instance.MarkUi();
                     }
                     catch (Exception ex)
                     {
@@ -132,8 +147,8 @@ namespace WPFFrontend
         }
 
         /// <summary>
-        /// Shows a "Waiting for game..." label near the radar icon with an animated
-        /// dot-cycling suffix, for the window's initial state before the game process is found
+        /// Shows a "Waiting for game" label near the radar icon with an animated
+        /// rotating-circle spinner suffix, for the window's initial state before the game process is found
         /// (previously nothing was shown at all during that wait). Configuration.Locale itself
         /// isn't set yet at this point (Configuration.Init() needs the game process), so this
         /// reads the persisted locale straight out of config.cfg instead - same result once
@@ -145,19 +160,19 @@ namespace WPFFrontend
             this.WaitingForGameLabel.Content = RadarLocalization.Get("Str_WaitingForGame");
             this.WaitingForGameBorder.Visibility = Visibility.Visible;
 
-            _waitingForGameDotsCount = 0;
-            _waitingForGameDotsTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-            _waitingForGameDotsTimer.Tick += (s, e) =>
+            _waitingForGameSpinnerFrame = 0;
+            _waitingForGameSpinnerTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
+            _waitingForGameSpinnerTimer.Tick += (s, e) =>
             {
-                _waitingForGameDotsCount = (_waitingForGameDotsCount + 1) % 4;
-                this.WaitingForGameLabel.Content = RadarLocalization.Get("Str_WaitingForGame") + new string('.', _waitingForGameDotsCount);
+                _waitingForGameSpinnerFrame = (_waitingForGameSpinnerFrame + 1) % WaitingForGameSpinnerFrames.Length;
+                this.WaitingForGameLabel.Content = RadarLocalization.Get("Str_WaitingForGame") + " " + WaitingForGameSpinnerFrames[_waitingForGameSpinnerFrame];
             };
-            _waitingForGameDotsTimer.Start();
+            _waitingForGameSpinnerTimer.Start();
         }
 
         private void stopWaitingForGameIndicator()
         {
-            _waitingForGameDotsTimer?.Stop();
+            _waitingForGameSpinnerTimer?.Stop();
             this.WaitingForGameBorder.Visibility = Visibility.Collapsed;
         }
 
