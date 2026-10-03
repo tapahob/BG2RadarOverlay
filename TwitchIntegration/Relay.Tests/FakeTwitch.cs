@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 // The test project isn't a Web SDK project, so ASP.NET's implicit usings don't apply - the
@@ -36,6 +36,18 @@ public sealed class FakeTwitch : IAsyncDisposable
 
     /// <summary>broadcaster id -> the JSON config.html saved for them (token prices).</summary>
     public Dictionary<string, string> Configs { get; } = new();
+
+    /// <summary>
+    /// The extension's signing secret, so GET /helix/extensions/configurations can hold the relay
+    /// to the same credential the real endpoint does. Null leaves the check off.
+    /// </summary>
+    public byte[]? ExtensionSecret { get; set; }
+
+    /// <summary>
+    /// Authorization headers the relay sent to /helix/extensions/configurations, so a test can
+    /// assert on what it presented rather than only on whether the call succeeded.
+    /// </summary>
+    public List<string> ConfigurationAuthHeaders { get; } = new();
 
     /// <summary>
     /// Who GET /helix/users answers for with no login - i.e. whoever the access token belongs to.
@@ -148,6 +160,31 @@ public sealed class FakeTwitch : IAsyncDisposable
         app.MapGet("/helix/extensions/configurations", (HttpContext ctx) =>
         {
             Interlocked.Increment(ref self!.HelixCallCount);
+
+            var auth = ctx.Request.Headers.Authorization.ToString();
+            self.ConfigurationAuthHeaders.Add(auth);
+
+            // The real endpoint is part of Twitch's Extension API, not ordinary Helix: it takes a
+            // JWT signed with the extension's shared secret and role "external", and answers an
+            // OAuth app access token with a bare 401. This stub used to accept anything, which is
+            // exactly how the relay shipped presenting the wrong credential - every test passed
+            // while every real redemption was silently dropped. So it checks now.
+            if (self.ExtensionSecret is not null)
+            {
+                var token = auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                    ? auth["Bearer ".Length..]
+                    : "";
+                var payload = token.Length > 0 ? Jwt.TryVerifyAndDecode(token, self.ExtensionSecret) : null;
+                var role = payload is { } p && p.TryGetProperty("role", out var roleEl) ? roleEl.GetString() : null;
+                var hasUserId = payload is { } p2 && p2.TryGetProperty("user_id", out var uidEl)
+                    && !string.IsNullOrEmpty(uidEl.GetString());
+
+                if (role != "external" || !hasUserId)
+                    return Results.Json(
+                        new { error = "Unauthorized", status = 401, message = "authentication failed" },
+                        statusCode: 401);
+            }
+
             var broadcasterId = ctx.Request.Query["broadcaster_id"].ToString();
             if (!self.Configs.TryGetValue(broadcasterId, out var content))
                 return Results.Json(new { data = Array.Empty<object>() });

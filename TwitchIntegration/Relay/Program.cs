@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -96,18 +96,17 @@ if (!string.IsNullOrEmpty(extensionSecretB64))
     catch (FormatException) { extensionSecret = null; }
 }
 
-// Reading config.html's saved token prices back out needs a *third* kind of Extension credential:
-// an app access token from the extension's own client id/secret (a different secret again from
-// TWITCH_EXTENSION_SECRET above - that one signs JWTs, this one is for the client_credentials
-// OAuth grant). This is the one credential genuinely shared across every streamer this relay
-// serves - it's extension-wide, not tied to any one broadcaster - which is exactly why
-// ExtensionConfigCache itself is what's keyed per streamer, not this. See ExtensionConfigCache
-// for why a server needs this at all instead of just reading Twitch.ext.configuration directly.
+// Reading config.html's saved token prices back out takes both Extension credentials, for two
+// different calls - see ExtensionConfigCache, which spells out which goes where. The short of it:
+// /helix/extensions/* authenticates with a JWT signed by TWITCH_EXTENSION_SECRET, and resolving a
+// channel login to a numeric id authenticates with an app access token from the client id/secret
+// pair. Both are extension-wide rather than per-broadcaster, which is why ExtensionConfigCache is
+// what gets keyed per streamer and these do not.
 var extensionClientId = Environment.GetEnvironmentVariable("TWITCH_EXTENSION_CLIENT_ID");
 var extensionClientSecret = Environment.GetEnvironmentVariable("TWITCH_EXTENSION_CLIENT_SECRET");
 ExtensionConfigCache? tokenPriceCache = null;
 if (!string.IsNullOrEmpty(extensionClientId) && !string.IsNullOrEmpty(extensionClientSecret))
-    tokenPriceCache = new ExtensionConfigCache(extensionClientId, extensionClientSecret, TimeSpan.FromSeconds(60));
+    tokenPriceCache = new ExtensionConfigCache(extensionClientId, extensionClientSecret, extensionSecret, TimeSpan.FromSeconds(60));
 
 // Everything that has to outlive a deployment: token balances viewers paid real Bits for, each
 // streamer's OAuth tokens, the EventSub secret, spent transaction ids. Under the app directory by
@@ -642,17 +641,41 @@ app.MapPost("/eventsub/callback", async (HttpContext context) =>
 
     var prices = await tokenPriceCache.GetPricesAsync(httpClient, broadcasterId);
     if (prices is null || prices.PointsPerToken <= 0 || prices.RewardName.Trim().Length == 0)
-        return Results.Ok(); // Channel Points isn't priced/named in this broadcaster's config.html yet
+    {
+        // Logged, not silent. Every exit below this point is a redemption a viewer has already
+        // been charged points for, and the only visible symptom is that nothing happens - so the
+        // reason has to be somewhere a streamer's "it isn't working" can actually be answered from.
+        app.Logger.LogWarning(
+            "Dropped a redemption on broadcaster {BroadcasterId}: no usable token price. {Reason}",
+            broadcasterId,
+            tokenPriceCache.LastFailure ?? "Channel Points are not priced or the reward is unnamed in config.html.");
+        return Results.Ok();
+    }
 
     // Matched by name, not a stored id - the one Custom Reward that sells tokens just has to be
     // titled whatever she typed into config.html's "Token Reward Name" field.
     if (!string.Equals(rewardTitle.Trim(), prices.RewardName.Trim(), StringComparison.OrdinalIgnoreCase))
-        return Results.Ok(); // some other reward on her channel, unrelated to tokens
+    {
+        // Debug, not warning: every other reward on the channel lands here, every time anyone
+        // redeems anything. It is normal traffic, and only interesting when a streamer is sure
+        // the names match and wants to see what the relay actually compared.
+        app.Logger.LogDebug(
+            "Ignored redemption of {RewardTitle} on broadcaster {BroadcasterId}: the token reward is named {ConfiguredName}.",
+            rewardTitle, broadcasterId, prices.RewardName);
+        return Results.Ok();
+    }
 
     // Rounds down: a reward priced at, say, 150 points against a 100-points-per-token rate
     // credits 1 token, not 1.5 - the leftover is the cost of a price that doesn't divide evenly,
     // same as change a vending machine doesn't give back.
     var tokens = rewardCost / prices.PointsPerToken;
+    if (tokens == 0)
+        app.Logger.LogWarning(
+            "Redemption of {RewardTitle} on broadcaster {BroadcasterId} credited nothing: the reward "
+            + "costs {Cost} points and a token is priced at {PointsPerToken}, so it does not buy one. "
+            + "Either the reward is too cheap or Points per token is set too high.",
+            rewardTitle, broadcasterId, rewardCost, prices.PointsPerToken);
+
     if (tokens > 0)
     {
         try

@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Text.Json;
 
 namespace TwitchRelay;
@@ -22,18 +22,34 @@ public sealed class TokenPriceConfig
 /// relay has no other way to see them: config.html writes into Twitch's Configuration Service,
 /// which only a browser-side Twitch.ext.configuration read can normally see.
 ///
-/// A server reads the same data over Helix instead, authenticated as the extension itself - an
-/// app access token from the extension's own client id/secret (Dev Console -> Extensions ->
-/// Manage -> the extension's OAuth credentials), *not* any one broadcaster's OAuth grant. That
-/// token is a single extension-wide credential, shared across every streamer this relay serves;
-/// everything else here (which broadcaster's prices, which broadcaster's numeric id) is cached
-/// per streamer, since this relay can be serving several at once.
+/// A server reads the same data over Helix instead, authenticated as the extension itself.
+///
+/// Two different credentials are involved, and they are not interchangeable - getting this wrong
+/// is silent, which cost a long debugging session once already:
+///
+///   /helix/extensions/*  (the prices) wants a JWT signed with the extension's shared secret,
+///                        role "external". An OAuth app access token is refused with a bare 401.
+///   /helix/users         (login -> numeric id) is an ordinary Helix endpoint and wants the
+///                        opposite: an app access token from the extension's client credentials.
+///
+/// Both are extension-wide, shared across every streamer this relay serves; everything else here
+/// (which broadcaster's prices, which broadcaster's numeric id) is cached per streamer, since
+/// this relay can be serving several at once.
 /// </summary>
 public sealed class ExtensionConfigCache
 {
     private readonly string extensionClientId;
     private readonly string extensionClientSecret;
+    private readonly byte[]? extensionSecret;
     private readonly TimeSpan ttl;
+
+    /// <summary>
+    /// Why the last price lookup came back empty, for the caller to log. Every failure here ends
+    /// as a null config, and every caller of that turns a redemption into a silent no-op - so
+    /// without this the only symptom of a misconfigured relay is viewers not getting what they
+    /// paid for, with nothing anywhere saying why.
+    /// </summary>
+    public string? LastFailure { get; private set; }
     private readonly string helixBaseUrl;
     private readonly string idBaseUrl;
 
@@ -53,10 +69,11 @@ public sealed class ExtensionConfigCache
     }
     private readonly ConcurrentDictionary<string, PriceEntry> pricesByBroadcasterId = new();
 
-    public ExtensionConfigCache(string extensionClientId, string extensionClientSecret, TimeSpan ttl)
+    public ExtensionConfigCache(string extensionClientId, string extensionClientSecret, byte[]? extensionSecret, TimeSpan ttl)
     {
         this.extensionClientId = extensionClientId;
         this.extensionClientSecret = extensionClientSecret;
+        this.extensionSecret = extensionSecret;
         this.ttl = ttl;
         helixBaseUrl = TwitchEndpoints.Helix;
         idBaseUrl = TwitchEndpoints.Id;
@@ -115,9 +132,15 @@ public sealed class ExtensionConfigCache
             && entry.Config is not null && DateTime.UtcNow - entry.CachedAtUtc < ttl)
             return entry.Config;
 
-        var token = await ensureAppAccessTokenAsync(http);
-        if (token is null)
-            return entry?.Config; // stale-but-something beats nothing if Twitch hiccups
+        if (extensionSecret is null)
+        {
+            LastFailure = "TWITCH_EXTENSION_SECRET is not set, so the relay cannot sign the "
+                + "JWT /helix/extensions/configurations requires. Token prices cannot be read.";
+            return entry?.Config;
+        }
+
+        // Signed per broadcaster, for a lifetime only long enough to make the call.
+        var token = Jwt.SignExtensionToken(extensionSecret, broadcasterId, TimeSpan.FromMinutes(1));
 
         using var request = new HttpRequestMessage(HttpMethod.Get,
             helixBaseUrl + "/extensions/configurations"
@@ -129,18 +152,30 @@ public sealed class ExtensionConfigCache
 
         using var response = await http.SendAsync(request);
         if (!response.IsSuccessStatusCode)
+        {
+            LastFailure = $"Twitch answered {(int)response.StatusCode} reading broadcaster "
+                + $"{broadcasterId}'s extension configuration. A 401 here means the extension "
+                + "secret does not match the extension named by TWITCH_EXTENSION_CLIENT_ID.";
             return entry?.Config;
+        }
 
         try
         {
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             var data = doc.RootElement.GetProperty("data");
             if (data.GetArrayLength() == 0)
-                return entry?.Config; // nothing saved in config.html yet for this broadcaster
+            {
+                LastFailure = $"Broadcaster {broadcasterId} has never saved the extension's "
+                    + "config.html, so there are no token prices to charge against.";
+                return entry?.Config;
+            }
 
             var contentJson = data[0].TryGetProperty("content", out var c) ? c.GetString() : null;
             if (string.IsNullOrEmpty(contentJson))
+            {
+                LastFailure = $"Broadcaster {broadcasterId}'s saved extension configuration is empty.";
                 return entry?.Config;
+            }
 
             using var contentDoc = JsonDocument.Parse(contentJson);
             var contentRoot = contentDoc.RootElement;
@@ -160,6 +195,7 @@ public sealed class ExtensionConfigCache
                 MaxTokenBalance = readInt(contentRoot, "maxTokenBalance")
             };
             pricesByBroadcasterId[broadcasterId] = new PriceEntry { Config = config, CachedAtUtc = DateTime.UtcNow };
+            LastFailure = null;
             return config;
         }
         catch (JsonException)

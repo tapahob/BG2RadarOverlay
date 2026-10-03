@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -76,6 +76,40 @@ public static class Jwt
             return root.Clone();
         }
     }
+
+    /// <summary>
+    /// Mints the JWT Twitch's Extension API wants on /helix/extensions/* - signed with the same
+    /// shared secret this class verifies incoming tokens with, but in the other direction: here
+    /// the relay is proving to Twitch that it is this extension's backend.
+    ///
+    /// This is NOT interchangeable with an OAuth app access token. /helix/extensions/* refuses a
+    /// client_credentials token with a bare 401, which is indistinguishable from a wrong secret
+    /// unless you know to look - see ExtensionConfigCache.GetPricesAsync.
+    ///
+    /// Both `role` and `user_id` are required. Twitch accepts the broadcaster whose segment is
+    /// being read as the user_id, which is what lets a relay serving several streamers sign for
+    /// each of them without being told who owns the extension.
+    /// </summary>
+    public static string SignExtensionToken(byte[] secret, string userId, TimeSpan lifetime)
+    {
+        var exp = DateTimeOffset.UtcNow.Add(lifetime).ToUnixTimeSeconds();
+        var header = base64UrlEncode(Encoding.UTF8.GetBytes("{\"alg\":\"HS256\",\"typ\":\"JWT\"}"));
+        var payload = base64UrlEncode(JsonSerializer.SerializeToUtf8Bytes(new Dictionary<string, object>
+        {
+            ["exp"] = exp,
+            ["user_id"] = userId,
+            ["role"] = "external"
+        }));
+
+        byte[] signature;
+        using (var hmac = new HMACSHA256(secret))
+            signature = hmac.ComputeHash(Encoding.ASCII.GetBytes(header + "." + payload));
+
+        return header + "." + payload + "." + base64UrlEncode(signature);
+    }
+
+    private static string base64UrlEncode(byte[] raw)
+        => Convert.ToBase64String(raw).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
     /// <summary>
     /// The `exp` of an already-verified payload, as UTC - what the replay guard files a spent

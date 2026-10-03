@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -86,6 +86,10 @@ public sealed class RelayHarness : IAsyncDisposable
         sharedTwitch.Subscriptions.Clear();
         sharedTwitch.SetPrices(BroadcasterId, BitsPerToken, PointsPerToken, RewardName);
 
+        // Hold the relay to the credential Twitch actually requires on the Extension API: a JWT
+        // signed with the extension secret, not an OAuth app access token.
+        sharedTwitch.ExtensionSecret = ExtensionSecret;
+
         dataDir ??= Path.Combine(Path.GetTempPath(), "relay-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dataDir);
 
@@ -96,6 +100,7 @@ public sealed class RelayHarness : IAsyncDisposable
 
         Environment.SetEnvironmentVariable("RELAY_DATA_DIR", dataDir);
         Environment.SetEnvironmentVariable("TWITCH_EXTENSION_SECRET", Convert.ToBase64String(ExtensionSecret));
+
         Environment.SetEnvironmentVariable("TWITCH_EXTENSION_CLIENT_ID", "fake-extension-client");
         Environment.SetEnvironmentVariable("TWITCH_EXTENSION_CLIENT_SECRET", "fake-extension-secret");
         // The separate OAuth "Application" the Channel Points path needs - a different credential
