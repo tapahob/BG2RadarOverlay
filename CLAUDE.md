@@ -40,9 +40,11 @@ Two suites, both fully mocked - neither needs Twitch, real Bits, or the VPS:
   configured with, so a receipt it signs is genuine as far as the relay can tell); `RelayHarness`
   runs the relay in-process against it. `TWITCH_HELIX_BASE_URL` / `TWITCH_ID_BASE_URL` are what
   point the relay at the stub - leave both unset in production.
-- `node TwitchIntegration/Extension/tests/pending-receipts.test.js` - the viewer-side half: what happens to a
-  Bits receipt between Twitch taking the money and the relay crediting it. Loads
-  `video_component.js` into a stub browser (no DOM, no Twitch, no network).
+- `node TwitchIntegration/Extension/tests/pending-receipts.test.js` - the viewer-side half. Mostly
+  what happens to a Bits receipt between Twitch taking the money and the relay crediting it, plus
+  the party-target picker, which shares the same harness. Loads `video_component.js` into a stub
+  browser (no DOM, no Twitch, no network) - the component is not an IIFE, so everything it defines
+  lands on the sandbox and pure helpers can be called straight out of it.
 
 ## Running the relay in Docker
 

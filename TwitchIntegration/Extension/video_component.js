@@ -166,6 +166,27 @@
   // so the default needs no special case anywhere downstream.
   var targetSlot = null;
 
+  // The slot a party member occupies, as the game numbers them. The overlay began sending this
+  // explicitly with the targeting feature; before that the party arrived in slot order with
+  // nothing naming it, so position is the fallback.
+  //
+  // Every place that needs a slot goes through here. Deciding a tile's slot one way and then
+  // checking whether that slot still exists another way is precisely what broke this: against an
+  // overlay that sends no slot, the check below compared undefined to the picked number, decided
+  // the character had left the party, and cleared the pick in the same click that made it. The
+  // tile highlighted for an instant and then went back, which looks exactly like a dead click.
+  function slotOf(member, index) {
+    return member && member.slot != null ? member.slot : (index + 1);
+  }
+
+  // Whether a picked slot is still occupied, by the same reckoning the tiles are drawn with.
+  function pickStillInParty(party, slot) {
+    for (var i = 0; i < party.length; i++) {
+      if (slotOf(party[i], i) === slot) return true;
+    }
+    return false;
+  }
+
   function renderParty(data) {
     var party = (data && data.party) || [];
     if (party.length === 0) {
@@ -176,20 +197,14 @@
     // A pick is dropped once that slot is gone - someone left the party, or the snapshot came
     // back shorter. Silently summoning at whoever took the slot over would be worse than
     // falling back to the protagonist.
-    if (targetSlot !== null) {
-      var stillThere = false;
-      for (var s = 0; s < party.length; s++) {
-        if (party[s].slot === targetSlot) { stillThere = true; break; }
-      }
-      if (!stillThere) targetSlot = null;
+    if (targetSlot !== null && !pickStillInParty(party, targetSlot)) {
+      targetSlot = null;
     }
 
     var html = '';
     for (var i = 0; i < party.length; i++) {
       var m = party[i];
-      // Slot comes from the overlay; fall back to position for a snapshot from an older build,
-      // so the picker still works rather than making every tile unselectable.
-      var slot = m.slot != null ? m.slot : (i + 1);
+      var slot = slotOf(m, i);
       var isTarget = (targetSlot === null && i === 0) || targetSlot === slot;
       html += '<div class="member' + (isTarget ? ' selected' : '') + '"'
         + ' data-slot="' + slot + '" tabindex="0" role="button"'

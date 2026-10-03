@@ -344,6 +344,49 @@ test('a cancelled purchase says so and stores nothing', async () => {
   assert.match(h.elements.sendResult.textContent, /cancel/i);
 });
 
+// ---- Party targeting ----
+//
+// Sharing the harness above rather than standing up a second one: these are the other half of
+// the same viewer-side surface, and the component has to be loaded into a stub browser either
+// way. The component is not an IIFE, so everything it defines lands on the sandbox and can be
+// called directly - which matters here, because the bug these cover had nothing to do with the
+// DOM and everything to do with two places disagreeing about what a slot is.
+
+test('a party member keeps the slot the overlay gave it', () => {
+  const h = createHarness();
+  assert.strictEqual(h.sandbox.slotOf({ slot: 4, name: 'Minsc' }, 0), 4);
+});
+
+test('a party from an overlay that sends no slot falls back to position', () => {
+  const h = createHarness();
+  assert.strictEqual(h.sandbox.slotOf({ name: 'Minsc' }, 2), 3);
+});
+
+// The regression. The extension and the overlay ship separately - a viewer's panel updates the
+// moment it is uploaded, the streamer's overlay only when they install a new build - so a party
+// with no slot field is a state that happens in the wild, not a hypothetical. Checking a pick
+// against the raw field while drawing tiles from the fallback meant every pick was judged to
+// have left the party and cleared in the same click that made it: clicking appeared to do
+// nothing at all.
+test('a pick survives against an overlay that sends no slot', () => {
+  const h = createHarness();
+  const party = [{ name: 'CHARNAME' }, { name: 'Imoen' }, { name: 'Minsc' }];
+  assert.strictEqual(h.sandbox.pickStillInParty(party, 2), true,
+    'slot 2 is Imoen by position - dropping it here is what made the picker look dead');
+});
+
+test('a pick is kept while that slot is still in the party', () => {
+  const h = createHarness();
+  const party = [{ slot: 1 }, { slot: 2 }, { slot: 3 }];
+  assert.strictEqual(h.sandbox.pickStillInParty(party, 2), true);
+});
+
+test('a pick is dropped once that slot has left the party', () => {
+  const h = createHarness();
+  const party = [{ slot: 1 }, { slot: 2 }];
+  assert.strictEqual(h.sandbox.pickStillInParty(party, 5), false);
+});
+
 // ---- Runner ----
 
 (async () => {
