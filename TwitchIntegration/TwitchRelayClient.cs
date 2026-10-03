@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
@@ -274,12 +274,16 @@ namespace BGOverlay
             // and the game rather than one per caller.
             var viewerText = extractString(message, "message");
 
+            // Which party member the pack lands on. Absent, zero or out of range all mean the
+            // protagonist - GameSpawnBridge.ClampTarget is the one place that decides.
+            var target = extractInt(message, "target", GameSpawnBridge.DefaultTarget);
+
             // An explicit ResRef overrides the packs; without one the summon is resolved
             // against the streamer's level-banded packs.
             if (!string.IsNullOrEmpty(resref))
             {
                 var amount = extractInt(message, "amount", 1);
-                GameSpawnBridge.Instance.Enqueue(new[] { new SpawnEntry { ResRef = resref, Amount = amount } }, viewerText);
+                GameSpawnBridge.Instance.Enqueue(new[] { new SpawnEntry { ResRef = resref, Amount = amount } }, viewerText, target);
                 return;
             }
 
@@ -291,7 +295,7 @@ namespace BGOverlay
             var requestedIds = extractStringArray(message, "packs");
             if (requestedIds.Count > 0)
             {
-                enqueueById(packs, requestedIds, viewerText);
+                enqueueById(packs, requestedIds, viewerText, target);
                 return;
             }
 
@@ -305,10 +309,10 @@ namespace BGOverlay
             }
 
             Logger.Info($"Summoning pack for level {ProtagonistLevel}: {pack}");
-            GameSpawnBridge.Instance.Enqueue(pack.Entries, viewerText);
+            GameSpawnBridge.Instance.Enqueue(pack.Entries, viewerText, target);
         }
 
-        private void enqueueById(IReadOnlyList<SpawnPack> packs, List<string> requestedIds, string viewerText)
+        private void enqueueById(IReadOnlyList<SpawnPack> packs, List<string> requestedIds, string viewerText, int target)
         {
             var ids = SpawnPack.AssignIds(packs);
             var entries = new List<SpawnEntry>();
@@ -339,7 +343,7 @@ namespace BGOverlay
             }
 
             Logger.Info($"Summoning packs [{string.Join(", ", summoned.ToArray())}] at level {ProtagonistLevel}.");
-            GameSpawnBridge.Instance.Enqueue(entries, viewerText);
+            GameSpawnBridge.Instance.Enqueue(entries, viewerText, target);
         }
 
         private static int extractInt(string json, string field, int fallback)
@@ -473,6 +477,12 @@ namespace BGOverlay
 
                 var member = party[i];
                 sb.Append('{');
+                // 1-based, and the order this list is already in: the scan walks the engine's
+                // entity array in slot order, which is the same order the game answers Player1..
+                // Player6 in. That is what lets a viewer pick a face here and have the game
+                // resolve it live when the summon lands, rather than the overlay shipping a
+                // position that is already a couple of seconds stale.
+                sb.Append("\"slot\":").Append(i + 1).Append(',');
                 sb.Append("\"name\":\"").Append(jsonEscape(member.Name2)).Append("\",");
                 sb.Append("\"race\":\"").Append(jsonEscape(member.Race)).Append("\",");
                 sb.Append("\"class\":\"").Append(jsonEscape(member.ClassString)).Append("\",");

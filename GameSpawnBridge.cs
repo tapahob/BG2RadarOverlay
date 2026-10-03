@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -34,9 +34,12 @@ namespace BGOverlay
         private const int OffsetResRef  = 0x14;
         private const int OffsetAmount  = 0x24;
         private const int OffsetMessage = 0x28;
+        // The message field ran to exactly 0x88, so the target had to grow the struct rather
+        // than fit in a gap - which is what makes this a layout change and not an addition.
+        private const int OffsetTarget  = 0x88;
         private const int ResRefSize    = 16;
         private const int MessageSize   = 96;
-        private const uint LayoutVersion = 4;
+        private const uint LayoutVersion = 5;
         private const uint FlagPending   = 1;
 
         /// <summary>
@@ -53,10 +56,21 @@ namespace BGOverlay
         /// </summary>
         public const int MaxAmount = 20;
 
+        /// <summary>
+        /// Party slots a summon can be aimed at, matching OBJECT.IDS Player1..Player6 - which is
+        /// what the Lua side resolves the target through, so the view lands on wherever that
+        /// character is *now* rather than wherever they were when the snapshot was taken.
+        /// </summary>
+        public const int MaxPartySlot = 6;
+
+        /// <summary>Aim at the protagonist - what a summon that names nobody gets.</summary>
+        public const int DefaultTarget = 0;
+
         private const int MaxQueued = 32;
 
-        // ~3s at the default 300ms tick: long enough not to fire on the normal one-tick gap
-        // between writing a request and the game picking it up.
+        // ~1s at the default 100ms tick: long enough not to fire on the normal gap between
+        // writing a request and the game picking it up, which is now a few of the mod's own
+        // 100ms poll ticks rather than one - it scrolls the view to the party before spawning.
         private const int StalledTicksBeforeWarning = 10;
 
         private int stalledTicks;
@@ -98,6 +112,9 @@ namespace BGOverlay
         {
             public SpawnEntry Entry;
             public string Message;
+
+            /// <summary>Party slot to summon at, or 0 for the protagonist.</summary>
+            public int Target;
         }
 
         private GameSpawnBridge() { }
@@ -109,15 +126,25 @@ namespace BGOverlay
         /// </summary>
         public void Enqueue(IEnumerable<SpawnEntry> entries)
         {
-            Enqueue(entries, null);
+            Enqueue(entries, null, DefaultTarget);
+        }
+
+        public void Enqueue(IEnumerable<SpawnEntry> entries, string message)
+        {
+            Enqueue(entries, message, DefaultTarget);
         }
 
         /// <param name="message">
         /// Optional viewer text, displayed in the game's message log alongside the first entry.
         /// </param>
-        public void Enqueue(IEnumerable<SpawnEntry> entries, string message)
+        /// <param name="target">
+        /// Party slot (1-based) to summon next to, or 0 for the protagonist. Clamped here rather
+        /// than trusted: it arrives from a viewer's browser, by way of the relay.
+        /// </param>
+        public void Enqueue(IEnumerable<SpawnEntry> entries, string message, int target)
         {
             var text = SanitizeMessage(message);
+            var slot = ClampTarget(target);
 
             lock (gate)
             {
@@ -127,10 +154,20 @@ namespace BGOverlay
                     // spawning long after the viewers who triggered it have moved on.
                     if (pending.Count >= MaxQueued)
                         break;
-                    pending.Enqueue(new QueuedSpawn { Entry = entry, Message = text });
+                    pending.Enqueue(new QueuedSpawn { Entry = entry, Message = text, Target = slot });
                     text = null;
                 }
             }
+        }
+
+        /// <summary>
+        /// Anything outside the party becomes the protagonist. A viewer naming slot 5 of a
+        /// four-person party is not an error worth refusing a paid-for summon over - the game
+        /// resolves Player5 to nobody and the pack would land nowhere.
+        /// </summary>
+        public static int ClampTarget(int target)
+        {
+            return target >= 1 && target <= MaxPartySlot ? target : DefaultTarget;
         }
 
         /// <summary>
@@ -187,7 +224,7 @@ namespace BGOverlay
                 next = pending.Peek();
             }
 
-            if (TrySpawn(next.Entry.ResRef, next.Entry.Amount, next.Message, out var error))
+            if (TrySpawn(next.Entry.ResRef, next.Entry.Amount, next.Message, next.Target, out var error))
             {
                 lock (gate)
                 {
@@ -228,15 +265,20 @@ namespace BGOverlay
         /// </summary>
         public bool TrySpawn(string resref, out string error)
         {
-            return TrySpawn(resref, 1, null, out error);
+            return TrySpawn(resref, 1, null, DefaultTarget, out error);
         }
 
         public bool TrySpawn(string resref, int amount, out string error)
         {
-            return TrySpawn(resref, amount, null, out error);
+            return TrySpawn(resref, amount, null, DefaultTarget, out error);
         }
 
         public bool TrySpawn(string resref, int amount, string message, out string error)
+        {
+            return TrySpawn(resref, amount, message, DefaultTarget, out error);
+        }
+
+        public bool TrySpawn(string resref, int amount, string message, int target, out string error)
         {
             lock (gate)
             {
@@ -254,7 +296,10 @@ namespace BGOverlay
 
                 if (!ensureMailbox())
                 {
-                    error = "Could not find the in-game bridge. Is EEex installed with M_BG2RDR.lua in override, and a game loaded?";
+                    // A mailbox stamped with a different layout version reads exactly like no
+                    // mailbox at all - magicMatches rejects it - so an out-of-date mod has to be
+                    // named here, or the only symptom is summons quietly doing nothing.
+                    error = "Could not find the in-game bridge. Click \"Install game files\" above (the mod may be missing or out of date), check EEex is installed, and load a game.";
                     return false;
                 }
 
@@ -277,6 +322,15 @@ namespace BGOverlay
                 if (!WinAPIBindings.WriteBytes(mailbox + OffsetAmount, BitConverter.GetBytes((uint)amount)))
                 {
                     error = "Could not write the summon amount into the game.";
+                    return false;
+                }
+
+                // Which party member the view scrolls to before the pack lands. Written with
+                // every request, including the ones that don't name anyone, so a 0 here always
+                // means "the protagonist" rather than whatever the previous summon left behind.
+                if (!WinAPIBindings.WriteBytes(mailbox + OffsetTarget, BitConverter.GetBytes((uint)ClampTarget(target))))
+                {
+                    error = "Could not write the summon target into the game.";
                     return false;
                 }
 

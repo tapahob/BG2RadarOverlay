@@ -63,6 +63,10 @@ const int maxMessageLength = 95;
 // a forged command rather than a limit anyone should meet.
 const int maxPacksPerSummon = 8;
 
+// Party slots a summon can be aimed at - OBJECT.IDS Player1..Player6, which is how the game-side
+// Lua resolves the target. Mirrors GameSpawnBridge.MaxPartySlot on the overlay side.
+const int maxPartySlot = 6;
+
 // One Bits purchase produces one receipt; the array exists only because the shape allows several.
 // Capped so an arbitrarily long list can't turn one request into unbounded signature checking.
 const int maxReceiptsPerPurchase = 10;
@@ -958,7 +962,13 @@ app.MapPost("/api/summon/{streamKey}", async (string streamKey, HttpContext cont
             ? (messageEl.GetString() ?? "")
             : "";
 
-        if (!writer.TryWrite(buildSummonCommand(resolvedIds, rawMessage)))
+        // Which party member to land the pack on. Range-checked here and clamped again by the
+        // overlay: this endpoint is reachable by anything that can POST, so neither side gets to
+        // assume the other validated it.
+        var target = root.TryGetProperty("target", out var targetEl) && targetEl.ValueKind == JsonValueKind.Number
+            && targetEl.TryGetInt32(out var parsedTarget) ? parsedTarget : 0;
+
+        if (!writer.TryWrite(buildSummonCommand(resolvedIds, rawMessage, target)))
         {
             // The spend already happened - refund it rather than leave a viewer charged for a
             // summon that never reached the overlay (a full outbound queue, in practice).
@@ -1055,7 +1065,7 @@ static (string UserId, string ChannelId)? tryGetViewerIdentity(string authToken,
 // Shared by the Channel Points and Bits paths, which both arrive at "these pack ids, plus maybe
 // a message" through completely different verification but need to hand the overlay the exact
 // same command shape /api/command already produces.
-static string buildSummonCommand(IReadOnlyList<string> packIds, string rawMessage)
+static string buildSummonCommand(IReadOnlyList<string> packIds, string rawMessage, int target)
 {
     var message = sanitizeMessage(rawMessage ?? "");
     var payload = new Dictionary<string, object> { ["type"] = "summon" };
@@ -1063,6 +1073,10 @@ static string buildSummonCommand(IReadOnlyList<string> packIds, string rawMessag
         payload["packs"] = packIds.Take(maxPacksPerSummon).ToList();
     if (message.Length > 0)
         payload["message"] = message;
+    // Only sent when a viewer actually picked someone. The overlay reads an absent target as
+    // the protagonist, so leaving it out keeps the common case the smallest thing on the wire.
+    if (target is >= 1 and <= maxPartySlot)
+        payload["target"] = target;
     return JsonSerializer.Serialize(payload);
 }
 

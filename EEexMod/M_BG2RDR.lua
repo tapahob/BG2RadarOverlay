@@ -40,8 +40,8 @@
 -- happens to match both magics still won't contain its own address.
 local MAGIC0      = 0x9E3779B9
 local MAGIC1      = 0x7F4A7C15
-local VERSION     = 4
-local SIZE        = 0x88
+local VERSION     = 5
+local SIZE        = 0x8C
 local OFF_MAGIC1  = 0x04
 local OFF_VERSION = 0x08
 local OFF_SELF    = 0x0C
@@ -49,10 +49,18 @@ local OFF_FLAG    = 0x10
 local OFF_RESREF  = 0x14
 local OFF_AMOUNT  = 0x24
 local OFF_MESSAGE = 0x28
+-- The message field ends exactly at 0x88, so the target slot grew the struct. That is why this
+-- is VERSION 5 and not a silent addition: an overlay writing a target into a mailbox allocated
+-- by the old mod would be writing four bytes past the end of it.
+local OFF_TARGET  = 0x88
 
 -- A typo on the overlay side shouldn't be able to lock up the game spawning thousands of
 -- creatures, so the count is clamped here as well as validated over there.
 local MAX_AMOUNT  = 20
+
+-- Party slots a summon can be aimed at - Player1..Player6 in OBJECT.IDS. Anything else, zero
+-- included, means the protagonist, which is what a summon that names nobody gets.
+local MAX_PARTY_SLOT = 6
 
 BG2RDR_Mailbox = nil
 
@@ -100,14 +108,50 @@ local function allocMailbox()
     EEex_FunctionLog(string.format("mailbox at 0x%X", address))
 end
 
-local function spawn(resref, amount)
-
-    -- C is the engine's console table (C:CreateCreature). Older builds expose it
-    -- as CLUAConsole; check both rather than assuming, since a missing table
-    -- would otherwise surface as an unexplained silent no-op.
+-- C is the engine's console table (C:CreateCreature). Older builds expose it as CLUAConsole;
+-- check both rather than assuming, since a missing table would otherwise surface as an
+-- unexplained silent no-op.
+local function getConsole()
     local console = C or CLUAConsole
     if console == nil then
-        EEex_FunctionLog("no console table (C / CLUAConsole) - cannot spawn")
+        EEex_FunctionLog("no console table (C / CLUAConsole) - cannot move the view or spawn")
+    end
+    return console
+end
+
+-- Scrolls the view onto a party member. PlayerN is OBJECT.IDS (Player1 is 21), INSTANT is
+-- SCROLL.IDS 0; both are resolved by the engine's own parser, so the symbolic names go here
+-- rather than the numbers.
+--
+-- Resolved live, by name, rather than from a position the overlay sent: the snapshot a viewer
+-- picked from is a couple of seconds old, and the party moves. PlayerN is whoever is in that
+-- slot at the moment the scroll runs.
+--
+-- This matters for more than presentation. CreateCreature drops its creature at the *centre of
+-- the current view*, so without this a pack lands wherever the camera happened to be rather
+-- than next to the character it was aimed at.
+local function moveViewToPartyMember(slot)
+
+    local console = getConsole()
+    if console == nil then
+        return
+    end
+
+    if slot == nil or slot < 1 or slot > MAX_PARTY_SLOT then
+        slot = 1
+    end
+
+    -- Eval appends to the action queue rather than running inline (EEex's own docs describe
+    -- QueueResponseStringOnAIBase as "behavior identical to C:Eval()"), so the scroll lands on a
+    -- later frame. That is exactly why the spawn below waits for it instead of following in the
+    -- same tick.
+    console:Eval(string.format("MoveViewObject(Player%d,INSTANT)", slot))
+end
+
+local function spawn(resref, amount)
+
+    local console = getConsole()
+    if console == nil then
         return
     end
 
@@ -121,10 +165,32 @@ local function spawn(resref, amount)
     end
 end
 
+-- A request whose camera move has been queued but whose creatures have not been dropped yet.
+-- One at a time: a second request waits in the mailbox until this one has landed, which keeps
+-- two packs from being scrolled to and spawned on top of each other.
+local pendingSpawn = nil
+
+-- Poll ticks to wait between queueing the scroll and dropping the pack. The poll below is
+-- throttled to 100ms, so this is roughly a fifth of a second - long enough for a queued INSTANT
+-- scroll to have run and the view to have settled, and it reads on stream the way it was asked
+-- for: the camera finds the party, and then the ambush arrives.
+local SPAWN_DELAY_TICKS = 2
+
 local function poll()
 
     local address = BG2RDR_Mailbox
     if address == nil then
+        return
+    end
+
+    -- Held over from an earlier tick, waiting for the camera to arrive.
+    if pendingSpawn ~= nil then
+        pendingSpawn.ticks = pendingSpawn.ticks - 1
+        if pendingSpawn.ticks <= 0 then
+            local request = pendingSpawn
+            pendingSpawn = nil
+            spawn(request.resref, request.amount)
+        end
         return
     end
 
@@ -134,6 +200,7 @@ local function poll()
 
     local resref  = EEex_ReadString(address + OFF_RESREF)
     local amount  = EEex_Read32(address + OFF_AMOUNT)
+    local target  = EEex_Read32(address + OFF_TARGET)
     local message = EEex_ReadString(address + OFF_MESSAGE)
 
     -- Clear the flag *before* spawning. If CreateCreature throws (bad ResRef,
@@ -141,7 +208,7 @@ local function poll()
     -- bad request wedges the bridge for the rest of the session.
     EEex_Write32(address + OFF_FLAG, 0)
 
-    EEex_FunctionLog(string.format("consuming request '%s' x%d", resref, amount))
+    EEex_FunctionLog(string.format("consuming request '%s' x%d at party slot %d", resref, amount, target))
 
     -- Prefixed, and always by us rather than by the sender: it marks the line as coming from
     -- a viewer, so nobody can type something that passes for the game's own feedback.
@@ -150,7 +217,10 @@ local function poll()
     end
 
     if resref ~= "" then
-        spawn(resref, amount)
+        -- Move first, spawn later: see moveViewToPartyMember for why the two cannot happen in
+        -- the same tick.
+        moveViewToPartyMember(target)
+        pendingSpawn = { resref = resref, amount = amount, ticks = SPAWN_DELAY_TICKS }
     end
 end
 

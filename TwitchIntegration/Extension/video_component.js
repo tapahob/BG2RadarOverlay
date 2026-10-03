@@ -151,10 +151,20 @@
       });
   }
 
+  // Kept so picking a party member can redraw immediately instead of waiting for the next
+  // poll, which is seconds away.
+  var lastSnapshot = null;
+
   function renderSnapshot(data) {
+    lastSnapshot = data;
     renderParty(data);
     renderPacks((data && data.packs) || []);
   }
+
+  // Which party member a summon lands next to, as a 1-based slot matching the game's
+  // Player1..Player6. Null means nobody has picked, which the overlay reads as the protagonist -
+  // so the default needs no special case anywhere downstream.
+  var targetSlot = null;
 
   function renderParty(data) {
     var party = (data && data.party) || [];
@@ -162,16 +172,52 @@
       contentEl.innerHTML = '<div id="empty">No party data yet.</div>';
       return;
     }
+
+    // A pick is dropped once that slot is gone - someone left the party, or the snapshot came
+    // back shorter. Silently summoning at whoever took the slot over would be worse than
+    // falling back to the protagonist.
+    if (targetSlot !== null) {
+      var stillThere = false;
+      for (var s = 0; s < party.length; s++) {
+        if (party[s].slot === targetSlot) { stillThere = true; break; }
+      }
+      if (!stillThere) targetSlot = null;
+    }
+
     var html = '';
     for (var i = 0; i < party.length; i++) {
       var m = party[i];
-      html += '<div class="member">'
+      // Slot comes from the overlay; fall back to position for a snapshot from an older build,
+      // so the picker still works rather than making every tile unselectable.
+      var slot = m.slot != null ? m.slot : (i + 1);
+      var isTarget = (targetSlot === null && i === 0) || targetSlot === slot;
+      html += '<div class="member' + (isTarget ? ' selected' : '') + '"'
+        + ' data-slot="' + slot + '" tabindex="0" role="button"'
+        + ' title="Summon next to this character">'
         + '<div class="name">' + escapeHtml(m.name || '?') + '</div>'
         + '<div class="meta">' + escapeHtml(m.race || '') + ' ' + escapeHtml(m['class'] || '') + '</div>'
         + '<div class="hp">HP: ' + (m.currentHp != null ? m.currentHp : '?') + '</div>'
+        + (isTarget ? '<div class="aim">Summoning here</div>' : '')
         + '</div>';
     }
     contentEl.innerHTML = html;
+
+    var tiles = contentEl.getElementsByClassName('member');
+    for (var t = 0; t < tiles.length; t++) {
+      tiles[t].addEventListener('click', onMemberPicked);
+      tiles[t].addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onMemberPicked.call(this, ev); }
+      });
+    }
+  }
+
+  function onMemberPicked() {
+    var slot = Number(this.getAttribute('data-slot'));
+    if (!slot) return;
+    targetSlot = slot;
+    // Re-rendered from the snapshot already on screen rather than waiting for the next poll,
+    // which is a couple of seconds away - a pick that takes that long to show feels broken.
+    renderParty(lastSnapshot);
   }
 
   // ---- Summon section ----
@@ -616,6 +662,7 @@
 
     var command = { type: 'summon', packs: ids };
     if (message) command.message = message;
+    if (targetSlot !== null) command.target = targetSlot;
 
     if (controlKey) {
       // The local mock, testing as the streamer - unchanged: no token balance involved, this is

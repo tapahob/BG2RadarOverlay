@@ -68,13 +68,28 @@
   }
 
   .member {
-    padding: 6px 0;
+    padding: 6px 4px;
     border-top: 1px solid rgba(201, 162, 75, 0.25);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    border-radius: 2px;
   }
   .member:first-of-type { border-top: none; }
+  .member:hover { background: rgba(201, 162, 75, 0.10); }
+  .member.selected {
+    background: rgba(201, 162, 75, 0.18);
+    border-left-color: #c9a24b;
+  }
+  .member:focus-visible { outline: 2px solid #c9a24b; outline-offset: -2px; }
   .member .name { font-weight: bold; font-size: 13px; }
   .member .meta { font-size: 11px; color: #d0c6a8; }
   .member .hp { font-size: 11px; color: #9be89b; }
+  .member .aim {
+    font-size: 10px;
+    color: #c9a24b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
 
   #empty, #offline {
     font-size: 12px;

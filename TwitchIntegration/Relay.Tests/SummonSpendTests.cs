@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -46,6 +46,77 @@ public class SummonSpendTests
         Assert.Equal("summon", parsed.GetProperty("type").GetString());
         Assert.Equal(new[] { "pack-a", "pack-b" }, parsed.GetProperty("packs").EnumerateArray().Select(e => e.GetString()).ToArray());
         Assert.Equal("for the horde", parsed.GetProperty("message").GetString());
+    }
+
+    /// <summary>
+    /// A viewer picking a party member in the panel. The slot rides along to the overlay, which
+    /// is what lets the game scroll to that character before the pack lands.
+    /// </summary>
+    [Fact]
+    public async Task A_summon_carries_the_party_member_the_viewer_aimed_at()
+    {
+        await using var relay = await RelayHarness.StartAsync();
+        await using var overlay = await relay.ConnectOverlayAsync();
+        await overlay.PublishPacksAsync(("pack-a", 3, true));
+        await GiveTokensAsync(relay, 10);
+
+        var response = await relay.PostSummonAsync(new
+        {
+            packs = new[] { "pack-a" },
+            target = 4,
+            authToken = RelayHarness.ViewerToken()
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var parsed = JsonDocument.Parse((await overlay.ReceiveCommandAsync())!).RootElement;
+        Assert.Equal(4, parsed.GetProperty("target").GetInt32());
+    }
+
+    /// <summary>
+    /// Nobody picked, so nothing is sent and the overlay falls back to the protagonist. Asserting
+    /// the field is *absent* rather than zero keeps the default in one place: an older overlay
+    /// that has never heard of targets reads such a command exactly as it always did.
+    /// </summary>
+    [Fact]
+    public async Task A_summon_with_no_one_picked_names_no_target_at_all()
+    {
+        await using var relay = await RelayHarness.StartAsync();
+        await using var overlay = await relay.ConnectOverlayAsync();
+        await overlay.PublishPacksAsync(("pack-a", 3, true));
+        await GiveTokensAsync(relay, 10);
+
+        await relay.PostSummonAsync(new { packs = new[] { "pack-a" }, authToken = RelayHarness.ViewerToken() });
+
+        var parsed = JsonDocument.Parse((await overlay.ReceiveCommandAsync())!).RootElement;
+        Assert.False(parsed.TryGetProperty("target", out _));
+    }
+
+    /// <summary>
+    /// This endpoint is reachable by anything that can POST, so a slot outside the party is not a
+    /// thing to pass along and hope about - it is dropped here, and the summon still happens.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-3)]
+    [InlineData(7)]
+    [InlineData(9999)]
+    public async Task A_target_outside_the_party_is_dropped_rather_than_forwarded(int target)
+    {
+        await using var relay = await RelayHarness.StartAsync();
+        await using var overlay = await relay.ConnectOverlayAsync();
+        await overlay.PublishPacksAsync(("pack-a", 3, true));
+        await GiveTokensAsync(relay, 10);
+
+        var response = await relay.PostSummonAsync(new
+        {
+            packs = new[] { "pack-a" },
+            target,
+            authToken = RelayHarness.ViewerToken()
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var parsed = JsonDocument.Parse((await overlay.ReceiveCommandAsync())!).RootElement;
+        Assert.False(parsed.TryGetProperty("target", out _));
     }
 
     [Fact]
