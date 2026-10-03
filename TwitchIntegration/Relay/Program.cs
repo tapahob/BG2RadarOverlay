@@ -882,9 +882,28 @@ app.MapPost("/api/summon/{streamKey}", async (string streamKey, HttpContext cont
     if (tokenPriceCache is null)
         return Results.Text("Token pricing isn't configured on this relay yet - set TWITCH_EXTENSION_CLIENT_ID and TWITCH_EXTENSION_CLIENT_SECRET (see CLAUDE.md).", statusCode: StatusCodes.Status501NotImplemented);
 
+    // Told apart on purpose. A streamer who never filled in the Twitch Channel field on the
+    // Radar app's Twitch Integration tab is a setup problem they can fix; Helix not answering is
+    // not. Both used to be a bare 502 with no body, which the panel could only report as "could
+    // not reach the relay" - blaming the network for a question the relay had already answered.
+    if (login.Length == 0)
+    {
+        app.Logger.LogWarning(
+            "Summon refused: the overlay on stream key {StreamKey} has not declared a Twitch "
+            + "channel. The streamer needs to fill in the Twitch Channel field on the Radar "
+            + "app's Twitch Integration tab.", streamKey);
+        return Results.Json(new { error = "channel_not_set" }, statusCode: StatusCodes.Status409Conflict);
+    }
+
     var broadcasterId = await tokenPriceCache.ResolveBroadcasterIdAsync(httpClient, login);
     if (broadcasterId is null)
-        return Results.StatusCode(StatusCodes.Status502BadGateway);
+    {
+        app.Logger.LogWarning(
+            "Summon refused: could not resolve the Twitch channel {Login} to an account. Either "
+            + "it is misspelled on the Radar app's Twitch Integration tab, or Helix is not "
+            + "answering.", login);
+        return Results.Json(new { error = "channel_unresolved" }, statusCode: StatusCodes.Status502BadGateway);
+    }
 
     using var reader = new StreamReader(context.Request.Body);
     var body = await reader.ReadToEndAsync();

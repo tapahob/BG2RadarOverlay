@@ -708,9 +708,9 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(command)
     })
-      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(readJsonOrNothing)
       .then(function (result) {
-        if (result.ok) {
+        if (result.ok && result.data) {
           balance = result.data.balance;
           sendResultEl.textContent = 'Summoned! ' + balance.toLocaleString() + ' token(s) left.';
           messageEl.value = '';
@@ -720,8 +720,14 @@
         } else if (result.data && result.data.error === 'insufficient_balance') {
           balance = result.data.balance;
           sendResultEl.textContent = 'Not enough tokens - buy some more below.';
+        } else if (result.data && result.data.error === 'channel_not_set') {
+          sendResultEl.textContent = 'This stream is not set up for summons yet.';
+        } else if (result.status === 404 || result.status === 501) {
+          sendResultEl.textContent = 'This stream is not set up for summons yet.';
+        } else if (result.status === 502) {
+          sendResultEl.textContent = 'Twitch is not answering right now - try again in a moment.';
         } else {
-          sendResultEl.textContent = 'Could not summon - try again in a moment.';
+          sendResultEl.textContent = 'Could not summon (error ' + result.status + ') - try again in a moment.';
         }
         renderSummonState();
       })
@@ -734,6 +740,20 @@
   // real packs.
   renderPacks([]);
   renderSummonState();
+
+  // Several of the relay's refusals have no body at all, and res.json() on an empty body throws
+  // a SyntaxError - which lands in .catch() and gets reported as "could not reach the relay".
+  // The relay was reached; it said no. Read the body as text and only parse it if there is
+  // something to parse, so the status code survives to the handler that can explain it.
+  function readJsonOrNothing(res) {
+    return res.text().then(function (text) {
+      var data = null;
+      if (text) {
+        try { data = JSON.parse(text); } catch (e) { data = null; }
+      }
+      return { ok: res.ok, status: res.status, data: data };
+    });
+  }
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
