@@ -84,7 +84,13 @@ deployed on a separate Ubuntu VPS, not on this machine.
   commands with `exec_command`, copy files with `open_sftp()`.
 - **The relay now runs in Docker on that VPS**, not as the `twitch-relay` systemd unit. The repo
   is checked out at `/opt/bg2radar-relay`; redeploying is `git pull && docker compose -f
-  docker-compose.existing-proxy.yml up -d --build` from `TwitchIntegration/Relay/docker`. The
+  docker-compose.existing-proxy.yml up -d --build` from `TwitchIntegration/Relay/docker`.
+  **Check what branch that checkout is on before trusting a redeploy.** It sat on
+  `twitch-integration-hardening` for weeks after that branch was merged, cloned `--single-branch`
+  so it could not even see `origin/master` - a `git pull` there fast-forwarded a dead branch and
+  rebuilt the same code, reporting success. It now tracks `master`; if a deploy ever looks like it
+  did nothing, `git -C /opt/bg2radar-relay rev-parse --abbrev-ref HEAD` is the first thing to
+  check. The
   container binds `127.0.0.1:5080` - the same address both Caddys already proxy to - so neither
   Caddy config had to change, and it runs as uid 33 (www-data) to match the existing owner of
   `/var/lib/twitch-relay`, so the data needed no chown.
@@ -144,11 +150,18 @@ up in the Dev Console, since two of the three are both just called "Secret":
 - **Extension Secret** (Dev Console -> Extensions -> Manage -> Secret) - base64-encoded, signs
   every JWT the extension deals with (`onAuthorized`, Bits `transactionReceipt`). -> relay env var
   `TWITCH_EXTENSION_SECRET`. One value, shared by every streamer on this relay (it belongs to the
-  Extension itself, not to any one channel). Required for both the Bits and the token-spend paths.
+  Extension itself, not to any one channel). Required for both the Bits and the token-spend paths,
+  **and for reading each streamer's saved `config.html`**: `GET /helix/extensions/configurations`
+  is part of Twitch's Extension API, not ordinary Helix, and takes a JWT signed with this secret
+  (`role: "external"`, and a `user_id` - the broadcaster being queried is accepted, so a
+  multi-tenant relay needs no extra configuration). It answers an OAuth app access token with a
+  bare 401. The relay shipped making exactly that mistake: every price lookup failed, so every
+  Channel Points redemption and every Bits purchase was dropped in silence. See the comment at the
+  top of `ExtensionConfigCache`.
 - **Extension client id/secret** (same Manage page, a *different* field - for the
-  `client_credentials` OAuth grant) - lets the relay read what each streamer's `config.html` saved
-  (token prices, reward name) via Helix `GET /helix/extensions/configurations`, authenticated as
-  the extension itself rather than as any particular broadcaster. -> `TWITCH_EXTENSION_CLIENT_ID`
+  `client_credentials` OAuth grant) - the app access token that resolves a channel login to a
+  numeric broadcaster id via Helix `GET /users`, which *is* an ordinary Helix endpoint and wants
+  the opposite credential from the one above. -> `TWITCH_EXTENSION_CLIENT_ID`
   / `TWITCH_EXTENSION_CLIENT_SECRET`. Also relay-wide - one pair, not one per streamer.
 - **A separate OAuth "Application"** (Dev Console -> register a new *Application*, not another
   Extension) - only needed for Channel Points, to create the EventSub subscription that reports
