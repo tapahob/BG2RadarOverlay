@@ -848,3 +848,4 @@ Str_TwitchModMissing=не установлено
 Str_TwitchModNoGame=игра ещё не найдена
 Str_TwitchModInstallOk=Скопировано файлов: {0}, в {1}. Перезапустите игру, чтобы они загрузились. Сам EEex нужно установить отдельно.
 Str_TwitchModInstallFailed=Не удалось установить: {0}
+Str_TwitchChannelInvalid=Это не похоже на логин Twitch. Нужна часть twitch.tv/<имя> - только буквы, цифры и _, без пробелов, а не отображаемое имя.

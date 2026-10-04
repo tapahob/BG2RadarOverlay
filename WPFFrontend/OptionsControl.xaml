@@ -142,6 +142,12 @@
                         <TextBox x:Name="TwitchBroadcasterLogin" Width="180" d:Text="yunamaxwell" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
                     </StackPanel>
                     <TextBlock d:Text="Your channel's login (as in twitch.tv/&lt;this&gt;) - lets a relay shared by several streamers tell your stream key apart from theirs." Text="{DynamicResource Str_TwitchChannelHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="122,2,0,0"/>
+                    <!-- A display name typed in here instead of the login resolves to no account
+                         at all, and the only symptom was summons failing at the relay with
+                         nothing on this screen hinting why. -->
+                    <TextBlock x:Name="TwitchChannelWarning" Visibility="Collapsed" d:Visibility="Visible" Foreground="#FFD06A4A"
+                               d:Text="That doesn't look like a Twitch login - no spaces." Text="{DynamicResource Str_TwitchChannelInvalid}"
+                               TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="122,2,0,0"/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Label d:Content="Stream Key:" Content="{DynamicResource Str_TwitchStreamKey}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>

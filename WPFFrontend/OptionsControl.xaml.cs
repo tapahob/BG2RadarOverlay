@@ -59,6 +59,7 @@ namespace WPFFrontend
             this.TwitchIntegrationEnabled.Click += (s, e) => updateTwitchControlsEnabled();
             this.TwitchRelayUrl.TextChanged += updateConfig;
             this.TwitchBroadcasterLogin.TextChanged += updateConfig;
+            this.TwitchBroadcasterLogin.TextChanged += (s, e) => updateChannelLoginWarning();
             this.MouseUp                    += OptionsControl_MouseUp;
             this.CloseBtn.MouseUp           += Label_MouseDown;
             var app                          = System.Windows.Application.Current;
@@ -185,6 +186,27 @@ namespace WPFFrontend
         {
             CycleProfiler.Instance.Reset();
             updateDiagnostics();
+        }
+
+        /// <summary>
+        /// Twitch logins are 4-25 characters of letters, digits and underscores, and never
+        /// contain a space - they are the twitch.tv/&lt;this&gt; part, not a display name. Typing
+        /// a display name here resolves to no Twitch account, so the relay refuses every summon
+        /// for this stream; before this warning the only trace of that was a failure on the
+        /// viewer's side, with nothing on this screen suggesting the cause.
+        ///
+        /// Flagged rather than silently corrected: stripping the spaces out of "Yuna Maxwell"
+        /// happens to give the right answer, and would be a guess in general.
+        /// </summary>
+        private void updateChannelLoginWarning()
+        {
+            var login = (this.TwitchBroadcasterLogin.Text ?? "").Trim();
+            var looksLikeALogin = login.Length == 0
+                || Regex.IsMatch(login, "^[A-Za-z0-9_]{4,25}$");
+
+            this.TwitchChannelWarning.Visibility = looksLikeALogin
+                ? Visibility.Collapsed
+                : Visibility.Visible;
         }
 
         /// <summary>
@@ -699,6 +721,7 @@ namespace WPFFrontend
             updateStreamKeyButtons();
             updateTwitchControlsEnabled();
             updateEEexModStatus();
+            updateChannelLoginWarning();
 
             spawnPacks = SpawnPack.Deserialize(Configuration.SpawnPacks);
 
