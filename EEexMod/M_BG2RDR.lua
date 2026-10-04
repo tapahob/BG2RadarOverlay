@@ -152,36 +152,52 @@ local function moveViewToPartyMember(slot)
     console:Eval(string.format("MoveViewObject(Player%d,INSTANT)", slot))
 end
 
--- Pauses, if the game is running. TogglePauseGame is a *toggle*, so calling it on an already
--- paused game would resume one - the exact opposite of the point, and the worst possible outcome
--- for somebody who is not at the keyboard. Hence the state check first.
---
--- The call and its argument list come from B3TimeStep.lua, which ships with EEex and does the
--- same thing for its time-step key. Wrapped in pcall because this reaches further into engine
--- internals than anything else here: if a future build moves it, a summon that cannot pause is
--- a great deal better than one that throws and leaves the bridge wedged.
-local function pauseGame()
+-- True, false, or nil when the engine will not say. Callers treat nil as "leave the game exactly
+-- as it is" rather than guessing, since both guesses are bad: pausing a running game under
+-- someone's hands, or resuming a paused one while they are away from the keyboard.
+local function isPaused()
 
-    local ok, alreadyPaused = pcall(function()
+    local ok, paused = pcall(function()
         return worldScreen:CheckIfPaused()
     end)
 
     if not ok then
-        EEex_FunctionLog("could not read the pause state - leaving the game running")
-        return
+        return nil
     end
 
-    if alreadyPaused then
-        return
-    end
+    return paused and true or false
+end
+
+-- TogglePauseGame is a *toggle*, hence every caller checking the state first. The call and its
+-- argument list come from B3TimeStep.lua, which ships with EEex and does the same thing for its
+-- time-step key. Wrapped in pcall because this reaches further into engine internals than
+-- anything else here: a summon that cannot pause is a great deal better than one that throws and
+-- leaves the bridge wedged.
+local function togglePause()
 
     -- byte visualPause, byte bSendMessage, int idPlayerPause, byte bLogPause, byte bRequireHostUnpause
-    local pauseOk = pcall(function()
+    local ok = pcall(function()
         EngineGlobals.g_pBaldurChitin.m_pEngineWorld:TogglePauseGame(true, true, 0, false, false)
     end)
 
-    if not pauseOk then
-        EEex_FunctionLog("could not pause the game")
+    if not ok then
+        EEex_FunctionLog("could not change the pause state")
+    end
+
+    return ok
+end
+
+local function setPaused(wanted)
+
+    local paused = isPaused()
+
+    if paused == nil then
+        EEex_FunctionLog("could not read the pause state - leaving the game as it is")
+        return
+    end
+
+    if paused ~= wanted then
+        togglePause()
     end
 end
 
@@ -213,6 +229,12 @@ local pendingSpawn = nil
 -- for: the camera finds the party, and then the ambush arrives.
 local SPAWN_DELAY_TICKS = 2
 
+-- Set when this code lifted a pause to get a camera move through, cleared once it has been put
+-- back. Kept here rather than on the request because a burst of summons is consumed one at a
+-- time and only the last of them restores the pause - by which point the request that found the
+-- game paused is several ticks gone, and every one after it correctly saw a running game.
+local liftedPause = false
+
 local function poll()
 
     local address = BG2RDR_Mailbox
@@ -229,11 +251,16 @@ local function poll()
             spawn(request.resref, request.amount)
 
             -- Only once nothing else is queued. A pack is written one creature at a time, and a
-            -- viewer can buy several at once, so pausing after each would stop the game between
-            -- the halves of a single ambush - and the camera move for whatever is still waiting
-            -- is a script action, which does not run while paused.
-            if PAUSE_ON_SUMMON and EEex_Read32(address + OFF_FLAG) == 0 then
-                pauseGame()
+            -- viewer can buy several at once, so pausing between them would both stop the game
+            -- mid-ambush and strand the next camera move, which cannot run while paused. The
+            -- last request through puts the pause back.
+            --
+            -- liftedPause covers the case where the streamer had paused it themselves and this
+            -- code lifted that to get the camera moved: it goes back whatever PAUSE_ON_SUMMON
+            -- says, because leaving someone's deliberate pause off is not ours to decide.
+            if (PAUSE_ON_SUMMON or liftedPause) and EEex_Read32(address + OFF_FLAG) == 0 then
+                setPaused(true)
+                liftedPause = false
             end
         end
         return
@@ -264,6 +291,22 @@ local function poll()
     end
 
     if resref ~= "" then
+        -- The camera move is a script action, and script actions do not run while the game is
+        -- paused - the same reason this file is driven from a menu label rather than an AI
+        -- listener. A summon arriving into a paused game would therefore spawn at whatever the
+        -- camera happened to be showing, ignoring the member the viewer picked. Which is not a
+        -- corner case now that a summon pauses the game behind it: the *next* one always arrives
+        -- paused.
+        --
+        -- So the pause is lifted for the two ticks the move and the spawn need, and put back
+        -- afterwards. A fifth of a second of game time passes - against a six-second combat
+        -- round - and the alternative is computing a viewport position from engine struct
+        -- internals, which is a great deal more to get wrong for a great deal less.
+        if isPaused() == true then
+            setPaused(false)
+            liftedPause = true
+        end
+
         -- Move first, spawn later: see moveViewToPartyMember for why the two cannot happen in
         -- the same tick.
         moveViewToPartyMember(target)

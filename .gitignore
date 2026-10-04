@@ -344,5 +344,10 @@ publish_relay/
 # it goes stale the moment any of those files change)
 TwitchExtension/config.zip
 
+# Same reasoning for the extension itself: a zip here is a build of the folder beside it, made to
+# be uploaded and then thrown away. Tracking one only means carrying a copy that disagrees with
+# the sources it was built from.
+TwitchIntegration/Extension/*.zip
+
 # A filled-in relay .env holds three Twitch secrets - never commit one.
 TwitchIntegration/Relay/docker/.env
