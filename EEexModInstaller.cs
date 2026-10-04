@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Reflection;
 
@@ -53,6 +53,45 @@ namespace BGOverlay
                     ? null
                     : Path.Combine(gameFolder, "override");
             }
+        }
+
+        /// <summary>
+        /// Whether EEex itself is installed in the detected game - the prerequisite this class
+        /// does *not* provide. Without it M_BG2RDR.lua errors out the moment the game loads it,
+        /// so every summon silently does nothing.
+        ///
+        /// Two markers, either of which is enough. A WeiDU install of EEex puts its Lua into
+        /// override (M___EEex.lua on the installs seen so far, though the underscores have moved
+        /// between versions, hence the pattern) and its loader next to the .exe. Deliberately
+        /// generous: a false "not installed" would block a working setup, which is worse than
+        /// letting a broken one through to the error it was always going to hit.
+        ///
+        /// Unknown - no game detected yet - reads as installed, for the same reason.
+        /// </summary>
+        public static bool IsEEexInstalled()
+        {
+            var gameFolder = Configuration.GameFolder;
+            if (string.IsNullOrEmpty(gameFolder))
+                return true;
+
+            try
+            {
+                if (File.Exists(Path.Combine(gameFolder, "EEex.dll")))
+                    return true;
+
+                var overrideFolder = Path.Combine(gameFolder, "override");
+                if (Directory.Exists(overrideFolder)
+                    && Directory.GetFiles(overrideFolder, "M*EEex*.lua").Length > 0)
+                    return true;
+            }
+            catch (Exception ex)
+            {
+                // An unreadable game folder is not evidence of anything.
+                Logger.Error("Could not check whether EEex is installed", ex);
+                return true;
+            }
+
+            return false;
         }
 
         public static EEexModStatus GetStatus()

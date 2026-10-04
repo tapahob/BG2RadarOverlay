@@ -127,6 +127,12 @@
                     <Label d:Content="Twitch Integration" Content="{DynamicResource Str_TwitchIntegration}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
 
                     <CheckBox x:Name="TwitchIntegrationEnabled" d:Content="Enable Twitch Integration" Content="{DynamicResource Str_TwitchEnable}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Margin="0,10,0,0"/>
+                    <!-- EEex is a separate mod with its own installer, and the one prerequisite
+                         the Install game files button below cannot provide. Without it the spawn
+                         bridge errors out on load and every summon silently does nothing. -->
+                    <TextBlock x:Name="EEexMissingWarning" Visibility="Collapsed" d:Visibility="Visible" Foreground="#FFD06A4A"
+                               d:Text="EEex is not installed in the detected game folder - Twitch summons need it." Text="{DynamicResource Str_TwitchNeedsEEex}"
+                               TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,4,0,0"/>
 
                     <!-- Everything below only matters once integration is on - disabled as a
                          group whenever the checkbox above is unchecked, re-enabled the instant

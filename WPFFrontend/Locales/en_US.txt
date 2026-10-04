@@ -855,3 +855,4 @@ Str_TwitchModNoGame=no game detected yet
 Str_TwitchModInstallOk=Copied {0} files into {1}. Restart the game to load them. EEex itself has to be installed separately.
 Str_TwitchModInstallFailed=Could not install: {0}
 Str_TwitchChannelInvalid=That doesn't look like a Twitch login. Use the twitch.tv/<name> part - letters, digits and _ only, no spaces - not your display name.
+Str_TwitchNeedsEEex=EEex is not installed in the detected game folder. Twitch summons need it - install EEex (it has its own installer), then switch this on.

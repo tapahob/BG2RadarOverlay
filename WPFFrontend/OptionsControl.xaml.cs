@@ -55,6 +55,9 @@ namespace WPFFrontend
             this.DebugMode.Click            += updateConfig;
             this.DebugMode.Click            += (s, e) => DebugModeChanged?.Invoke();
             this.DebugMode.Click            += (s, e) => updateControlKeyVisibility();
+            // Registered before updateConfig, so a refusal has already put the box back before
+            // anything reads it.
+            this.TwitchIntegrationEnabled.Click += (s, e) => refuseTwitchWithoutEEex();
             this.TwitchIntegrationEnabled.Click += updateConfig;
             this.TwitchIntegrationEnabled.Click += (s, e) => updateTwitchControlsEnabled();
             this.TwitchRelayUrl.TextChanged += updateConfig;
@@ -186,6 +189,45 @@ namespace WPFFrontend
         {
             CycleProfiler.Instance.Reset();
             updateDiagnostics();
+        }
+
+        /// <summary>
+        /// Refuses to switch Twitch integration on while EEex is missing, and says why. EEex is a
+        /// separate mod with its own installer - the one prerequisite the Install game files
+        /// button cannot provide - and without it the spawn bridge errors out as the game loads
+        /// it, so every summon a viewer pays for silently does nothing.
+        ///
+        /// Only turning it *on* is refused. Turning it off always works, and a configuration
+        /// that is already enabled is left alone: disabling someone's working setup because a
+        /// file could not be found would be worse than the problem being guarded against.
+        /// </summary>
+        private void refuseTwitchWithoutEEex()
+        {
+            if (this.TwitchIntegrationEnabled.IsChecked != true)
+            {
+                updateEEexPresenceWarning();
+                return;
+            }
+
+            if (EEexModInstaller.IsEEexInstalled())
+            {
+                updateEEexPresenceWarning();
+                return;
+            }
+
+            this.TwitchIntegrationEnabled.IsChecked = false;
+            updateEEexPresenceWarning();
+        }
+
+        /// <summary>
+        /// Shown whenever EEex is missing, not only when switching on, so an install that lost it
+        /// says so the next time these options are opened rather than at the first failed summon.
+        /// </summary>
+        private void updateEEexPresenceWarning()
+        {
+            this.EEexMissingWarning.Visibility = EEexModInstaller.IsEEexInstalled()
+                ? Visibility.Collapsed
+                : Visibility.Visible;
         }
 
         /// <summary>
@@ -722,6 +764,7 @@ namespace WPFFrontend
             updateTwitchControlsEnabled();
             updateEEexModStatus();
             updateChannelLoginWarning();
+            updateEEexPresenceWarning();
 
             spawnPacks = SpawnPack.Deserialize(Configuration.SpawnPacks);
 
