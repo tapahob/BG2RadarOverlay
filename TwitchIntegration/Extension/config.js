@@ -34,6 +34,7 @@
       document.getElementById('bitsPerToken').value = saved.bitsPerToken || '';
       document.getElementById('pointsPerToken').value = saved.pointsPerToken || '';
       document.getElementById('rewardName').value = saved.rewardName || '';
+      document.getElementById('randomSummonRewardName').value = saved.randomSummonRewardName || '';
       document.getElementById('maxTokenBalance').value = saved.maxTokenBalance || '';
     } catch (e) {
       // Malformed/legacy content - leave the form blank rather than fail to load.
@@ -158,6 +159,7 @@
     var bitsPerToken = nonNegativeIntOrZero(document.getElementById('bitsPerToken').value);
     var pointsPerToken = nonNegativeIntOrZero(document.getElementById('pointsPerToken').value);
     var rewardName = document.getElementById('rewardName').value.trim();
+    var randomSummonRewardName = document.getElementById('randomSummonRewardName').value.trim();
     var maxTokenBalance = nonNegativeIntOrZero(document.getElementById('maxTokenBalance').value);
 
     if (pointsPerToken > 0 && !rewardName) {
@@ -177,6 +179,7 @@
         bitsPerToken: bitsPerToken,
         pointsPerToken: pointsPerToken,
         rewardName: rewardName,
+        randomSummonRewardName: randomSummonRewardName,
         maxTokenBalance: maxTokenBalance
       }));
     } else {
@@ -190,6 +193,7 @@
           bitsPerToken: bitsPerToken,
           pointsPerToken: pointsPerToken,
           rewardName: rewardName,
+          randomSummonRewardName: randomSummonRewardName,
           maxTokenBalance: maxTokenBalance
         }));
       } catch (e) {

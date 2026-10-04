@@ -262,6 +262,11 @@ namespace BGOverlay
         /// </summary>
         public int ProtagonistLevel { get; set; }
 
+        // One instance, not a fresh Random per summon: two redemptions landing in the same
+        // millisecond would otherwise seed identically and pick the same "random" pack. Only ever
+        // used from the receive loop's own thread.
+        private readonly Random random = new Random();
+
         private void handleCommand(string message)
         {
             if (extractString(message, "type") != "summon")
@@ -305,16 +310,23 @@ namespace BGOverlay
                 return;
             }
 
-            // No pack named: fall back to resolving one from the protagonist's level. This is
-            // what a channel-point reward that predates the pack tiles still sends.
-            var pack = SpawnPack.ForLevel(packs, ProtagonistLevel);
+            // No pack named. Either a viewer redeemed the random-summon reward - which names no
+            // pack on purpose, and is how people take part while the extension is unapproved and
+            // the panel is out of reach - or it is a channel-point reward that predates the pack
+            // tiles, which gets the same best-fit pack it always did.
+            var wantsRandom = extractBool(message, "random");
+
+            var pack = wantsRandom
+                ? SpawnPack.RandomForLevel(packs, ProtagonistLevel, random)
+                : SpawnPack.ForLevel(packs, ProtagonistLevel);
+
             if (pack == null)
             {
                 Logger.Info($"Summon ignored: no spawn pack covers level {ProtagonistLevel}.");
                 return;
             }
 
-            Logger.Info($"Summoning pack for level {ProtagonistLevel}: {pack}");
+            Logger.Info($"Summoning {(wantsRandom ? "a random pack" : "pack")} for level {ProtagonistLevel}: {pack}");
             GameSpawnBridge.Instance.Enqueue(pack.Entries, viewerText, target);
         }
 
@@ -350,6 +362,34 @@ namespace BGOverlay
 
             Logger.Info($"Summoning packs [{string.Join(", ", summoned.ToArray())}] at level {ProtagonistLevel}.");
             GameSpawnBridge.Instance.Enqueue(entries, viewerText, target);
+        }
+
+        /// <summary>
+        /// A JSON boolean, by the same hand-rolled scan as its siblings - the relay sends small,
+        /// known-shaped commands and this file has never pulled in a JSON parser for them.
+        /// Absent, false, or anything unrecognised all read as false, so only a literal true
+        /// turns a flag on.
+        /// </summary>
+        private static bool extractBool(string json, string field)
+        {
+            var marker = "\"" + field + "\"";
+            var at = json.IndexOf(marker, StringComparison.Ordinal);
+            if (at < 0)
+                return false;
+
+            at = json.IndexOf(':', at + marker.Length);
+            if (at < 0)
+                return false;
+
+            for (int i = at + 1; i < json.Length; i++)
+            {
+                var c = json[i];
+                if (c == ' ' || c == '"')
+                    continue;
+                return string.CompareOrdinal(json, i, "true", 0, 4) == 0;
+            }
+
+            return false;
         }
 
         private static int extractInt(string json, string field, int fallback)

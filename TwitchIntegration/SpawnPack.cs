@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -273,6 +273,30 @@ namespace BGOverlay
         /// so a specific "5-5" pack overrides a catch-all "1-40" without the user having to
         /// worry about the order they defined them in.
         /// </summary>
+        /// <summary>
+        /// One of the packs whose level band covers <paramref name="level"/>, picked at random
+        /// with every eligible pack equally likely.
+        ///
+        /// Not <see cref="ForLevel"/>, which deliberately returns the *narrowest* matching band -
+        /// the best fit for a summon that is meant to suit the party. This is for the opposite
+        /// intent: a viewer redeeming "surprise me", where always getting the same answer for a
+        /// given level would make the reward pointless after the first redemption.
+        /// </summary>
+        public static SpawnPack RandomForLevel(IEnumerable<SpawnPack> packs, int level, Random random)
+        {
+            var eligible = new List<SpawnPack>();
+            foreach (var pack in packs)
+            {
+                if (pack.Matches(level))
+                    eligible.Add(pack);
+            }
+
+            if (eligible.Count == 0)
+                return null;
+
+            return eligible[random.Next(eligible.Count)];
+        }
+
         public static SpawnPack ForLevel(IEnumerable<SpawnPack> packs, int level)
         {
             SpawnPack best = null;

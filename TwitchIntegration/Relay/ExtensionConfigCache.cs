@@ -10,6 +10,15 @@ public sealed class TokenPriceConfig
     public string RewardName { get; init; } = "";
 
     /// <summary>
+    /// Title of a Custom Reward that summons a random pack outright, with no tokens and no panel.
+    /// Empty when the streamer has not set one up. Separate from <see cref="RewardName"/> because
+    /// it is a different bargain: that one sells currency, this one spends nothing and fires
+    /// immediately - which is what makes it usable while the extension is still unapproved and
+    /// viewers cannot open the panel at all.
+    /// </summary>
+    public string RandomSummonRewardName { get; init; } = "";
+
+    /// <summary>
     /// The most tokens one viewer may hold on this channel, or 0 for no ceiling. Only Channel
     /// Points are held to it - see the note where it is applied in Program.cs.
     /// </summary>
@@ -261,6 +270,7 @@ public sealed class ExtensionConfigCache
                 BitsPerToken = readInt(contentRoot, "bitsPerToken"),
                 PointsPerToken = readInt(contentRoot, "pointsPerToken"),
                 RewardName = contentRoot.TryGetProperty("rewardName", out var r) && r.ValueKind == JsonValueKind.String ? (r.GetString() ?? "") : "",
+                RandomSummonRewardName = contentRoot.TryGetProperty("randomSummonRewardName", out var rs) && rs.ValueKind == JsonValueKind.String ? (rs.GetString() ?? "") : "",
                 MaxTokenBalance = readInt(contentRoot, "maxTokenBalance")
             };
             pricesByBroadcasterId[broadcasterId] = new PriceEntry { Config = config, CachedAtUtc = DateTime.UtcNow };

@@ -525,6 +525,29 @@ app.MapGet("/api/eventsub-status/{broadcasterId}", async (string broadcasterId) 
     return Results.Json(answer);
 });
 
+// Which overlay belongs to a numeric broadcaster id. Everything upstream of the EventSub callback
+// is keyed by stream key, and a redemption only ever says which *channel* it happened on - so the
+// two are matched by resolving each connected overlay's declared channel login. The resolution is
+// cached inside ExtensionConfigCache, so this costs a Helix call once per streamer rather than
+// once per redemption, and a relay serves a handful of streamers, not thousands.
+async Task<ChannelWriter<string>?> findOverlayForBroadcasterAsync(string broadcasterId)
+{
+    if (tokenPriceCache is null)
+        return null;
+
+    foreach (var pair in streamKeyToBroadcasterLogin)
+    {
+        var id = await tokenPriceCache.ResolveBroadcasterIdAsync(httpClient, pair.Value);
+        if (id != broadcasterId)
+            continue;
+        if (streamKeyToControlKey.TryGetValue(pair.Key, out var boundControlKey)
+            && commandWriters.TryGetValue(boundControlKey, out var writer))
+            return writer;
+    }
+
+    return null;
+}
+
 // Twitch's actual delivery endpoint once the subscription above exists. Public by necessity -
 // Twitch calls it directly - so the HMAC signature check is what stands in for authentication;
 // see the comment on BitsReceipt for why that's a sound way to trust a public endpoint.
@@ -644,21 +667,66 @@ app.MapPost("/eventsub/callback", async (HttpContext context) =>
         return Results.Ok();
 
     var prices = await tokenPriceCache.GetPricesAsync(httpClient, broadcasterId);
-    if (prices is null || prices.PointsPerToken <= 0 || prices.RewardName.Trim().Length == 0)
+    if (prices is null)
     {
         // Logged, not silent. Every exit below this point is a redemption a viewer has already
         // been charged points for, and the only visible symptom is that nothing happens - so the
         // reason has to be somewhere a streamer's "it isn't working" can actually be answered from.
         app.Logger.LogWarning(
-            "Dropped a redemption on broadcaster {BroadcasterId}: no usable token price. {Reason}",
+            "Dropped a redemption on broadcaster {BroadcasterId}: could not read their config.html. {Reason}",
             broadcasterId,
-            tokenPriceCache.LastFailure ?? "Channel Points are not priced or the reward is unnamed in config.html.");
+            tokenPriceCache.LastFailure ?? "No saved extension configuration.");
+        return Results.Ok();
+    }
+
+    var title = rewardTitle.Trim();
+
+    // ---- A reward that summons outright, with no tokens and no panel ----
+    //
+    // Checked before the token reward, and independently of it: this one is the whole point while
+    // the extension is unapproved, when viewers cannot open the panel at all and so can never
+    // spend a token however many they are sold. A streamer running only this leaves Channel Points
+    // per token at 0, which is why none of the token checks gate it.
+    var randomRewardName = prices.RandomSummonRewardName.Trim();
+    if (randomRewardName.Length > 0
+        && string.Equals(title, randomRewardName, StringComparison.OrdinalIgnoreCase))
+    {
+        var writer = await findOverlayForBroadcasterAsync(broadcasterId);
+        if (writer is null)
+        {
+            app.Logger.LogWarning(
+                "Dropped a random summon on broadcaster {BroadcasterId}: their Radar app is not "
+                + "connected to this relay right now.", broadcasterId);
+            return Results.Ok();
+        }
+
+        // user_name is the display name Twitch puts on the event itself - no lookup needed, and
+        // it is Twitch's own word for who redeemed rather than anything the viewer supplied.
+        var redeemer = ev.TryGetProperty("user_name", out var userNameEl) ? (userNameEl.GetString() ?? "") : "";
+        if (redeemer.Length == 0)
+            redeemer = ev.TryGetProperty("user_login", out var userLoginEl) ? (userLoginEl.GetString() ?? "") : "";
+
+        if (!writer.TryWrite(buildRandomSummonCommand(redeemer)))
+            app.Logger.LogWarning(
+                "Could not dispatch a random summon on broadcaster {BroadcasterId}: the outbound "
+                + "queue to their Radar app is full.", broadcasterId);
+
+        return Results.Ok();
+    }
+
+    if (prices.PointsPerToken <= 0 || prices.RewardName.Trim().Length == 0)
+    {
+        // Not a warning any more. With a random-summon reward configured and no token economy at
+        // all, this is the normal path for every other reward on the channel.
+        app.Logger.LogDebug(
+            "Ignored redemption of {RewardTitle} on broadcaster {BroadcasterId}: Channel Points "
+            + "are not priced for tokens.", rewardTitle, broadcasterId);
         return Results.Ok();
     }
 
     // Matched by name, not a stored id - the one Custom Reward that sells tokens just has to be
     // titled whatever she typed into config.html's "Token Reward Name" field.
-    if (!string.Equals(rewardTitle.Trim(), prices.RewardName.Trim(), StringComparison.OrdinalIgnoreCase))
+    if (!string.Equals(title, prices.RewardName.Trim(), StringComparison.OrdinalIgnoreCase))
     {
         // Debug, not warning: every other reward on the channel lands here, every time anyone
         // redeems anything. It is normal traffic, and only interesting when a streamer is sure
@@ -1088,6 +1156,19 @@ static (string UserId, string ChannelId)? tryGetViewerIdentity(string authToken,
 // Shared by the Channel Points and Bits paths, which both arrive at "these pack ids, plus maybe
 // a message" through completely different verification but need to hand the overlay the exact
 // same command shape /api/command already produces.
+// A summon that names no pack and no target: the overlay picks a random one from the packs whose
+// level band covers the party, and lands it on the protagonist. Deliberately the smallest possible
+// command - everything about which creatures exist and what suits the party stays on the overlay
+// side, exactly as it does for the panel.
+static string buildRandomSummonCommand(string? redeemer)
+{
+    var payload = new Dictionary<string, object> { ["type"] = "summon", ["random"] = true };
+    var viewer = sanitizeMessage(redeemer ?? "");
+    if (viewer.Length > 0)
+        payload["viewer"] = viewer;
+    return JsonSerializer.Serialize(payload);
+}
+
 static string buildSummonCommand(IReadOnlyList<string> packIds, string rawMessage, int target, string? viewerName)
 {
     var message = sanitizeMessage(rawMessage ?? "");
