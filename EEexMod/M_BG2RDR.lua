@@ -62,6 +62,10 @@ local MAX_AMOUNT  = 20
 -- included, means the protagonist, which is what a summon that names nobody gets.
 local MAX_PARTY_SLOT = 6
 
+-- Pause the game once a summoned pack has landed, so a streamer who has stepped away does not
+-- come back dead. Set to false to let summons arrive into a running game.
+local PAUSE_ON_SUMMON = true
+
 BG2RDR_Mailbox = nil
 
 -- EEex_Write32 takes a *signed* int32 and rejects anything above 0x7FFFFFFF, so any value
@@ -148,6 +152,39 @@ local function moveViewToPartyMember(slot)
     console:Eval(string.format("MoveViewObject(Player%d,INSTANT)", slot))
 end
 
+-- Pauses, if the game is running. TogglePauseGame is a *toggle*, so calling it on an already
+-- paused game would resume one - the exact opposite of the point, and the worst possible outcome
+-- for somebody who is not at the keyboard. Hence the state check first.
+--
+-- The call and its argument list come from B3TimeStep.lua, which ships with EEex and does the
+-- same thing for its time-step key. Wrapped in pcall because this reaches further into engine
+-- internals than anything else here: if a future build moves it, a summon that cannot pause is
+-- a great deal better than one that throws and leaves the bridge wedged.
+local function pauseGame()
+
+    local ok, alreadyPaused = pcall(function()
+        return worldScreen:CheckIfPaused()
+    end)
+
+    if not ok then
+        EEex_FunctionLog("could not read the pause state - leaving the game running")
+        return
+    end
+
+    if alreadyPaused then
+        return
+    end
+
+    -- byte visualPause, byte bSendMessage, int idPlayerPause, byte bLogPause, byte bRequireHostUnpause
+    local pauseOk = pcall(function()
+        EngineGlobals.g_pBaldurChitin.m_pEngineWorld:TogglePauseGame(true, true, 0, false, false)
+    end)
+
+    if not pauseOk then
+        EEex_FunctionLog("could not pause the game")
+    end
+end
+
 local function spawn(resref, amount)
 
     local console = getConsole()
@@ -190,6 +227,14 @@ local function poll()
             local request = pendingSpawn
             pendingSpawn = nil
             spawn(request.resref, request.amount)
+
+            -- Only once nothing else is queued. A pack is written one creature at a time, and a
+            -- viewer can buy several at once, so pausing after each would stop the game between
+            -- the halves of a single ambush - and the camera move for whatever is still waiting
+            -- is a script action, which does not run while paused.
+            if PAUSE_ON_SUMMON and EEex_Read32(address + OFF_FLAG) == 0 then
+                pauseGame()
+            end
         end
         return
     end
