@@ -34,7 +34,7 @@
       document.getElementById('bitsPerToken').value = saved.bitsPerToken || '';
       document.getElementById('pointsPerToken').value = saved.pointsPerToken || '';
       document.getElementById('rewardName').value = saved.rewardName || '';
-      document.getElementById('randomSummonRewardName').value = saved.randomSummonRewardName || '';
+      renderRandomSummons(randomSummonsFromSaved(saved));
       document.getElementById('maxTokenBalance').value = saved.maxTokenBalance || '';
     } catch (e) {
       // Malformed/legacy content - leave the form blank rather than fail to load.
@@ -159,7 +159,7 @@
     var bitsPerToken = nonNegativeIntOrZero(document.getElementById('bitsPerToken').value);
     var pointsPerToken = nonNegativeIntOrZero(document.getElementById('pointsPerToken').value);
     var rewardName = document.getElementById('rewardName').value.trim();
-    var randomSummonRewardName = document.getElementById('randomSummonRewardName').value.trim();
+    var randomSummons = readRandomSummons();
     var maxTokenBalance = nonNegativeIntOrZero(document.getElementById('maxTokenBalance').value);
 
     if (pointsPerToken > 0 && !rewardName) {
@@ -179,7 +179,7 @@
         bitsPerToken: bitsPerToken,
         pointsPerToken: pointsPerToken,
         rewardName: rewardName,
-        randomSummonRewardName: randomSummonRewardName,
+        randomSummons: randomSummons,
         maxTokenBalance: maxTokenBalance
       }));
     } else {
@@ -193,7 +193,7 @@
           bitsPerToken: bitsPerToken,
           pointsPerToken: pointsPerToken,
           rewardName: rewardName,
-          randomSummonRewardName: randomSummonRewardName,
+          randomSummons: randomSummons,
           maxTokenBalance: maxTokenBalance
         }));
       } catch (e) {
@@ -205,3 +205,97 @@
     statusEl.style.color = '#00c78c';
     statusEl.textContent = 'Saved.';
   });
+
+// ---- Random summon rewards ----
+//
+// Rows of (reward title, tags, message). Each is one Custom Reward on the channel that summons a
+// pack outright. Held in the DOM rather than in a parallel array: the inputs are the state, so
+// there is nothing to keep in step with them and no way for the two to disagree.
+
+function randomSummonsFromSaved(saved) {
+  if (saved && Object.prototype.toString.call(saved.randomSummons) === '[object Array]') {
+    return saved.randomSummons;
+  }
+  // One reward, from before these were configurable. Carried over as a single untagged row so an
+  // existing setup survives the upgrade instead of quietly switching itself off.
+  if (saved && saved.randomSummonRewardName) {
+    return [{ reward: saved.randomSummonRewardName, tags: [], template: '' }];
+  }
+  return [];
+}
+
+function renderRandomSummons(rows) {
+  var host = document.getElementById('randomSummons');
+  host.innerHTML = '';
+  for (var i = 0; i < rows.length; i++) addRandomSummonRow(rows[i]);
+}
+
+function addRandomSummonRow(row) {
+  row = row || {};
+  var host = document.getElementById('randomSummons');
+
+  var wrap = document.createElement('div');
+  wrap.className = 'randomSummonRow';
+
+  var reward = document.createElement('input');
+  reward.type = 'text';
+  reward.maxLength = 45;
+  reward.placeholder = 'exact Custom Reward title';
+  reward.value = row.reward || '';
+  reward.setAttribute('data-role', 'reward');
+
+  var tags = document.createElement('input');
+  tags.type = 'text';
+  tags.maxLength = 120;
+  tags.placeholder = 'tags, e.g. undead; hard (empty = any pack)';
+  tags.value = (row.tags || []).join('; ');
+  tags.setAttribute('data-role', 'tags');
+
+  var template = document.createElement('input');
+  template.type = 'text';
+  template.maxLength = 90;
+  template.placeholder = '<viewername> did it again - <victim> is done for!';
+  template.value = row.template || '';
+  template.setAttribute('data-role', 'template');
+
+  var remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'secondary';
+  remove.textContent = 'Remove';
+  remove.addEventListener('click', function () { host.removeChild(wrap); });
+
+  wrap.appendChild(reward);
+  wrap.appendChild(tags);
+  wrap.appendChild(template);
+  wrap.appendChild(remove);
+  host.appendChild(wrap);
+}
+
+// What is on screen, cleaned up. A row with no reward title can never match a redemption, so it
+// is dropped rather than saved as a rule that silently does nothing.
+function readRandomSummons() {
+  var out = [];
+  var rows = document.getElementById('randomSummons').getElementsByClassName('randomSummonRow');
+  for (var i = 0; i < rows.length; i++) {
+    var reward = rows[i].querySelector('[data-role="reward"]').value.trim();
+    if (!reward) continue;
+
+    var rawTags = rows[i].querySelector('[data-role="tags"]').value.split(';');
+    var tags = [];
+    for (var t = 0; t < rawTags.length; t++) {
+      var tag = rawTags[t].trim().toLowerCase();
+      if (tag && tags.indexOf(tag) === -1) tags.push(tag);
+    }
+
+    out.push({
+      reward: reward,
+      tags: tags,
+      template: rows[i].querySelector('[data-role="template"]').value.trim()
+    });
+  }
+  return out;
+}
+
+document.getElementById('addRandomSummon').addEventListener('click', function () {
+  addRandomSummonRow({});
+});

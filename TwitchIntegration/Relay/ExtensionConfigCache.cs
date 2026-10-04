@@ -3,6 +3,26 @@ using System.Text.Json;
 
 namespace TwitchRelay;
 
+/// <summary>
+/// One Custom Reward that summons outright. The streamer may define several, each drawing from a
+/// different slice of their pack list - "Summon undead" and "Summon something nasty" off the same
+/// packs - which is why this is a list and not three more fields.
+/// </summary>
+public sealed class RandomSummonRule
+{
+    /// <summary>Exact title of the Custom Reward this rule answers to.</summary>
+    public string Reward { get; init; } = "";
+
+    /// <summary>
+    /// What to print in the game's message log. &lt;viewername&gt; and &lt;victim&gt; are filled
+    /// in by the overlay, which is the only side that knows which party member was picked.
+    /// </summary>
+    public string Template { get; init; } = "";
+
+    /// <summary>Pack tags this reward draws from; empty means the whole list.</summary>
+    public IReadOnlyList<string> Tags { get; init; } = Array.Empty<string>();
+}
+
 public sealed class TokenPriceConfig
 {
     public int BitsPerToken { get; init; }
@@ -17,6 +37,13 @@ public sealed class TokenPriceConfig
     /// viewers cannot open the panel at all.
     /// </summary>
     public string RandomSummonRewardName { get; init; } = "";
+
+    /// <summary>
+    /// Every random-summon reward this streamer has set up. A lone RandomSummonRewardName from
+    /// before these were configurable is read in as a single, untagged rule with no template, so
+    /// an existing setup keeps working untouched.
+    /// </summary>
+    public IReadOnlyList<RandomSummonRule> RandomSummons { get; init; } = Array.Empty<RandomSummonRule>();
 
     /// <summary>
     /// The most tokens one viewer may hold on this channel, or 0 for no ceiling. Only Channel
@@ -186,6 +213,59 @@ public sealed class ExtensionConfigCache
         }
     }
 
+    /// <summary>
+    /// The streamer's random-summon rewards, newest shape first and the old single-name field as
+    /// a fallback. Anything malformed is skipped rather than failing the whole read: this config
+    /// is written by a browser, and one bad row should not cost a streamer their token prices.
+    /// </summary>
+    private static List<RandomSummonRule> readRandomSummons(JsonElement root)
+    {
+        var rules = new List<RandomSummonRule>();
+
+        if (root.TryGetProperty("randomSummons", out var arr) && arr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var row in arr.EnumerateArray())
+            {
+                if (row.ValueKind != JsonValueKind.Object)
+                    continue;
+
+                var reward = row.TryGetProperty("reward", out var rw) && rw.ValueKind == JsonValueKind.String
+                    ? (rw.GetString() ?? "").Trim() : "";
+                if (reward.Length == 0)
+                    continue; // a rule with no reward name can never match anything
+
+                var template = row.TryGetProperty("template", out var tp) && tp.ValueKind == JsonValueKind.String
+                    ? (tp.GetString() ?? "") : "";
+
+                var tags = new List<string>();
+                if (row.TryGetProperty("tags", out var tg) && tg.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var tag in tg.EnumerateArray())
+                    {
+                        if (tag.ValueKind != JsonValueKind.String)
+                            continue;
+                        var text = (tag.GetString() ?? "").Trim().ToLowerInvariant();
+                        if (text.Length > 0 && !tags.Contains(text))
+                            tags.Add(text);
+                    }
+                }
+
+                rules.Add(new RandomSummonRule { Reward = reward, Template = template, Tags = tags });
+            }
+        }
+
+        if (rules.Count == 0
+            && root.TryGetProperty("randomSummonRewardName", out var legacy)
+            && legacy.ValueKind == JsonValueKind.String)
+        {
+            var reward = (legacy.GetString() ?? "").Trim();
+            if (reward.Length > 0)
+                rules.Add(new RandomSummonRule { Reward = reward });
+        }
+
+        return rules;
+    }
+
     private static bool isPlainAscii(string? value)
     {
         if (string.IsNullOrEmpty(value))
@@ -271,6 +351,7 @@ public sealed class ExtensionConfigCache
                 PointsPerToken = readInt(contentRoot, "pointsPerToken"),
                 RewardName = contentRoot.TryGetProperty("rewardName", out var r) && r.ValueKind == JsonValueKind.String ? (r.GetString() ?? "") : "",
                 RandomSummonRewardName = contentRoot.TryGetProperty("randomSummonRewardName", out var rs) && rs.ValueKind == JsonValueKind.String ? (rs.GetString() ?? "") : "",
+                RandomSummons = readRandomSummons(contentRoot),
                 MaxTokenBalance = readInt(contentRoot, "maxTokenBalance")
             };
             pricesByBroadcasterId[broadcasterId] = new PriceEntry { Config = config, CachedAtUtc = DateTime.UtcNow };

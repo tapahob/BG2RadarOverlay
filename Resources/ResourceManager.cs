@@ -39,6 +39,75 @@ namespace BGOverlay
         public Dictionary<string, EFFReader> EFFReaderCache             = null;
         public Dictionary<string, BAMReader> BAMReaderCache             = null;
 
+        // The KEY/BIF index is built once at startup, but override/ is not in it at all - a
+        // creature a mod dropped in there is perfectly spawnable and would otherwise read as
+        // missing. Listed lazily and re-listed occasionally, since a folder someone is modding
+        // can gain files while the game is open.
+        private HashSet<string> overrideCreatures;
+        private DateTime overrideCreaturesListedUtc = DateTime.MinValue;
+        private static readonly TimeSpan OverrideListingTtl = TimeSpan.FromSeconds(30);
+        private readonly object overrideGate = new object();
+
+        /// <summary>
+        /// Whether a creature ResRef names something this installation can actually spawn.
+        ///
+        /// Used to keep packs that reference creatures nobody has out of what viewers are offered
+        /// and out of what a random summon can pick: a viewer spending points on an ambush that
+        /// cannot happen is the one outcome worth ruling out up front.
+        ///
+        /// Unknown reads as "exists". Before the game is hooked there is no index to consult, and
+        /// hiding every pack at that point would be far more wrong than letting one through.
+        /// </summary>
+        public bool CreatureExists(string resref)
+        {
+            if (string.IsNullOrWhiteSpace(resref))
+                return false;
+
+            var name = resref.Trim().ToUpperInvariant();
+
+            if (BIFResourceEntries != null && BIFResourceEntries.ContainsKey(name + ".CRE"))
+                return true;
+
+            foreach (var inOverride in overrideCreatureNames())
+            {
+                if (inOverride == name)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private HashSet<string> overrideCreatureNames()
+        {
+            lock (overrideGate)
+            {
+                if (overrideCreatures != null && DateTime.UtcNow - overrideCreaturesListedUtc < OverrideListingTtl)
+                    return overrideCreatures;
+
+                var found = new HashSet<string>();
+                try
+                {
+                    var folder = string.IsNullOrEmpty(Configuration.GameFolder)
+                        ? null
+                        : Path.Combine(Configuration.GameFolder, "override");
+
+                    if (folder != null && Directory.Exists(folder))
+                    {
+                        foreach (var path in Directory.GetFiles(folder, "*.cre"))
+                            found.Add(Path.GetFileNameWithoutExtension(path).ToUpperInvariant());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Could not list override creatures", ex);
+                }
+
+                overrideCreatures = found;
+                overrideCreaturesListedUtc = DateTime.UtcNow;
+                return overrideCreatures;
+            }
+        }
+
         public void Init()
         {
             ResourceManager.Instance = this;

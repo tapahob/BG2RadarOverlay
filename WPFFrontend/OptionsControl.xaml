@@ -217,6 +217,12 @@
                         <Label d:Content="tokens (0 = free)" Content="{DynamicResource Str_TwitchPackCostUnit}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center"/>
                     </StackPanel>
 
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Label d:Content="Tags:" Content="{DynamicResource Str_TwitchPackTags}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
+                        <TextBox x:Name="PackTags" Width="170" MaxLength="80" d:Text="undead; easy" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
+                    </StackPanel>
+                    <TextBlock d:Text="Separated by &quot;;&quot;. A Channel Points reward can draw only from packs carrying the tags it names." Text="{DynamicResource Str_TwitchPackTagsHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="122,2,0,0"/>
+
                     <Label d:Content="Creatures (one &quot;RESREF amount&quot; per line):" Content="{DynamicResource Str_TwitchPackCreatures}" Style="{StaticResource BoldSmall}" Margin="0,6,0,0"/>
                     <TextBox x:Name="PackEntries" Height="60" AcceptsReturn="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" d:Text="GNOLL01&#x0a;GNOLL02&#x0a;GNOLL03" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent"/>
 

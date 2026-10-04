@@ -117,12 +117,32 @@ namespace BGOverlay
                 return;
 
             lastSendUtc = DateTime.UtcNow;
+            // Kept for the random-summon path, which has to pick a party member and name them
+            // in the streamer's message. The command arrives on the socket's own thread with no
+            // party to hand, and reading game memory from there is what the rest of this file
+            // is built to avoid.
+            var names = new string[party.Count];
+            for (int i = 0; i < party.Count; i++)
+                names[i] = party[i].Name2 ?? "";
+            lastPartyNames = names;
+
             pendingPayload = buildPayload(party, CurrentPacks());
             sendSignal.Release();
         }
 
+        // Written by the loop thread on every snapshot, read by the socket thread when a summon
+        // arrives. Replaced wholesale rather than mutated, so a reader always sees one whole
+        // party rather than half of two.
+        private volatile string[] lastPartyNames = new string[0];
+
         private string cachedPackSource;
         private List<SpawnPack> cachedPacks = new List<SpawnPack>();
+
+        // Whether the cached list was filtered with a creature index to hand. The packs are first
+        // asked for before the game is hooked, when nothing can be checked and everything is
+        // kept; without this the "has the config changed" test would hold that unfiltered list
+        // for the rest of the session, since the config string has not changed at all.
+        private bool cachedWithCreatureIndex;
 
         /// <summary>
         /// The streamer's packs as configured right now. Cached on the raw config string so the
@@ -132,10 +152,30 @@ namespace BGOverlay
         public List<SpawnPack> CurrentPacks()
         {
             var source = Configuration.SpawnPacks ?? "";
-            if (!string.Equals(source, cachedPackSource, StringComparison.Ordinal))
+            var haveCreatureIndex = ResourceManager.Instance != null;
+
+            if (!string.Equals(source, cachedPackSource, StringComparison.Ordinal)
+                || (haveCreatureIndex && !cachedWithCreatureIndex))
             {
-                cachedPacks = SpawnPack.Deserialize(source);
+                var parsed = SpawnPack.Deserialize(source);
+
+                // Filtered here, at the one place every consumer reads packs from, so the tiles a
+                // viewer is offered, the ids a summon names and the pool a random summon draws
+                // from can never disagree about which packs exist.
+                cachedPacks = SpawnPack.Summonable(parsed);
                 cachedPackSource = source;
+                cachedWithCreatureIndex = haveCreatureIndex;
+
+                if (parsed.Count != cachedPacks.Count)
+                {
+                    // Worth saying out loud: from a streamer's side a pack with a mistyped ResRef
+                    // simply stops appearing, with nothing anywhere explaining the disappearance.
+                    foreach (var pack in parsed)
+                    {
+                        if (!pack.CanSummonHere())
+                            Logger.Info($"Pack '{pack.DisplayName}' is hidden from viewers: this installation has none of its creatures.");
+                    }
+                }
             }
             return cachedPacks;
         }
@@ -316,9 +356,31 @@ namespace BGOverlay
             // tiles, which gets the same best-fit pack it always did.
             var wantsRandom = extractBool(message, "random");
 
-            var pack = wantsRandom
-                ? SpawnPack.RandomForLevel(packs, ProtagonistLevel, random)
-                : SpawnPack.ForLevel(packs, ProtagonistLevel);
+            SpawnPack pack;
+            if (wantsRandom)
+            {
+                // The reward that was redeemed may narrow the pool to packs carrying particular
+                // tags - that is what lets one channel run several rewards off one pack list.
+                var tags = extractStringArray(message, "tags");
+                var pool = new List<SpawnPack>();
+                foreach (var candidate in packs)
+                {
+                    if (candidate.HasAllTags(tags))
+                        pool.Add(candidate);
+                }
+
+                if (pool.Count == 0)
+                {
+                    Logger.Info($"Random summon ignored: no pack carries [{string.Join(", ", tags.ToArray())}].");
+                    return;
+                }
+
+                pack = SpawnPack.RandomForLevel(pool, ProtagonistLevel, random);
+            }
+            else
+            {
+                pack = SpawnPack.ForLevel(packs, ProtagonistLevel);
+            }
 
             if (pack == null)
             {
@@ -326,8 +388,27 @@ namespace BGOverlay
                 return;
             }
 
+            // A random summon picks its own victim: nobody chose one in a panel, and a reward
+            // that always landed on the protagonist would make the streamer's <victim> read the
+            // same every single time.
+            if (wantsRandom)
+            {
+                var party = lastPartyNames;
+                if (party.Length > 0)
+                {
+                    var slot = random.Next(party.Length);
+                    target = slot + 1;
+
+                    // The template is the streamer's own sentence and already names the viewer,
+                    // so it replaces the composed line rather than being prefixed with one.
+                    var rendered = renderTemplate(extractString(message, "template"), viewerName, party[slot]);
+                    if (rendered != null)
+                        viewerText = rendered;
+                }
+            }
+
             Logger.Info($"Summoning {(wantsRandom ? "a random pack" : "pack")} for level {ProtagonistLevel}: {pack}");
-            GameSpawnBridge.Instance.Enqueue(pack.Entries, viewerText, target);
+            GameSpawnBridge.Instance.Enqueue(pack.ExistingEntries(), viewerText, target);
         }
 
         private void enqueueById(IReadOnlyList<SpawnPack> packs, List<string> requestedIds, string viewerText, int target)
@@ -350,7 +431,7 @@ namespace BGOverlay
                     continue;
                 }
 
-                entries.AddRange(packs[i].Entries);
+                entries.AddRange(packs[i].ExistingEntries());
                 summoned.Add(ids[i]);
             }
 
@@ -370,6 +451,25 @@ namespace BGOverlay
         /// Absent, false, or anything unrecognised all read as false, so only a literal true
         /// turns a flag on.
         /// </summary>
+        /// <summary>
+        /// Fills in the streamer's message template: &lt;viewername&gt; for who redeemed, and
+        /// &lt;victim&gt; for the party member the pack is about to land on.
+        ///
+        /// Null when there is no template, which leaves the caller's own line alone. Both
+        /// values are ones this side already trusts - a Twitch name the relay resolved against
+        /// a verified identity, and a character name read out of the game - and the result goes
+        /// through the same sanitiser as every other line before it reaches the message log.
+        /// </summary>
+        private static string renderTemplate(string template, string viewerName, string victimName)
+        {
+            if (string.IsNullOrWhiteSpace(template))
+                return null;
+
+            return template
+                .Replace("<viewername>", viewerName ?? "")
+                .Replace("<victim>", victimName ?? "");
+        }
+
         private static bool extractBool(string json, string field)
         {
             var marker = "\"" + field + "\"";

@@ -687,9 +687,17 @@ app.MapPost("/eventsub/callback", async (HttpContext context) =>
     // the extension is unapproved, when viewers cannot open the panel at all and so can never
     // spend a token however many they are sold. A streamer running only this leaves Channel Points
     // per token at 0, which is why none of the token checks gate it.
-    var randomRewardName = prices.RandomSummonRewardName.Trim();
-    if (randomRewardName.Length > 0
-        && string.Equals(title, randomRewardName, StringComparison.OrdinalIgnoreCase))
+    RandomSummonRule? matchedRule = null;
+    foreach (var rule in prices.RandomSummons)
+    {
+        if (string.Equals(title, rule.Reward.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            matchedRule = rule;
+            break;
+        }
+    }
+
+    if (matchedRule is not null)
     {
         var writer = await findOverlayForBroadcasterAsync(broadcasterId);
         if (writer is null)
@@ -706,7 +714,7 @@ app.MapPost("/eventsub/callback", async (HttpContext context) =>
         if (redeemer.Length == 0)
             redeemer = ev.TryGetProperty("user_login", out var userLoginEl) ? (userLoginEl.GetString() ?? "") : "";
 
-        if (!writer.TryWrite(buildRandomSummonCommand(redeemer)))
+        if (!writer.TryWrite(buildRandomSummonCommand(redeemer, matchedRule)))
             app.Logger.LogWarning(
                 "Could not dispatch a random summon on broadcaster {BroadcasterId}: the outbound "
                 + "queue to their Radar app is full.", broadcasterId);
@@ -1160,12 +1168,23 @@ static (string UserId, string ChannelId)? tryGetViewerIdentity(string authToken,
 // level band covers the party, and lands it on the protagonist. Deliberately the smallest possible
 // command - everything about which creatures exist and what suits the party stays on the overlay
 // side, exactly as it does for the panel.
-static string buildRandomSummonCommand(string? redeemer)
+static string buildRandomSummonCommand(string? redeemer, RandomSummonRule rule)
 {
     var payload = new Dictionary<string, object> { ["type"] = "summon", ["random"] = true };
+
     var viewer = sanitizeMessage(redeemer ?? "");
     if (viewer.Length > 0)
         payload["viewer"] = viewer;
+
+    if (rule.Tags.Count > 0)
+        payload["tags"] = rule.Tags;
+
+    // Sent whole, with its placeholders still in it. Only the overlay knows which party member
+    // the pack is about to land on, so only the overlay can fill in <victim>.
+    var template = (rule.Template ?? "").Trim();
+    if (template.Length > 0)
+        payload["template"] = template;
+
     return JsonSerializer.Serialize(payload);
 }
 

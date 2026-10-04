@@ -37,6 +37,32 @@
   }
   button:hover:enabled { background: #772ce8; }
   button:disabled { opacity: 0.5; cursor: default; }
+
+  /* A quieter button than the purple Save: adding and removing rows is bookkeeping, not the
+     action this page exists for. */
+  button.secondary {
+    margin-top: 8px;
+    padding: 6px 14px;
+    background: #2a2a2d;
+    border: 1px solid #3a3a3d;
+    font-size: 13px;
+  }
+  button.secondary:hover:enabled { background: #3a3a3d; }
+
+  /* One reward per row: title, tags, message, and the button that removes it. Wraps rather than
+     scrolls, since the config page is often open in a narrow Dev Console panel. */
+  .randomSummonRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-top: 8px;
+    padding: 8px;
+    border: 1px solid #3a3a3d;
+    border-radius: 4px;
+  }
+  .randomSummonRow input { flex: 1 1 180px; max-width: none; }
+  .randomSummonRow button.secondary { margin-top: 0; flex: 0 0 auto; }
   #status { margin-top: 12px; font-size: 13px; color: #00c78c; min-height: 16px; }
   .hint { font-size: 12px; color: #adadb8; margin-top: 4px; }
 </style>
@@ -75,14 +101,22 @@
     Channel Points per token above is not 0.
   </div>
 
-  <label for="randomSummonRewardName">Random Summon Reward Name</label>
-  <input id="randomSummonRewardName" type="text" maxlength="45" placeholder="leave empty to turn this off" autocomplete="off">
-  <div class="hint">
-    Optional, and nothing to do with tokens. A Custom Reward with this exact title summons a random
-    pack for your party's level immediately, at your main character - no tokens, no panel. That is
-    what lets viewers join in while the extension is still waiting on review, since Channel Points
-    rewards work for everyone whether or not the extension is approved. Leave empty to turn it off.
+  <label>Random Summon Rewards</label>
+  <div class="hint" style="margin-top:0">
+    Optional, and nothing to do with tokens. Each row is one Custom Reward on your channel that
+    summons a pack immediately, at a random party member - no tokens, no panel. That is what lets
+    viewers take part while the extension is waiting on review, since Channel Points rewards work
+    for everyone either way.
+    <br><br>
+    <b>Reward</b> must match the reward's title exactly.
+    <b>Tags</b> (separated by ";") limit which packs it can draw from - leave empty for all of
+    them; tags are set per pack in the Radar app.
+    <b>Message</b> is what appears in the game log:
+    <code>&lt;viewername&gt;</code> becomes whoever redeemed, <code>&lt;victim&gt;</code> the party
+    member it lands on. Leave the message empty for no announcement.
   </div>
+  <div id="randomSummons"></div>
+  <button id="addRandomSummon" type="button" class="secondary">Add a reward</button>
 
   <label for="maxTokenBalance">Max Tokens per Viewer</label>
   <input id="maxTokenBalance" type="number" min="0" step="1" placeholder="0 = no limit" autocomplete="off">

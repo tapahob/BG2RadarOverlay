@@ -89,7 +89,10 @@ namespace BGOverlay
             var parts = packs
                 .Where(p => p.Entries.Count > 0)
                 .Select(p => $"{SanitizeName(p.Name)}|{p.LevelFrom}-{p.LevelTo}|{p.Cost}|" +
-                             string.Join(",", p.Entries.Select(e => $"{e.ResRef.ToLowerInvariant()}:{e.Amount}").ToArray()));
+                             string.Join(",", p.Entries.Select(e => $"{e.ResRef.ToLowerInvariant()}:{e.Amount}").ToArray()) +
+                             // Comma-separated, not semicolon: ';' already ends a pack in this
+                             // flat format, whatever the Options tab asks the streamer to type.
+                             "|" + string.Join(",", p.Tags.ToArray()));
             return string.Join(";", parts.ToArray());
         }
 
@@ -150,19 +153,23 @@ namespace BGOverlay
                 // Three shapes are accepted, told apart by field count, because each older one
                 // is still sitting in someone's config.cfg and a format change must not cost
                 // them their packs:
-                //   from-to|entries                 - before packs had names
-                //   name|from-to|entries            - before packs had a cost
-                //   name|from-to|cost|entries       - current
+                //   from-to|entries                  - before packs had names
+                //   name|from-to|entries             - before packs had a cost
+                //   name|from-to|cost|entries        - before packs had tags
+                //   name|from-to|cost|entries|tags   - current
                 var halves = packText.Split('|');
-                if (halves.Length < 2 || halves.Length > 4)
+                if (halves.Length < 2 || halves.Length > 5)
                     continue;
 
                 var name = halves.Length >= 3 ? SanitizeName(halves[0]) : "";
                 var rangeText = halves.Length == 2 ? halves[0] : halves[1];
-                var entriesText = halves[halves.Length - 1];
+                // Not simply the last field any more: with tags present the entries are the
+                // second to last, and reading the tags as entries would empty every pack.
+                var entriesText = halves.Length == 5 ? halves[3] : halves[halves.Length - 1];
+                var tagsText = halves.Length == 5 ? halves[4] : "";
 
                 var cost = 0;
-                if (halves.Length == 4)
+                if (halves.Length >= 4)
                     int.TryParse(halves[2].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out cost);
 
                 var range = rangeText.Split('-');
@@ -179,7 +186,8 @@ namespace BGOverlay
                     Name = name,
                     LevelFrom = from,
                     LevelTo = to,
-                    Cost = cost < 0 ? 0 : cost
+                    Cost = cost < 0 ? 0 : cost,
+                    Tags = ParseTags(tagsText)
                 };
 
                 foreach (var entryText in entriesText.Split(','))
@@ -282,6 +290,95 @@ namespace BGOverlay
         /// intent: a viewer redeeming "surprise me", where always getting the same answer for a
         /// given level would make the reward pointless after the first redemption.
         /// </summary>
+        /// <summary>
+        /// Free-text labels the streamer typed on the Twitch Integration tab, lowercased. They
+        /// are what a Channel Points reward narrows its pool by - "undead", "easy", "boss" - so
+        /// one channel can offer several rewards that each draw from a different slice of the
+        /// same pack list.
+        ///
+        /// Stored lowercase and matched case-insensitively, because nobody typing a reward's tags
+        /// into a web form will reliably match the capitalisation they used in a desktop app
+        /// weeks earlier.
+        /// </summary>
+        public List<string> Tags { get; set; } = new List<string>();
+
+        /// <summary>Whether this pack carries every one of the tags asked for.</summary>
+        public bool HasAllTags(IEnumerable<string> required)
+        {
+            if (required == null)
+                return true;
+
+            foreach (var want in required)
+            {
+                var needle = (want ?? "").Trim().ToLowerInvariant();
+                if (needle.Length == 0)
+                    continue;
+                if (!Tags.Contains(needle))
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// The entries of this pack whose creature this installation actually has, and only
+        /// those. A pack naming four creatures of which one was never installed still summons
+        /// the other three rather than failing outright.
+        /// </summary>
+        public List<SpawnEntry> ExistingEntries()
+        {
+            var manager = ResourceManager.Instance;
+            if (manager == null)
+                return new List<SpawnEntry>(Entries);
+
+            var kept = new List<SpawnEntry>();
+            foreach (var entry in Entries)
+            {
+                if (manager.CreatureExists(entry.ResRef))
+                    kept.Add(entry);
+            }
+            return kept;
+        }
+
+        /// <summary>
+        /// Whether this pack can summon anything at all here. What a viewer is offered and what a
+        /// random summon may pick are both filtered by this, so nobody spends points on an ambush
+        /// made entirely of creatures this installation has never had.
+        /// </summary>
+        public bool CanSummonHere()
+        {
+            return ExistingEntries().Count > 0;
+        }
+
+        /// <summary>Those of <paramref name="packs"/> that can actually summon something here.</summary>
+        public static List<SpawnPack> Summonable(IEnumerable<SpawnPack> packs)
+        {
+            var kept = new List<SpawnPack>();
+            foreach (var pack in packs)
+            {
+                if (pack.CanSummonHere())
+                    kept.Add(pack);
+            }
+            return kept;
+        }
+
+        /// <summary>Splits the ";"-separated tag text the Options tab takes into clean tags.</summary>
+        public static List<string> ParseTags(string text)
+        {
+            var tags = new List<string>();
+            if (string.IsNullOrWhiteSpace(text))
+                return tags;
+
+            foreach (var raw in text.Split(';', ',', '|'))
+            {
+                var tag = SanitizeName(raw).ToLowerInvariant();
+                if (tag.Length > 0 && !tags.Contains(tag))
+                    tags.Add(tag);
+            }
+
+            return tags;
+        }
+
         public static SpawnPack RandomForLevel(IEnumerable<SpawnPack> packs, int level, Random random)
         {
             var eligible = new List<SpawnPack>();

@@ -537,6 +537,7 @@ namespace WPFFrontend
             this.PackLevelFrom.Text = pack.LevelFrom.ToString();
             this.PackLevelTo.Text   = pack.LevelTo.ToString();
             this.PackCost.Text      = pack.Cost.ToString();
+            this.PackTags.Text      = string.Join("; ", pack.Tags.ToArray());
             this.PackEntries.Text   = SpawnPack.ToEntryLines(pack.Entries);
         }
 
@@ -581,14 +582,21 @@ namespace WPFFrontend
             var name = SpawnPack.SanitizeName(this.PackName.Text);
             this.PackName.Text = name;
 
+            var tags = SpawnPack.ParseTags(this.PackTags.Text);
+
             spawnPacks[index] = new SpawnPack
             {
                 Name = name,
                 LevelFrom = from,
                 LevelTo = to,
                 Cost = cost,
-                Entries = entries
+                Entries = entries,
+                Tags = tags
             };
+
+            // Echoed back cleaned up - lowercased, de-duplicated, separators stripped - so what
+            // is on screen is what a reward's tag list will actually be matched against.
+            this.PackTags.Text = string.Join("; ", tags.ToArray());
 
             persistPacks();
             refreshPackList(index);
@@ -628,6 +636,7 @@ namespace WPFFrontend
             this.PackLevelFrom.Text = "1";
             this.PackLevelTo.Text   = "1";
             this.PackCost.Text      = "0";
+            this.PackTags.Text      = "";
             this.PackEntries.Text   = "";
             this.PackName.Focus();
         }
