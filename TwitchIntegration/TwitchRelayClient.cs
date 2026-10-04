@@ -274,6 +274,12 @@ namespace BGOverlay
             // and the game rather than one per caller.
             var viewerText = extractString(message, "message");
 
+            // Who to credit in the game's message log. Resolved by the relay from the viewer's
+            // verified identity, so it is their actual Twitch name rather than anything they
+            // typed; empty for the control-key mock and for Test summon, which have no viewer.
+            var viewerName = extractString(message, "viewer");
+            viewerText = GameSpawnBridge.ComposeLogLine(viewerName, viewerText);
+
             // Which party member the pack lands on. Absent, zero or out of range all mean the
             // protagonist - GameSpawnBridge.ClampTarget is the one place that decides.
             var target = extractInt(message, "target", GameSpawnBridge.DefaultTarget);

@@ -171,6 +171,35 @@ namespace BGOverlay
         }
 
         /// <summary>
+        /// The line that goes in the game's message log: who summoned, then what they said.
+        ///
+        /// The name is attributed, not decorative, so it is what survives when the two together
+        /// run past the mailbox: the viewer's own text is what gets cut. It also replaces the old
+        /// fixed "[Twitch]" marker, which is why an unattributed summon still carries one - the
+        /// Options tab's Test summon and the mock have no viewer behind them, and a bare line in
+        /// the log would read as the game's own output.
+        ///
+        /// The name comes from the relay, which resolved it from Twitch against a verified
+        /// identity token - never from anything the viewer typed. That is what keeps it from
+        /// being a second message field someone can write whatever they like into.
+        /// </summary>
+        public static string ComposeLogLine(string viewerName, string message)
+        {
+            // SanitizeMessage answers null, not empty, for anything that reduces to nothing.
+            var name = SanitizeMessage(viewerName);
+            var text = SanitizeMessage(message);
+
+            // Said nothing, so nothing is shown - exactly as before. The name goes where the
+            // [Twitch] marker used to be, and nowhere it did not already appear.
+            if (string.IsNullOrEmpty(text))
+                return null;
+
+            return string.IsNullOrEmpty(name)
+                ? SanitizeMessage("[Twitch] " + text)
+                : SanitizeMessage(name + ": " + text);
+        }
+
+        /// <summary>
         /// Reduces viewer text to what can safely be handed to the game: printable ASCII, single
         /// spaces, length-capped. Anything a viewer types arrives here as-is, so this is the
         /// enforcement point - the extension's own trimming is cosmetic and the relay can be

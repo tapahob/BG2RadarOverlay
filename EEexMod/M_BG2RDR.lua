@@ -255,10 +255,12 @@ local function poll()
 
     EEex_FunctionLog(string.format("consuming request '%s' x%d at party slot %d", resref, amount, target))
 
-    -- Prefixed, and always by us rather than by the sender: it marks the line as coming from
-    -- a viewer, so nobody can type something that passes for the game's own feedback.
+    -- Shown as it arrives. The overlay composes this line - "<viewer>: <what they typed>", or a
+    -- "[Twitch]" marker when there is no viewer behind the summon - because it is the side that
+    -- knows the mailbox's length limit and can decide what to cut when a name and a message do
+    -- not both fit. Nothing a viewer types reaches here unfiltered either way.
     if message ~= "" then
-        Infinity_DisplayString("[Twitch] " .. message)
+        Infinity_DisplayString(message)
     end
 
     if resref ~= "" then

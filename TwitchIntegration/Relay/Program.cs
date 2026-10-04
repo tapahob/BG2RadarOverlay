@@ -987,7 +987,11 @@ app.MapPost("/api/summon/{streamKey}", async (string streamKey, HttpContext cont
         var target = root.TryGetProperty("target", out var targetEl) && targetEl.ValueKind == JsonValueKind.Number
             && targetEl.TryGetInt32(out var parsedTarget) ? parsedTarget : 0;
 
-        if (!writer.TryWrite(buildSummonCommand(resolvedIds, rawMessage, target)))
+        // Best effort: a summon the viewer has already been charged for is not failed over a
+        // name. No name just means the line in the game log is not attributed.
+        var viewerName = await tokenPriceCache.ResolveViewerNameAsync(httpClient, viewer.Value.UserId);
+
+        if (!writer.TryWrite(buildSummonCommand(resolvedIds, rawMessage, target, viewerName)))
         {
             // The spend already happened - refund it rather than leave a viewer charged for a
             // summon that never reached the overlay (a full outbound queue, in practice).
@@ -1084,10 +1088,15 @@ static (string UserId, string ChannelId)? tryGetViewerIdentity(string authToken,
 // Shared by the Channel Points and Bits paths, which both arrive at "these pack ids, plus maybe
 // a message" through completely different verification but need to hand the overlay the exact
 // same command shape /api/command already produces.
-static string buildSummonCommand(IReadOnlyList<string> packIds, string rawMessage, int target)
+static string buildSummonCommand(IReadOnlyList<string> packIds, string rawMessage, int target, string? viewerName)
 {
     var message = sanitizeMessage(rawMessage ?? "");
     var payload = new Dictionary<string, object> { ["type"] = "summon" };
+    // Put through the same filter as the viewer's own text. It comes from Twitch rather than
+    // from the browser, but it lands in the same single-byte game log and gets the same cap.
+    var viewer = sanitizeMessage(viewerName ?? "");
+    if (viewer.Length > 0)
+        payload["viewer"] = viewer;
     if (packIds.Count > 0)
         payload["packs"] = packIds.Take(maxPacksPerSummon).ToList();
     if (message.Length > 0)

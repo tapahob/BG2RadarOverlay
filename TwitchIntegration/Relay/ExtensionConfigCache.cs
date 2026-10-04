@@ -62,6 +62,10 @@ public sealed class ExtensionConfigCache
     // has ever seen.
     private readonly ConcurrentDictionary<string, string> loginToId = new();
 
+    // Same reasoning as loginToId, the other way round: a viewer's name changes about as often
+    // as their login does, and this is on the path of every single summon.
+    private readonly ConcurrentDictionary<string, string> viewerIdToName = new();
+
     private sealed class PriceEntry
     {
         public TokenPriceConfig? Config;
@@ -116,6 +120,71 @@ public sealed class ExtensionConfigCache
         if (id is not null)
             loginToId[login] = id;
         return id;
+    }
+
+    /// <summary>
+    /// What to call the viewer who just spent tokens, from the numeric id their verified identity
+    /// token carries. Resolved here rather than taken from the panel: a name the browser supplied
+    /// would be a name the viewer chose for the occasion, and this one ends up in the streamer's
+    /// game log as an attribution.
+    ///
+    /// Prefers the display name, but only while it is plain ASCII. A localised display name - and
+    /// Twitch allows them - cannot survive the game's single-byte message log, and would arrive as
+    /// nothing at all; the login is always [a-z0-9_] and says who it was.
+    ///
+    /// Null when Twitch cannot say. The caller treats that as an unattributed summon rather than
+    /// failing one a viewer has already paid for.
+    /// </summary>
+    public async Task<string?> ResolveViewerNameAsync(HttpClient http, string viewerId)
+    {
+        viewerId = (viewerId ?? "").Trim();
+        if (viewerId.Length == 0)
+            return null;
+        if (viewerIdToName.TryGetValue(viewerId, out var cachedName))
+            return cachedName;
+
+        var token = await ensureAppAccessTokenAsync(http);
+        if (token is null)
+            return null;
+
+        using var request = new HttpRequestMessage(HttpMethod.Get,
+            helixBaseUrl + "/users?id=" + Uri.EscapeDataString(viewerId));
+        request.Headers.Add("Authorization", "Bearer " + token);
+        request.Headers.Add("Client-Id", extensionClientId);
+
+        using var response = await http.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var data = doc.RootElement.GetProperty("data");
+            if (data.GetArrayLength() == 0)
+                return null;
+
+            var login = data[0].TryGetProperty("login", out var loginEl) ? loginEl.GetString() : null;
+            var display = data[0].TryGetProperty("display_name", out var displayEl) ? displayEl.GetString() : null;
+
+            var name = isPlainAscii(display) ? display : login;
+            if (!string.IsNullOrEmpty(name))
+                viewerIdToName[viewerId] = name!;
+            return name;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static bool isPlainAscii(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return false;
+        foreach (var c in value)
+            if (c < 0x20 || c > 0x7E)
+                return false;
+        return true;
     }
 
     /// <summary>
