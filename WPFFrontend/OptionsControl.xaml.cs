@@ -492,12 +492,44 @@ namespace WPFFrontend
         /// one. New creates and selects a pack rather than just clearing the selection -
         /// otherwise a disabled Save would leave no way to ever add one.
         /// </summary>
-        private void updatePackButtons()
+        /// <summary>
+        /// Switches the editor on only while there is a pack for it to edit.
+        ///
+        /// The fields used to stay live with nothing selected, which reads as a blank pack
+        /// waiting to be filled in - and it is not one. Save does nothing without a selection, so
+        /// everything typed into it was quietly thrown away; the fix is for it not to invite the
+        /// typing. New stays enabled throughout, since it is the way out of this state.
+        ///
+        /// The fields are emptied as well as disabled. A greyed-out form still holding the last
+        /// pack's values reads as "this is the pack", which is exactly the confusion being
+        /// removed.
+        /// </summary>
+        private void updatePackEditorState()
         {
             var hasSelection = selectedPack() != null;
+
             this.PackSave.IsEnabled   = hasSelection;
             this.PackDelete.IsEnabled = hasSelection;
             this.TestSummon.IsEnabled = hasSelection;
+
+            this.PackName.IsEnabled      = hasSelection;
+            this.PackLevelFrom.IsEnabled = hasSelection;
+            this.PackLevelTo.IsEnabled   = hasSelection;
+            this.PackCost.IsEnabled      = hasSelection;
+            this.PackTags.IsEnabled      = hasSelection;
+            this.PackEntries.IsEnabled   = hasSelection;
+
+            // Callers populate the fields right after this when there *is* a selection, so
+            // clearing here would undo their work.
+            if (hasSelection)
+                return;
+
+            this.PackName.Text      = "";
+            this.PackLevelFrom.Text = "";
+            this.PackLevelTo.Text   = "";
+            this.PackCost.Text      = "";
+            this.PackTags.Text      = "";
+            this.PackEntries.Text   = "";
         }
 
         private void showSummonResult(bool ok, string text)
@@ -522,12 +554,12 @@ namespace WPFFrontend
             if (selectIndex >= 0 && selectIndex < this.PackList.Items.Count)
                 this.PackList.SelectedIndex = selectIndex;
 
-            updatePackButtons();
+            updatePackEditorState();
         }
 
         private void PackList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            updatePackButtons();
+            updatePackEditorState();
 
             var pack = selectedPack();
             if (pack == null)
