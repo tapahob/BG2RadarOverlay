@@ -19,7 +19,11 @@ namespace BGOverlay.Input
         RightButtonDown = 0x0204,
         RightButtonUp = 0x0205,
         MiddleButtonDown = 0x0207,
-        MiddleButtonUp = 0x0208
+        MiddleButtonUp = 0x0208,
+        MouseWheel = 0x020A,
+        XButtonDown = 0x020B,
+        XButtonUp = 0x020C,
+        MouseHorizontalWheel = 0x020E
     }
 
     public class MouseMessageEventArgs : EventArgs
@@ -69,6 +73,9 @@ namespace BGOverlay.Input
         private IntPtr _hookHandle = IntPtr.Zero;
         private Thread _hookThread;
         private volatile uint _hookThreadId;
+        // Only the hook thread modifies this. A press belongs to whoever received
+        // its down edge, including when the pointer leaves the window before up.
+        private int _radarButtons;
 
         public MouseHook(int pid, MouseMessageTypes types)
         {
@@ -79,6 +86,8 @@ namespace BGOverlay.Input
         {
             _handlers[(int)code] = handler;
         }
+
+        public Func<MouseMessageEventArgs, bool> GameButtonFilter { get; set; }
 
         public Task InstallAsync()
         {
@@ -124,18 +133,46 @@ namespace BGOverlay.Input
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && _handlers.TryGetValue(wParam.ToInt32(), out var handler) && IsTargetForeground())
+            int code = wParam.ToInt32();
+            var message = (MouseMessageCode)code;
+            bool down = message == MouseMessageCode.LeftButtonDown || message == MouseMessageCode.RightButtonDown
+                || message == MouseMessageCode.MiddleButtonDown || message == MouseMessageCode.XButtonDown;
+            bool up = message == MouseMessageCode.LeftButtonUp || message == MouseMessageCode.RightButtonUp
+                || message == MouseMessageCode.MiddleButtonUp || message == MouseMessageCode.XButtonUp;
+            bool wheel = message == MouseMessageCode.MouseWheel || message == MouseMessageCode.MouseHorizontalWheel;
+            bool registered = _handlers.TryGetValue(code, out var handler);
+            if (nCode >= 0 && (registered || ((down || up || wheel) && GameButtonFilter != null)))
             {
                 try
                 {
                     var hookStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
-                    handler?.Invoke(this, new MouseMessageEventArgs(
+                    int mask = 0;
+                    // Each Win32 button-up immediately follows its down message numerically.
+                    switch ((MouseMessageCode)(up ? code - 1 : code))
+                    {
+                        case MouseMessageCode.LeftButtonDown: mask = 1; break;
+                        case MouseMessageCode.RightButtonDown: mask = 2; break;
+                        case MouseMessageCode.MiddleButtonDown: mask = 4; break;
+                        case MouseMessageCode.XButtonDown: mask = (hookStruct.mouseData >> 16) == 1 ? 8 : 16; break;
+                    }
+                    bool ownedUp = up && (_radarButtons & mask) != 0;
+                    if (up || down) _radarButtons &= ~mask;
+                    if (!IsTargetForeground())
+                        return ownedUp ? new IntPtr(1) : CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+                    var args = new MouseMessageEventArgs(
                         wParam.ToInt32(),
                         hookStruct.pt.X,
                         hookStruct.pt.Y,
                         (GetKeyState(VK_SHIFT) & 0x8000) != 0,
                         (GetKeyState(VK_CONTROL) & 0x8000) != 0,
-                        (GetKeyState(VK_MENU) & 0x8000) != 0));
+                        (GetKeyState(VK_MENU) & 0x8000) != 0);
+                    if ((down || wheel || ownedUp) && GameButtonFilter?.Invoke(args) == true)
+                    {
+                        if (down) _radarButtons |= mask;
+                        return new IntPtr(1);
+                    }
+                    if (ownedUp) return new IntPtr(1);
+                    handler?.Invoke(this, args);
                 }
                 catch (Exception ex)
                 {

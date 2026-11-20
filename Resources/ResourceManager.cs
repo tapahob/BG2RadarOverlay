@@ -184,11 +184,14 @@ namespace BGOverlay
             BIFFReader reader = null;
             try
             {
-                if (!BiffReaderCache.TryGetValue(bifFilename, out reader))
+                lock (BiffReaderCache)
                 {
-                    reader = new BIFFReader(bifFilename);
-                    BiffReaderCache[bifFilename] = reader;
-                    Logger.Info($"BIFFReader created: {bifFilename}");
+                    if (!BiffReaderCache.TryGetValue(bifFilename, out reader))
+                    {
+                        reader = new BIFFReader(bifFilename);
+                        BiffReaderCache[bifFilename] = reader;
+                        Logger.Info($"BIFFReader created: {bifFilename}");
+                    }
                 }
             } catch (Exception ex)
             {

@@ -45,7 +45,27 @@
         <Border Grid.RowSpan="4" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
 
         <TabControl Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Background="Transparent" BorderThickness="0">
-            <TabItem d:Header="General" Header="{DynamicResource Str_TabGeneral}">
+            <TabControl.Resources>
+                <Geometry x:Key="GeneralGlyph">F1 M1,3 H15 V5 H1 Z M4,1 H7 V7 H4 Z M1,11 H15 V13 H1 Z M9,9 H12 V15 H9 Z</Geometry>
+                <Geometry x:Key="TwitchGlyph">F0 M11.571,4.714 h1.715 v5.143 H11.57 z m4.715,0 H18 v5.143 h-1.714 z M6,0 L1.714,4.286 v15.428 h5.143 V24 l4.286,-4.286 h3.428 L22.286,12 V0 z m14.571,11.143 l-3.428,3.428 h-3.429 l-3,3 v-3 H6.857 V1.714 h13.714 Z</Geometry>
+                <Geometry x:Key="DiagnosticsGlyph">M1,9 H4 V15 H1 Z M6,5 H9 V15 H6 Z M11,1 H14 V15 H11 Z</Geometry>
+            </TabControl.Resources>
+            <TabControl.ItemContainerStyle>
+                <Style TargetType="TabItem" BasedOn="{StaticResource {x:Type TabItem}}">
+                    <Setter Property="HeaderTemplate">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Width="14" Height="14" Margin="0,0,5,0" Stretch="Uniform" VerticalAlignment="Center" Fill="#39281A"
+                                          Data="{Binding Tag, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
+                                    <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </TabControl.ItemContainerStyle>
+            <TabItem Tag="{StaticResource GeneralGlyph}" d:Header="General" Header="{DynamicResource Str_TabGeneral}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -92,6 +112,9 @@
                             <Label d:Content="Refresh Rate (ms):" Content="{DynamicResource Str_RefreshRate}" Style="{StaticResource BoldSmall}"/>
                             <TextBox x:Name="RefreshRate" PreviewTextInput="TextBox_PreviewTextInput" MinWidth="50" Text="100" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25" Width="46" Margin="-5" />
                         </StackPanel>
+                        <Label Content="{DynamicResource Str_NumberAnimation}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+                        <CheckBox x:Name="AnimateEnemyListNumbers" Content="{DynamicResource Str_AnimateEnemyListNumbers}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold"/>
+                        <CheckBox x:Name="AnimateCharacterCardNumbers" Content="{DynamicResource Str_AnimateCharacterCardNumbers}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold"/>
                     </StackPanel>
                     <Border Grid.Row="3" Grid.ColumnSpan="1" Grid.Column="3" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="3"/>
                     <StackPanel Grid.ColumnSpan="1" Grid.Row="4" Grid.Column="3" Margin="5,5,5,5" Grid.RowSpan="2">
@@ -122,123 +145,129 @@
                     <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="8" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Save" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
                 </Grid>
             </TabItem>
-            <TabItem d:Header="Twitch Integration" Header="{DynamicResource Str_TabTwitchIntegration}">
-                <StackPanel Margin="10" MinHeight="450">
-                    <Label d:Content="Twitch Integration" Content="{DynamicResource Str_TwitchIntegration}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
+            <TabItem Tag="{StaticResource TwitchGlyph}" d:Header="Twitch Integration" Header="{DynamicResource Str_TabTwitchIntegration}">
+                <Grid Margin="8" MaxHeight="530" TextElement.FontFamily="{DynamicResource FontFamily1}" TextElement.FontWeight="Bold">
+                    <Grid.Resources>
+                        <ResourceDictionary Source="TwitchOptionsTheme.xaml"/>
+                    </Grid.Resources>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <CheckBox x:Name="TwitchIntegrationEnabled" d:Content="Enable Twitch Integration" Content="{DynamicResource Str_TwitchEnable}" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Margin="0,10,0,0"/>
-                    <!-- EEex is a separate mod with its own installer, and the one prerequisite
-                         the Install game files button below cannot provide. Without it the spawn
-                         bridge errors out on load and every summon silently does nothing. -->
-                    <TextBlock x:Name="EEexMissingWarning" Visibility="Collapsed" d:Visibility="Visible" Foreground="#FFD06A4A"
-                               d:Text="EEex is not installed in the detected game folder - Twitch summons need it." Text="{DynamicResource Str_TwitchNeedsEEex}"
-                               TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,4,0,0"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                        <StackPanel Margin="0,0,6,0">
+                            <CheckBox x:Name="TwitchIntegrationEnabled" Margin="0,1,0,4"
+                                      d:Content="Enable Twitch Integration" Content="{DynamicResource Str_TwitchEnable}"/>
+                            <TextBlock x:Name="EEexMissingWarning" Style="{StaticResource Warning}" Visibility="Collapsed"
+                                       Text="{DynamicResource Str_TwitchNeedsEEex}"/>
 
-                    <!-- Everything below only matters once integration is on - disabled as a
-                         group whenever the checkbox above is unchecked, re-enabled the instant
-                         it's checked again (see updateTwitchControlsEnabled in the code-behind). -->
-                    <StackPanel x:Name="TwitchControlsPanel">
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label d:Content="Relay Server URL:" Content="{DynamicResource Str_TwitchRelayUrl}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="TwitchRelayUrl" Width="220" d:Text="https://relay.example.com" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                    </StackPanel>
+                            <StackPanel x:Name="TwitchControlsPanel">
+                                <Border Style="{StaticResource Section}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="3*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchRelayUrl}"/>
+                                        <TextBox Grid.Column="1" x:Name="TwitchRelayUrl" d:Text="https://relay.example.com"/>
+                                        <TextBlock Grid.Row="1" Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchChannel}"/>
+                                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="TwitchBroadcasterLogin" Margin="0,4,0,0"/>
+                                        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Style="{StaticResource Hint}" Text="{DynamicResource Str_TwitchChannelHint}"/>
+                                        <TextBlock Grid.Row="3" Grid.ColumnSpan="2" x:Name="TwitchChannelWarning" Style="{StaticResource Warning}"
+                                                   Visibility="Collapsed" Text="{DynamicResource Str_TwitchChannelInvalid}"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label d:Content="Twitch Channel:" Content="{DynamicResource Str_TwitchChannel}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="TwitchBroadcasterLogin" Width="180" d:Text="yunamaxwell" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                    </StackPanel>
-                    <TextBlock d:Text="Your channel's login (as in twitch.tv/&lt;this&gt;) - lets a relay shared by several streamers tell your stream key apart from theirs." Text="{DynamicResource Str_TwitchChannelHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="122,2,0,0"/>
-                    <!-- A display name typed in here instead of the login resolves to no account
-                         at all, and the only symptom was summons failing at the relay with
-                         nothing on this screen hinting why. -->
-                    <TextBlock x:Name="TwitchChannelWarning" Visibility="Collapsed" d:Visibility="Visible" Foreground="#FFD06A4A"
-                               d:Text="That doesn't look like a Twitch login - no spaces." Text="{DynamicResource Str_TwitchChannelInvalid}"
-                               TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="122,2,0,0"/>
+                                        <TextBlock Grid.Row="4" Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchStreamKey}"/>
+                                        <TextBox Grid.Row="4" Grid.Column="1" x:Name="TwitchStreamKey" IsReadOnly="True"/>
+                                        <WrapPanel Grid.Row="5" Grid.ColumnSpan="2" HorizontalAlignment="Right" Margin="0,4,0,2">
+                                            <Button x:Name="GenerateStreamKey" d:Content="Connect" Click="GenerateStreamKey_Click"/>
+                                            <Button x:Name="RegenerateStreamKey" d:Content="New Key" Margin="4,0,0,0" Click="RegenerateStreamKey_Click"/>
+                                        </WrapPanel>
+                                        <Grid Grid.Row="6" Grid.ColumnSpan="2" x:Name="TwitchControlKeyRow" Margin="0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*"/>
+                                                <ColumnDefinition Width="3*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchControlKey}"/>
+                                            <TextBox Grid.Column="1" x:Name="TwitchControlKey" IsReadOnly="True"/>
+                                        </Grid>
+                                        <TextBlock Grid.Row="7" Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchStatus}"/>
+                                        <Label Grid.Row="7" Grid.Column="1" x:Name="TwitchStatus" Style="{StaticResource StatusLabel}" d:Content="Connected"/>
+                                    </Grid>
+                                </Border>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label d:Content="Stream Key:" Content="{DynamicResource Str_TwitchStreamKey}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="TwitchStreamKey" Width="150" d:Text="3f9a2c7e18b4400e9f5d6a1c2b3e4f50" IsReadOnly="True" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                        <Button x:Name="GenerateStreamKey" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Connect" FontFamily="Segoe Print" FontWeight="Bold" Click="GenerateStreamKey_Click" Margin="5,0,0,0"/>
-                        <!-- Only shown once a key exists, because the button beside it has become
-                             Connect by then and rotating the key would otherwise be unreachable -
-                             the key box is read-only, so there is no way to clear it by hand. -->
-                        <Button x:Name="RegenerateStreamKey" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="New Key" FontFamily="Segoe Print" FontWeight="Bold" Click="RegenerateStreamKey_Click" Margin="5,0,0,0"/>
-                    </StackPanel>
+                                <Border Style="{StaticResource Section}" Margin="0,8,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource Str_TwitchPacksSection}" HorizontalAlignment="Center" FontSize="14"/>
+                                        <TextBlock Style="{StaticResource Hint}" Text="{DynamicResource Str_TwitchPacksHint}"/>
+                                        <WrapPanel Margin="0,2,0,4">
+                                            <Button x:Name="InstallEEexMod" Content="{DynamicResource Str_TwitchInstallMod}" Click="InstallEEexMod_Click"/>
+                                            <Label x:Name="EEexModStatusLabel" Style="{StaticResource StatusLabel}" Margin="6,0,0,0" d:Content="Installed"/>
+                                        </WrapPanel>
+                                        <TextBlock x:Name="EEexModResult" TextWrapping="Wrap" FontSize="11"/>
+                                        <ListBox x:Name="PackList" Height="108" FontSize="11" SelectionChanged="PackList_SelectionChanged">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap"/></DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
 
-                    <!-- Authorizes spawning creatures in-game - shown only in Debug Mode so it
-                         isn't casually visible/streamable (see updateControlKeyVisibility). -->
-                    <StackPanel x:Name="TwitchControlKeyRow" Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label d:Content="Control key:" Content="{DynamicResource Str_TwitchControlKey}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="TwitchControlKey" Width="180" d:Text="7c1e4b90fa2d4c8e8b6f3a9d0e1c2b4a" IsReadOnly="True" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label d:Content="Status:" Content="{DynamicResource Str_TwitchStatus}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <Label x:Name="TwitchStatus" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" d:Content="Connected"/>
-                    </StackPanel>
-
-                    <Label d:Content="Summon packs" Content="{DynamicResource Str_TwitchPacksSection}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-                    <TextBlock d:Text="Packs viewers can pick from on stream. The name is what they see; the level range decides when a pack is offered. Requires EEex plus M_BG2RDR.lua in the game's override folder." Text="{DynamicResource Str_TwitchPacksHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,0,0,6"/>
-
-                    <!-- Installs the game-side half of the bridge into the detected game's
-                         override folder. EEex itself is a separate mod and is not installed
-                         here - the status text beside the button says so. -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <Button x:Name="InstallEEexMod" d:Content="Install game files" Content="{DynamicResource Str_TwitchInstallMod}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="InstallEEexMod_Click"/>
-                        <Label x:Name="EEexModStatusLabel" Style="{StaticResource BoldSmall}" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0" d:Content="Installed"/>
-                    </StackPanel>
-                    <TextBlock x:Name="EEexModResult" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,0,0,6" d:Text="Copied 2 files into the game's override folder. Restart the game to load them."/>
-
-                    <ListBox x:Name="PackList" Height="140" BorderThickness="1" BorderBrush="#FF151313" Background="Transparent" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" SelectionChanged="PackList_SelectionChanged">
-                        <d:ListBox.ItemsSource>
-                            <x:Array Type="sys:String" xmlns:sys="clr-namespace:System;assembly=mscorlib">
-                                <sys:String>Gnoll Ambush (Lv 1-3, 50 tokens)</sys:String>
-                                <sys:String>Ogre Warband (Lv 4-7, 120 tokens)</sys:String>
-                                <sys:String>Vampire Trio (Lv 8-12, 300 tokens)</sys:String>
-                            </x:Array>
-                        </d:ListBox.ItemsSource>
-                    </ListBox>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Label d:Content="Name (shown to viewers):" Content="{DynamicResource Str_TwitchPackName}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="PackName" Width="170" MaxLength="24" d:Text="Gnoll Ambush" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Label d:Content="Levels:" Content="{DynamicResource Str_TwitchPackLevels}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="PackLevelFrom" Width="40" Text="1" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                        <Label d:Content="to" Content="{DynamicResource Str_TwitchPackTo}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center"/>
-                        <TextBox x:Name="PackLevelTo" Width="40" Text="3" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Label d:Content="Summon cost:" Content="{DynamicResource Str_TwitchPackCost}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="PackCost" Width="70" Text="0" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                        <Label d:Content="tokens (0 = free)" Content="{DynamicResource Str_TwitchPackCostUnit}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Label d:Content="Tags:" Content="{DynamicResource Str_TwitchPackTags}" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Width="122"/>
-                        <TextBox x:Name="PackTags" Width="170" MaxLength="80" d:Text="undead; easy" BorderThickness="1" BorderBrush="#FF151313" VerticalContentAlignment="Center" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent" Height="25"/>
-                    </StackPanel>
-                    <TextBlock d:Text="Separated by &quot;;&quot;. A Channel Points reward can draw only from packs carrying the tags it names." Text="{DynamicResource Str_TwitchPackTagsHint}" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="122,2,0,0"/>
-
-                    <Label d:Content="Creatures (one &quot;RESREF amount&quot; per line):" Content="{DynamicResource Str_TwitchPackCreatures}" Style="{StaticResource BoldSmall}" Margin="0,6,0,0"/>
-                    <TextBox x:Name="PackEntries" Height="60" AcceptsReturn="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" d:Text="GNOLL01&#x0a;GNOLL02&#x0a;GNOLL03" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Background="Transparent"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Button x:Name="PackSave" IsEnabled="False" d:Content="Save pack" Content="{DynamicResource Str_TwitchPackSave}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="PackSave_Click"/>
-                        <Button x:Name="PackDelete" IsEnabled="False" d:Content="Delete" Content="{DynamicResource Str_TwitchPackDelete}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="PackDelete_Click" Margin="5,0,0,0"/>
-                        <Button x:Name="PackNew" d:Content="New" Content="{DynamicResource Str_TwitchPackNew}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="PackNew_Click" Margin="5,0,0,0"/>
-                        <Button x:Name="TestSummon" IsEnabled="False" d:Content="Test summon" Content="{DynamicResource Str_TwitchSummonButton}" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Click="TestSummon_Click" Margin="5,0,0,0"/>
-                    </StackPanel>
-                    <TextBlock x:Name="SummonResult" TextWrapping="Wrap" FontFamily="Segoe Print" FontWeight="Bold" FontSize="11" Margin="0,6,0,0" d:Text="Queued: Gnoll Ambush (Lv 1-3)"/>
-                    </StackPanel>
-
-                    <Button x:Name="SaveTwitch" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Save" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,20,0,0" HorizontalAlignment="Stretch"/>
-                </StackPanel>
+                                        <Grid Margin="0,6,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*"/>
+                                                <ColumnDefinition Width="3*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchPackName}"/>
+                                            <TextBox Grid.Column="1" x:Name="PackName" MaxLength="24"/>
+                                            <TextBlock Grid.Row="1" Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchPackLevels}"/>
+                                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,4,0,0">
+                                                <TextBox x:Name="PackLevelFrom" Width="40" Text="1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                <TextBlock Style="{StaticResource Caption}" Margin="5,0" Text="{DynamicResource Str_TwitchPackTo}"/>
+                                                <TextBox x:Name="PackLevelTo" Width="40" Text="3" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Row="2" Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchPackCost}"/>
+                                            <DockPanel Grid.Row="2" Grid.Column="1" Margin="0,4,0,0">
+                                                <TextBox x:Name="PackCost" Width="54" PreviewTextInput="TextBox_PreviewTextInput" Text="0"/>
+                                                <TextBlock Style="{StaticResource Caption}" Margin="5,0,0,0" Text="{DynamicResource Str_TwitchPackCostUnit}"/>
+                                            </DockPanel>
+                                            <TextBlock Grid.Row="3" Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchPackTags}"/>
+                                            <TextBox Grid.Row="3" Grid.Column="1" x:Name="PackTags" MaxLength="80" Margin="0,4,0,0"/>
+                                        </Grid>
+                                        <TextBlock Style="{StaticResource Hint}" Text="{DynamicResource Str_TwitchPackTagsHint}"/>
+                                        <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource Str_TwitchPackCreatures}"/>
+                                        <TextBox x:Name="PackEntries" Height="64" AcceptsReturn="True" TextWrapping="NoWrap"
+                                                 VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"/>
+                                        <WrapPanel Margin="0,2,0,0">
+                                            <Button x:Name="PackSave" IsEnabled="False" Content="{DynamicResource Str_TwitchPackSave}" Click="PackSave_Click" Margin="0,3,4,0"/>
+                                            <Button x:Name="PackDelete" IsEnabled="False" Content="{DynamicResource Str_TwitchPackDelete}" Click="PackDelete_Click" Margin="0,3,4,0"/>
+                                            <Button x:Name="PackNew" Content="{DynamicResource Str_TwitchPackNew}" Click="PackNew_Click" Margin="0,3,4,0"/>
+                                            <Button x:Name="TestSummon" IsEnabled="False" Content="{DynamicResource Str_TwitchSummonButton}" Click="TestSummon_Click" Margin="0,3,0,0"/>
+                                        </WrapPanel>
+                                        <TextBlock x:Name="SummonResult" TextWrapping="Wrap" FontSize="11"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <Button Grid.Row="1" x:Name="SaveTwitch" Content="{DynamicResource Str_Save}" Click="Save_Click" Margin="0,6,0,0"/>
+                </Grid>
             </TabItem>
-            <TabItem d:Header="Diagnostics" Header="{DynamicResource Str_TabDiagnostics}">
+            <TabItem Tag="{StaticResource DiagnosticsGlyph}" d:Header="Diagnostics" Header="{DynamicResource Str_TabDiagnostics}">
                 <!-- Read-only readout of CycleProfiler, refreshed on a DispatcherTimer while
                      this control is visible (same pattern as the Twitch status label). Values
                      are set from code rather than bound, so there is nothing for the profiler

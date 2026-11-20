@@ -49,16 +49,10 @@ namespace BGOverlay
             // Load English as the baseline first and let the selected locale override on top
             // of it, so a translation file that's missing a key (e.g. one added after the file
             // was last updated) falls back to English for that key instead of showing nothing.
-            var result = loadFile(DefaultLocale) ?? new Dictionary<string, string>();
-            if (!string.Equals(locale, DefaultLocale, StringComparison.OrdinalIgnoreCase))
-            {
-                var overrides = loadFile(locale);
-                if (overrides != null)
-                {
-                    foreach (var entry in overrides)
-                        result[entry.Key] = entry.Value;
-                }
-            }
+            var result = new Dictionary<string, string>();
+            loadLocale(DefaultLocale, result);
+            if (!string.IsNullOrEmpty(locale) && !string.Equals(locale, DefaultLocale, StringComparison.OrdinalIgnoreCase))
+                loadLocale(locale, result);
             Strings = result;
 
             Logger.Debug($"RadarLocalization.Init: loaded {Strings.Count} string(s)");
@@ -88,57 +82,44 @@ namespace BGOverlay
             return AppDomain.CurrentDomain.BaseDirectory;
         }
 
-        private static Dictionary<string, string> loadFile(string locale)
+        private static void loadLocale(string locale, Dictionary<string, string> result)
         {
-            if (string.IsNullOrEmpty(locale))
-                return null;
-
-            var localesDir = Path.Combine(getAppDirectory(), "Locales");
-            if (!Directory.Exists(localesDir))
+            var assembly = typeof(RadarLocalization).Assembly;
+            var resource = assembly.GetManifestResourceNames().FirstOrDefault(name =>
+                string.Equals(name, $"BGOverlay.Locales.{locale}.txt", StringComparison.OrdinalIgnoreCase));
+            if (resource != null)
             {
-                // Logger.Error() is a no-op without an exception (see Logger.cs) - use Info so
-                // this actually reaches radar.log.
-                Logger.Info($"RadarLocalization: Locales folder not found at '{localesDir}'");
-                return null;
+                using (var reader = new StreamReader(assembly.GetManifestResourceStream(resource)))
+                    readStrings(reader, result);
             }
 
-            // Configuration.Locale is normalized to lowercase (Configuration.getProperty lowercases
-            // everything it reads from config.cfg), while locale files are named to match the
-            // game's own lang/ folder casing (e.g. "en_US.txt", "ru_RU.txt"). Match case-insensitively
-            // by hand instead of relying on the filesystem to do it - that's not guaranteed on every
-            // setup (e.g. a case-sensitive NTFS directory, or however a single-file publish's
-            // self-extract cache behaves).
-            var candidates = Directory.EnumerateFiles(localesDir, "*.txt").ToList();
-            var path = candidates.FirstOrDefault(f => string.Equals(Path.GetFileNameWithoutExtension(f), locale, StringComparison.OrdinalIgnoreCase));
-            if (path == null)
-            {
-                Logger.Info($"RadarLocalization: no locale file matching '{locale}' in '{localesDir}'. Found: {string.Join(", ", candidates.Select(Path.GetFileName))}");
-                return null;
-            }
-
+            // Loose translations override the built-in defaults, including individual edits.
+            var folder = Path.Combine(getAppDirectory(), "Locales");
             try
             {
-                var result = new Dictionary<string, string>();
-                foreach (var line in File.ReadAllLines(path))
-                {
-                    if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#"))
-                        continue;
-
-                    var separatorIndex = line.IndexOf('=');
-                    if (separatorIndex <= 0)
-                        continue;
-
-                    var key = line.Substring(0, separatorIndex).Trim();
-                    var value = line.Substring(separatorIndex + 1).Trim();
-                    result[key] = value;
-                }
-                Logger.Debug($"RadarLocalization: loaded {result.Count} string(s) from '{path}'");
-                return result;
+                if (!Directory.Exists(folder)) return;
+                var file = Directory.EnumerateFiles(folder, "*.txt").FirstOrDefault(path =>
+                    string.Equals(Path.GetFileNameWithoutExtension(path), locale, StringComparison.OrdinalIgnoreCase));
+                if (file == null) return;
+                using (var reader = File.OpenText(file))
+                    readStrings(reader, result);
             }
             catch (Exception ex)
             {
-                Logger.Error($"Could not load locale file: {path}", ex);
-                return null;
+                Logger.Error($"Could not read the external {locale} translation from '{folder}'", ex);
+            }
+        }
+
+        private static void readStrings(TextReader reader, Dictionary<string, string> result)
+        {
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#"))
+                    continue;
+                int separator = line.IndexOf('=');
+                if (separator > 0)
+                    result[line.Substring(0, separator).Trim()] = line.Substring(separator + 1).Trim();
             }
         }
     }

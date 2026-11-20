@@ -73,4 +73,11 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup Condition="Exists('..\bin\NativeRadar\BG2Radar.asi')">
+    <Content Include="..\bin\NativeRadar\BG2Radar.asi;..\bin\NativeRadar\*.txt;..\bin\NativeRadar\*.md;..\bin\NativeRadar\winmm*.dll">
+      <Link>GameFiles\%(Filename)%(Extension)</Link>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
 </Project>

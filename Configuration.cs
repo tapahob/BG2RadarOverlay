@@ -58,6 +58,8 @@ namespace BGOverlay
         public static bool HideAllies { get; set; }
         public static IntPtr HWndPtr { get; set; }
         public static bool BigBuffIcons { get; set; }
+        public static bool AnimateEnemyListNumbers { get; set; } = true;
+        public static bool AnimateCharacterCardNumbers { get; set; } = true;
         public static string Font1 { get; set; }
         public static string Font2 { get; set; }
         public static string Font3 { get; set; }
@@ -107,6 +109,8 @@ namespace BGOverlay
             RefreshTimeMS       = 100;
             Locale              = "en_US";            
             BigBuffIcons        = true;
+            AnimateEnemyListNumbers = true;
+            AnimateCharacterCardNumbers = true;
             Font1               = "Segoe Print";
             Font2               = "Ink Free";
             Font3               = "Bahnschrift Condensed";
@@ -159,6 +163,8 @@ namespace BGOverlay
                 $"HideNeutrals={HideNeutrals}",
                 $"HideAllies={HideAllies}",
                 $"BigBuffIcons={BigBuffIcons}",
+                $"AnimateEnemyListNumbers={AnimateEnemyListNumbers}",
+                $"AnimateCharacterCardNumbers={AnimateCharacterCardNumbers}",
                 $"Font1={Font1}",
                 $"Font2={Font2}",
                 $"Font3={Font3}",
@@ -237,6 +243,8 @@ namespace BGOverlay
                 HideNeutrals        = getProperty("HideNeutrals", "false").Equals("true");
                 HideAllies          = getProperty("HideAllies", "false").Equals("true");
                 BigBuffIcons        = getProperty("BigBuffIcons", "false").Equals("true");
+                AnimateEnemyListNumbers = getProperty(nameof(AnimateEnemyListNumbers), "true").Equals("true");
+                AnimateCharacterCardNumbers = getProperty(nameof(AnimateCharacterCardNumbers), "true").Equals("true");
                 Font1               = getProperty("Font1", "Segoe Print");
                 Font2               = getProperty("Font2", "Ink Free");
                 Font3               = getProperty("Font3", "Bahnschrift Condensed");
@@ -278,6 +286,10 @@ namespace BGOverlay
 
         public static void ForceBorderless()
         {
+            // With the in-game module the engine owns its window, including exclusive fullscreen.
+            if (GameFolder != null && (File.Exists(Path.Combine(GameFolder, "BG2Radar.asi"))
+                || File.Exists(Path.Combine(GameFolder, "scripts", "BG2Radar.asi"))))
+                return;
             Logger.Debug("Making the window borderless ...");
             try
             {

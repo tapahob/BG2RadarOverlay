@@ -15,6 +15,13 @@ namespace BGOverlay
         public CREReader Reader { get; set; }
 
         private IntPtr entityIdPtr;
+        // The slot can be recycled between the list refresh and a hover frame.
+        public IntPtr GetCurrentSpriteAddress()
+        {
+            var sprite = WinAPIBindings.ReadPointer(entityIdPtr);
+            return sprite != IntPtr.Zero && WinAPIBindings.ReadInt32(sprite + OffId) == Id
+                && WinAPIBindings.ReadByte(sprite + OffType) == 49 ? sprite : IntPtr.Zero;
+        }
         private ResourceManager resourceManager;
 
         public int tag { get; set; }

@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Animation;
+using BGOverlay;
 
 namespace WPFFrontend
 {
@@ -50,13 +51,20 @@ namespace WPFFrontend
             var oldValue = (int)e.OldValue;
             var newValue = (int)e.NewValue;
 
+            if (!Configuration.AnimateCharacterCardNumbers)
+            {
+                self.BeginAnimation(DisplayedValueProperty, null);
+                self.SetValue(DisplayedValueProperty, newValue);
+                return;
+            }
+
             if (newValue == oldValue)
                 return;
 
             // Unlike HpRollText (which only rolls down and jumps straight to an increase, since
             // healing shouldn't count up slowly), stat labels here roll both ways - a buff
             // landing counts up, one wearing off counts down.
-            var animation = new Int32Animation(oldValue, newValue, TimeSpan.FromSeconds(1))
+            var animation = new Int32Animation((int)self.GetValue(DisplayedValueProperty), newValue, TimeSpan.FromSeconds(1))
             {
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
             };

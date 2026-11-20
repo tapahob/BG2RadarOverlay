@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace WPFFrontend
@@ -18,6 +18,7 @@ namespace WPFFrontend
     public class EnemyListRow : INotifyPropertyChanged
     {
         public int Tag { get; }
+        internal BGOverlay.BGEntity Entity { get; set; }
 
         private string _name;
         public string Name
@@ -39,6 +40,18 @@ namespace WPFFrontend
             {
                 if (_currentHP == value) return;
                 _currentHP = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _isGameHovered;
+        public bool IsGameHovered
+        {
+            get => _isGameHovered;
+            set
+            {
+                if (_isGameHovered == value) return;
+                _isGameHovered = value;
                 OnPropertyChanged();
             }
         }

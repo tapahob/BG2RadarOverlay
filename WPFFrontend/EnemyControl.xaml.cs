@@ -38,10 +38,8 @@ namespace WPFFrontend
                 this.updateView(bgEntity);
 
                 double left = 0;
-                var height  = System.Windows.SystemParameters.PrimaryScreenHeight;
-                var width   = System.Windows.SystemParameters.PrimaryScreenWidth;
+                var width   = this.mainWindow.CardLayoutWidth;
                 var x       = width * (bgEntity.X - bgEntity.MousePosX1) / bgEntity.ViewportWidth;
-                var y       = height * (bgEntity.Y - bgEntity.MousePosY1) / bgEntity.ViewportHeight;
 
                 if (x > (width / 2))
                 {
@@ -51,7 +49,6 @@ namespace WPFFrontend
                 {
                     left = x + 50;
                 }
-                //Canvas.SetTop(this, y / 2);
                 Canvas.SetLeft(this, left);
                 this.MouseRightButtonUp += EnemyControl_MouseRightButtonDown;
                 WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);

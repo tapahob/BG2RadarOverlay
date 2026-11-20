@@ -28,6 +28,8 @@ server between the overlay and viewers' browsers — you can use someone else's,
 Just extract the archive and start the "BG Radar Overlay.exe".
 The folder does not matter anymore, the game would be detected automatically once its launched.
 
+For fullscreen BG2EE on Windows, the optional native module draws the radar inside the game. See the [in-game renderer setup](NativeRadar/README.md).
+
 ## Configuration
 if you are to right-click the Radar at the top left corner it would show a proper **Options window**
 There is also a config file "config.cfg". The gamefolder should be detected automatically, if it does not - specify the path manualy.

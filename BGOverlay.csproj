@@ -114,6 +114,10 @@
          button works from a single-file publish, where there is no folder next to the .exe to
          read them out of. LogicalName is spelled out so the lookup in EEexModInstaller does not
          depend on how MSBuild would otherwise derive a name from the folder. -->
+    <EmbeddedResource Include="WPFFrontend\Locales\*.txt">
+      <LogicalName>BGOverlay.Locales.%(Filename)%(Extension)</LogicalName>
+      <WithCulture>false</WithCulture>
+    </EmbeddedResource>
     <EmbeddedResource Include="EEexMod\M_BG2RDR.lua">
       <LogicalName>BGOverlay.EEexMod.M_BG2RDR.lua</LogicalName>
     </EmbeddedResource>

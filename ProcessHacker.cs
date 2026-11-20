@@ -14,6 +14,10 @@ namespace BGOverlay
 
     public class ProcessHacker
     {
+        private readonly Process launchGame;
+        public ProcessHacker() { }
+        public ProcessHacker(Process game) { launchGame = game; }
+
         public Process Proc;
         private IntPtr hProc;        
         private IntPtr moduleBase;
@@ -105,6 +109,7 @@ namespace BGOverlay
             seenIndexes.Clear();
             if (Proc.HasExited)
             {
+                if (launchGame != null) return; // The companion exits with its launching game.
                 NearestEnemies.Clear();
                 TextEntries.Clear();
                 entityPool.Clear();
@@ -326,29 +331,25 @@ namespace BGOverlay
             Logger.Init();
             Logger.Info("Waiting for game process ...");
             
-            while (Process.GetProcessesByName("Baldur").Length == 0)
+            this.Proc = launchGame;
+            while (this.Proc == null)
             {
-                if (Process.GetProcessesByName("icewind").Length > 0)
-                {
-                    gameName = "icewind";
-                    break;
-                }
-                    
-                Thread.Sleep(3000);
+                this.Proc = Process.GetProcessesByName("Baldur").FirstOrDefault()
+                    ?? Process.GetProcessesByName("icewind").FirstOrDefault();
+                if (this.Proc == null) Thread.Sleep(3000);
             }
-
-            this.Proc = Process.GetProcessesByName(gameName)[0];
+            gameName = Proc.ProcessName.ToLowerInvariant();
             Logger.Info("Game process found!");
 
             ProcessFound?.Invoke(Proc.ProcessName, Proc.Id);
 
-            Configuration.Init(Process.GetProcessesByName(gameName)[0]);
+            Configuration.Init(Proc);
             this.TextEntries     = new ObservableCollection<string>();
             this.ResourceManager = new ResourceManager();
             ResourceManager.Init();
             makeBorderless(Proc.MainWindowHandle);
             this.hProc      = WinAPIBindings.OpenProcess(WinAPIBindings.ProcessAccessFlags.All, false, Proc.Id);
-            this.moduleBase = WinAPIBindings.GetModuleBaseAddress(Proc, $"{gameName}.exe");
+            this.moduleBase = Proc.MainModule.BaseAddress;
             this.entityList = new List<BGEntity>();
             Configuration.hProc = hProc;
 

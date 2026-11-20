@@ -28,9 +28,10 @@ namespace WPFFrontend
 
         private MouseHook _mouseHook;
         private bool _toShowEnemyList = true;
+        private bool _listRequestedVisible;
         private System.Drawing.Rectangle bounds;
         private readonly object _stocksLock = new();
-        private readonly ProcessHacker _processHacker = new();
+        private readonly ProcessHacker _processHacker = new(((App)Application.Current).LaunchGame);
         private readonly ConcurrentDictionary<int, EnemyControl> _currentEnemyControls = new();
         // Not readonly - created only once _processHacker.Init() has finished (it needs
         // Configuration.Font1/2/3 etc., set during that call), from a background-thread
@@ -57,6 +58,8 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
+            Activated += (_, _) => { if (_insideGame) Opacity = 1; };
+            Deactivated += (_, _) => { if (_insideGame) Opacity = 0; };
 
             // Logger.Init() normally runs first thing inside _processHacker.Init(), but that now
             // only happens later on the background thread (see below) - Logger.Debug/Error would
@@ -82,6 +85,7 @@ namespace WPFFrontend
 
             this.Closed += (o, e) =>
             {
+                stopGameFrames();
                 _mouseHook?.Uninstall();
                 Logger.flush();
             };
@@ -122,7 +126,7 @@ namespace WPFFrontend
 
                 Logger.Debug("Main loop started");
 
-                while (true)
+                while (((App)Application.Current)?.LaunchGame?.HasExited != true)
                 {
                     try
                     {
@@ -426,6 +430,8 @@ namespace WPFFrontend
 
             Logger.Debug("Initializing mouse hook");
 
+            Dispatcher.Invoke(() => startGameFrames(pid, _processHacker.Proc.MainWindowHandle));
+            _mouseHook.GameButtonFilter = handleGameButton;
             _mouseHook.AddHandler(MouseMessageCode.RightButtonDown, MouseHook_MouseEvent);
             _mouseHook.InstallAsync().GetAwaiter().GetResult();
             
@@ -434,7 +440,7 @@ namespace WPFFrontend
 
         private void ProcessHacker_ProcessDestroyed(string processName, int pid)
         {
-            EnemyTextEntries.Clear();
+            Dispatcher.Invoke(() => { stopGameFrames(); EnemyTextEntries.Clear(); });
             _mouseHook.Uninstall();
         }
 
@@ -537,7 +543,8 @@ namespace WPFFrontend
                         var row = EnemyTextEntries.FirstOrDefault(r => r.Tag == entity.tag);
                         if (row == null)
                         {
-                            EnemyTextEntries.Add(new EnemyListRow(entity.tag, entity.Name2, entity.CurrentHP, isPartyMember));
+                            row = new EnemyListRow(entity.tag, entity.Name2, entity.CurrentHP, isPartyMember);
+                            EnemyTextEntries.Add(row);
                         }
                         else
                         {
@@ -547,6 +554,7 @@ namespace WPFFrontend
                             row.CurrentHP = entity.CurrentHP;
                             row.IsPartyMember = isPartyMember;
                         }
+                        row.Entity = entity;
                     }
 
                     // Remove rows for enemies that left the nearest-enemies set (died, moved out
@@ -597,10 +605,10 @@ namespace WPFFrontend
         private void updateEnemyListVisibility()
         {
             var shouldShow = _toShowEnemyList && EnemyTextEntries.Count > 0;
-            var isCurrentlyShown = this.StackPanel.Visibility == Visibility.Visible;
-            if (shouldShow == isCurrentlyShown)
+            if (shouldShow == _listRequestedVisible)
                 return;
 
+            _listRequestedVisible = shouldShow;
             if (shouldShow)
                 showEnemyList();
             else
@@ -612,12 +620,12 @@ namespace WPFFrontend
             ThicknessAnimation anim = new ThicknessAnimation();
             anim.From = this.StackPanel.Margin;
             var newMargin = this.StackPanel.Margin;
-            newMargin.Top = -this.StackPanel.ActualHeight;
+            newMargin.Top = -this.ListView.ActualHeight;
             anim.To = newMargin;
             anim.EasingFunction = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
             anim.Duration = TimeSpan.FromSeconds(.45);
             anim.FillBehavior = FillBehavior.HoldEnd;
-            anim.Completed += (o, e) => this.StackPanel.Visibility = Visibility.Collapsed;
+            anim.Completed += (o, e) => { if (!_listRequestedVisible) this.StackPanel.Visibility = Visibility.Collapsed; };
             this.StackPanel.BeginAnimation(StackPanel.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
         }
 
@@ -625,7 +633,6 @@ namespace WPFFrontend
         {
             ThicknessAnimation anim = new ThicknessAnimation();
             var newMargin1 = this.StackPanel.Margin;
-            newMargin1.Top /= 2;
             anim.From = newMargin1;
             var newMargin = this.StackPanel.Margin;
             newMargin.Top = 0;
@@ -697,6 +704,7 @@ namespace WPFFrontend
 
         private void MouseHook_MouseEvent(object sender, MouseMessageEventArgs e)
         {
+            if (isGameOptionsInput(e.X, e.Y)) return;
             
             this.Dispatcher.BeginInvoke(new Action(() =>
             {                
@@ -786,6 +794,11 @@ namespace WPFFrontend
                 if (_options == null)
                     return;
 
+                if (_insideGame)
+                {
+                    showGameOptions();
+                    return;
+                }
                 _options.Init();
                 _options.Show();
             }

@@ -39,9 +39,9 @@ namespace WPFFrontend
             var oldValue = (int)e.OldValue;
             var newValue = (int)e.NewValue;
 
-            if (newValue < oldValue)
+            if (Configuration.AnimateEnemyListNumbers && newValue < oldValue)
             {
-                var animation = new Int32Animation(oldValue, newValue, TimeSpan.FromSeconds(1))
+                var animation = new Int32Animation((int)self.GetValue(DisplayedHPProperty), newValue, TimeSpan.FromSeconds(1))
                 {
                     EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
                 };

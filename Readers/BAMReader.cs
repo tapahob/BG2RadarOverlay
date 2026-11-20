@@ -1,6 +1,7 @@
 ﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -264,19 +265,24 @@ namespace BGOverlay.Readers
                             xdata[cnt] = data[(y * frameEntries[i].Width) + x].Blue;
                             xdata[cnt + 1] = data[(y * frameEntries[i].Width) + x].Green;
                             xdata[cnt + 2] = data[(y * frameEntries[i].Width) + x].Red;
-                            xdata[cnt + 3] = alpha == (byte)0 ? (byte)255 : alpha;
+                            bool transparentCursorPixel = FileName == "CURSORS.BAM" && pixels[cnt / 4] == rleColourIndex;
+                            xdata[cnt + 3] = transparentCursorPixel ? (byte)0 : alpha == 0 ? (byte)255 : alpha;
                             cnt += 4;
                         }
                     }
 
-                    var img = new Bitmap(frameEntries[i].Width, frameEntries[i].Height, frameEntries[i].Width * 4, PixelFormat.Format32bppArgb, Marshal.UnsafeAddrOfPinnedArrayElement(xdata, 0));
-                    img.MakeTransparent();
+                    var img = new Bitmap(frameEntries[i].Width, frameEntries[i].Height, PixelFormat.Format32bppArgb);
+                    var bits = img.LockBits(new Rectangle(0, 0, img.Width, img.Height), ImageLockMode.WriteOnly, img.PixelFormat);
+                    try { Marshal.Copy(xdata, 0, bits.Scan0, xdata.Length); }
+                    finally { img.UnlockBits(bits); }
+                    if (FileName != "CURSORS.BAM") img.MakeTransparent();
                     frames.Add(img);
                 }
 
 
-                foreach (var cycle in cycles)
+                for (int cycleIndex = 0; cycleIndex < cycles.Count; cycleIndex++)
                 {
+                    var cycle = cycles[cycleIndex];
                     for (int frameIndexCount = 0; frameIndexCount < cycle.FrameIndexCount; frameIndexCount++)
                     {
                         var frameLookupIndex = cycle.FrameIndexOffset + frameIndexCount;
@@ -284,9 +290,16 @@ namespace BGOverlay.Readers
                         var frame = frames[frameIndex];
                         var bitmap = new Bitmap(frame);
                         result.Add(bitmap);
+                        if (FileName == "CURSORS.BAM" && frameIndexCount == 0 &&
+                            (cycleIndex == 0 || cycleIndex == 1 || cycleIndex == 44 || cycleIndex == 45))
+                        {
+                            var entry = frameEntries[frameIndex];
+                            CursorFrames[cycleIndex] = (bitmap, new Point(entry.XCentre, entry.YCentre));
+                        }
                     }
                 }
 
+                foreach (var frame in frames) frame.Dispose();
                 return result;
             }
 
@@ -318,7 +331,10 @@ namespace BGOverlay.Readers
 
         private void loadImage(int originalOffset, BinaryReader reader)
         {
-            this.Image = handleBam(originalOffset, reader)[0];
+            var images = handleBam(originalOffset, reader);
+            this.Image = images[0];
+            foreach (var image in images.Skip(1))
+                if (!CursorFrames.Values.Any(cursor => ReferenceEquals(cursor.Image, image))) image?.Dispose();
         }
 
         private void loadResources(int originalOffset, BinaryReader reader)
@@ -353,6 +369,7 @@ namespace BGOverlay.Readers
         public int OffsetFramePalette { get; private set; }
         public int OffsetFrameFrameLookupTable { get; private set; }
         public uint[] BAMPalette { get; private set; }
+        public Dictionary<int, (Bitmap Image, Point Hotspot)> CursorFrames { get; } = new Dictionary<int, (Bitmap, Point)>();
         public Bitmap Image { get; private set; }
         public string FileName { get; }
     }

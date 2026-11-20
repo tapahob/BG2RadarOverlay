@@ -23,6 +23,16 @@ namespace WPFFrontend
     public partial class OptionsControl : UserControl
     {
         private bool hidden = true;
+        internal event Action WindowCloseRequested;
+
+        internal void SetWindowHosted(bool open)
+        {
+            BeginAnimation(MarginProperty, null);
+            Margin = new Thickness();
+            Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+            hidden = !open;
+            if (open) updateEEexModStatus();
+        }
 
         /// <summary>
         /// Raised right after the Debug Mode checkbox is toggled (Configuration.DebugMode is
@@ -51,6 +61,8 @@ namespace WPFFrontend
             this.EnableBorderlessMode.Click += updateConfig;
             this.RefreshRate.TextChanged    += updateConfig;
             this.BigBuffIcons.Click         += updateConfig;
+            this.AnimateEnemyListNumbers.Click += updateConfig;
+            this.AnimateCharacterCardNumbers.Click += updateConfig;
             this.UseShiftClick.Click        += updateConfig;
             this.DebugMode.Click            += updateConfig;
             this.DebugMode.Click            += (s, e) => DebugModeChanged?.Invoke();
@@ -365,6 +377,11 @@ namespace WPFFrontend
         {
             if (this.hidden || e != null && e.ChangedButton != MouseButton.Right)
                 return;
+            if (WindowCloseRequested != null)
+            {
+                WindowCloseRequested();
+                return;
+            }
             
             ThicknessAnimation anim = new ThicknessAnimation();
             anim.From               = this.Margin;
@@ -437,6 +454,8 @@ namespace WPFFrontend
             if (int.TryParse(this.RefreshRate.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out refreshMs))
                 Configuration.RefreshTimeMS   = refreshMs;
             Configuration.BigBuffIcons        = (bool)this.BigBuffIcons.IsChecked;
+            Configuration.AnimateEnemyListNumbers = this.AnimateEnemyListNumbers.IsChecked == true;
+            Configuration.AnimateCharacterCardNumbers = this.AnimateCharacterCardNumbers.IsChecked == true;
             Configuration.UseShiftClick       = (bool)this.UseShiftClick.IsChecked;
             Configuration.DebugMode           = (bool)this.DebugMode.IsChecked;
             Configuration.Locale              = this.Locale.SelectedValue.ToString();
@@ -788,6 +807,8 @@ namespace WPFFrontend
                 this.EnableBorderlessMode.IsChecked = Configuration.Borderless;
                 this.RefreshRate.Text               = Configuration.RefreshTimeMS.ToString();
                 this.BigBuffIcons.IsChecked         = Configuration.BigBuffIcons;
+                this.AnimateEnemyListNumbers.IsChecked = Configuration.AnimateEnemyListNumbers;
+                this.AnimateCharacterCardNumbers.IsChecked = Configuration.AnimateCharacterCardNumbers;
                 this.UseShiftClick.IsChecked        = Configuration.UseShiftClick;
                 this.DebugMode.IsChecked            = Configuration.DebugMode;
                 this.TwitchIntegrationEnabled.IsChecked = Configuration.TwitchIntegrationEnabled;
@@ -845,6 +866,8 @@ namespace WPFFrontend
 
         private void Label_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            // Closing a child HWND on down would deliver the matching up to the game.
+            if (WindowCloseRequested != null && e?.ButtonState == MouseButtonState.Pressed) return;
             OptionsControl_MouseUp(null, null);
         }
 

@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:wpffrontend="clr-namespace:WPFFrontend"
         mc:Ignorable="d" AllowsTransparency="True" WindowStyle="None" WindowStartupLocation="Manual"
-        Title="BG Overlay" Topmost="True" Height="1080" Width="1920" ResizeMode="NoResize">
+        Title="BG Overlay" ShowActivated="False" Topmost="True" Height="1080" Width="1920" ResizeMode="NoResize">
     <Window.Background>
         <SolidColorBrush Opacity="0" Color="White"/>
     </Window.Background>
@@ -31,6 +31,8 @@
         </Style>
     </Window.Resources>
     <Canvas x:Name="MainCanvas">
+        <Image x:Name="DesktopActorOutline" IsHitTestVisible="False" Visibility="Collapsed"
+               Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
         <Image Visibility="Collapsed" x:Name="DebugPointer" Source="/icons/not_found.png" Height="10"/>
         <Grid x:Name="MainGrid" AllowDrop="True" Width="{Binding ActualWidth, ElementName=MainCanvas}" 
           Height="{Binding ActualHeight, ElementName=MainCanvas}">
@@ -68,10 +70,40 @@
                         PreviewMouseLeftButtonDown="EnemyList_PreviewMouseLeftButtonDown"
                         PreviewMouseMove="EnemyList_PreviewMouseMove"
                         PreviewMouseLeftButtonUp="EnemyList_PreviewMouseLeftButtonUp">
-                <ListView x:Name="ListView" Foreground="Black" BorderBrush="Black" BorderThickness="2" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" VerticalAlignment="Top" SelectionChanged="ListView_SelectionChanged">
+                <ListView x:Name="ListView" Foreground="Black" BorderBrush="Black" BorderThickness="2" Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" VerticalAlignment="Top" SelectionChanged="ListView_SelectionChanged">
                     <ListView.Background>
                         <ImageBrush Stretch="UniformToFill" ImageSource="/pexels-photo-235985.jpeg"/>
                     </ListView.Background>
+                    <ListView.Template>
+                        <ControlTemplate TargetType="ListView">
+                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                <ScrollViewer Focusable="False" CanContentScroll="True" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </Border>
+                        </ControlTemplate>
+                    </ListView.Template>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <EventSetter Event="MouseEnter" Handler="ActorRow_Enter"/>
+                            <EventSetter Event="MouseLeave" Handler="ActorRow_Leave"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListViewItem">
+                                        <Border x:Name="RowBackground" Background="Transparent">
+                                            <ContentPresenter HorizontalAlignment="Stretch"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="RowBackground" Property="Background" Value="#75FFE2A4"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid>
@@ -79,9 +111,24 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Style="{StaticResource EnemyList}" HorizontalAlignment="Left" Text="{Binding Name}"/>
-                                <wpffrontend:HpRollText Grid.Column="1" Style="{StaticResource EnemyList}" HorizontalAlignment="Right" Margin="4,0,0,0" HP="{Binding CurrentHP}"/>
+                                <Border x:Name="RowHighlight" Grid.ColumnSpan="2" Background="#75FFE2A4" Opacity="0" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="0" Style="{StaticResource EnemyList}" HorizontalAlignment="Left" Margin="5,2,0,2" Text="{Binding Name}"/>
+                                <wpffrontend:HpRollText Grid.Column="1" Style="{StaticResource EnemyList}" HorizontalAlignment="Right" Margin="4,2,5,2" HP="{Binding CurrentHP}"/>
                             </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsGameHovered}" Value="True">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard><Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="RowHighlight" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.12"/>
+                                        </Storyboard></BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                    <DataTrigger.ExitActions>
+                                        <BeginStoryboard><Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="RowHighlight" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12"/>
+                                        </Storyboard></BeginStoryboard>
+                                    </DataTrigger.ExitActions>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
