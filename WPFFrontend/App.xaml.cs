@@ -8,18 +8,25 @@ namespace WPFFrontend
 {
     public partial class App : Application
     {
-        private Mutex _instance;
         internal Process LaunchGame { get; private set; }
+
+        internal static class EntryPoint
+        {
+            [STAThread]
+            public static void Main()
+            {
+                // The native launcher checks this same mutex before starting the overlay.
+                using var instance = new Mutex(false, @"Local\BG2Radar.Companion", out bool first);
+                if (!first) return;
+
+                var app = new App();
+                app.InitializeComponent();
+                app.Run();
+            }
+        }
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            // Atomic even when Steam and a manual radar launch happen together.
-            _instance = new Mutex(false, @"Local\BG2Radar.Companion", out bool first);
-            if (!first)
-            {
-                Shutdown();
-                return;
-            }
             if (e.Args.Length == 2 && e.Args[0] == "--game-pid")
             {
                 if (!int.TryParse(e.Args[1], out int pid) || !watchGame(pid))
@@ -52,7 +59,6 @@ namespace WPFFrontend
         protected override void OnExit(ExitEventArgs e)
         {
             LaunchGame?.Dispose();
-            _instance?.Dispose();
             base.OnExit(e);
         }
     }
