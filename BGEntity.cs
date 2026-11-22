@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using WinApiBindings;
 using static BGOverlay.CREReader;
 
@@ -40,8 +41,19 @@ namespace BGOverlay
             return (name, resource?.CastingIcon);
         }
 
-        private static string DisplayName(string value) =>
-            string.IsNullOrWhiteSpace(value) || value == "-1" || value == "<NO IDEA>" ? null : value;
+        private static readonly Regex ColorTagRegex = new Regex(@"\^0x[0-9a-fA-F]{8}|\^-", RegexOptions.Compiled);
+
+        internal static string StripColorTags(string value)
+        {
+            if (string.IsNullOrEmpty(value) || value.IndexOf('^') < 0) return value;
+            return ColorTagRegex.Replace(value, string.Empty);
+        }
+
+        private static string DisplayName(string value)
+        {
+            var stripped = StripColorTags(value);
+            return string.IsNullOrWhiteSpace(stripped) || stripped == "-1" || stripped == "<NO IDEA>" ? null : stripped;
+        }
 
         public int tag { get; set; }
         public List<CGameEffect> TimedEffects { get; private set; }
@@ -610,7 +622,7 @@ namespace BGOverlay
                 this.MousePosY1            = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
                 this.ViewportHeight        = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
                 this.ViewportWidth         = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
-                this.Name2                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(IntPtr.Add(entityBase, 0x3928), 0x0), 64);
+                this.Name2                 = StripColorTags(WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(IntPtr.Add(entityBase, 0x3928), 0x0), 64));
                 this.Name1                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(IntPtr.Add(entityBase, 0x30), 0x0), 8);
                 this.CurrentHP             = BitConverter.ToInt16(window, OffCurrentHP);
                 this.timedEffectsPointer   = IntPtr.Add(entityBase, 0x4A00);

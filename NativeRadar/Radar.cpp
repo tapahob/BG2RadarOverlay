@@ -1,4 +1,6 @@
 #include <windows.h>
+#include <shellapi.h>
+#include <objbase.h>
 #include <GL/gl.h>
 #include <d3d9.h>
 #include <wrl/client.h>
@@ -7,6 +9,7 @@
 #include <vector>
 #include <mutex>
 #include <cwchar>
+#include <cwctype>
 #include <cstring>
 #include <string>
 #include <new>
@@ -397,35 +400,146 @@ IDirect3D9* WINAPI createRadar9(UINT sdk) {
         attach((*reinterpret_cast<void***>(result))[16], createRadarDevice, createGameDevice);
     return result;
 }
+struct ShellLaunchArgs {
+    std::wstring exe;
+    std::wstring args;
+    std::wstring directory;
+};
+
+DWORD WINAPI launchElevatedCompanion(LPVOID param) {
+    std::unique_ptr<ShellLaunchArgs> launch(static_cast<ShellLaunchArgs*>(param));
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    SHELLEXECUTEINFOW sei{};
+    sei.cbSize = sizeof(sei);
+    sei.fMask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI;
+    sei.lpVerb = L"open";
+    sei.lpFile = launch->exe.c_str();
+    sei.lpParameters = launch->args.c_str();
+    sei.lpDirectory = launch->directory.c_str();
+    sei.nShow = SW_SHOWNOACTIVATE;
+    ShellExecuteExW(&sei);
+    if (SUCCEEDED(hr)) CoUninitialize();
+    return 0;
+}
+
+bool isRadarExecutableLeaf(const std::wstring& path) {
+    const size_t slash = path.find_last_of(L"\\/");
+    if (slash == std::wstring::npos) return false;
+    return _wcsicmp(path.c_str() + slash + 1, L"BG Radar Overlay.exe") == 0;
+}
+
+bool resolveExecutablePath(const std::wstring& candidate, std::wstring& exe, std::wstring& directory) {
+    DWORD attributes = GetFileAttributesW(candidate.c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY)) return false;
+
+    HANDLE file = CreateFileW(candidate.c_str(), FILE_READ_ATTRIBUTES,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                              nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return false;
+
+    DWORD length = GetFinalPathNameByHandleW(file, nullptr, 0, FILE_NAME_NORMALIZED);
+    std::wstring resolved(length, L'\0');
+    DWORD copied = length ? GetFinalPathNameByHandleW(file, resolved.data(), length, FILE_NAME_NORMALIZED) : 0;
+    CloseHandle(file);
+    if (!copied || copied >= length) return false;
+
+    resolved.resize(copied);
+    std::wstring normalized;
+    if (resolved.rfind(L"\\\\?\\UNC\\", 0) == 0) normalized = L"\\\\" + resolved.substr(8);
+    else if (resolved.rfind(L"\\\\?\\", 0) == 0) normalized = resolved.substr(4);
+    else normalized = std::move(resolved);
+
+    const size_t lastSlash = normalized.find_last_of(L'\\');
+    if (lastSlash == std::wstring::npos || _wcsicmp(normalized.c_str() + lastSlash + 1, L"BG Radar Overlay.exe") != 0)
+        return false;
+
+    exe = std::move(normalized);
+    directory = exe.substr(0, lastSlash);
+    return true;
+}
+
+bool readPathPointer(const std::wstring& pointerFile, std::wstring& target) {
+    DWORD attributes = GetFileAttributesW(pointerFile.c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY)) return false;
+
+    HANDLE file = CreateFileW(pointerFile.c_str(), GENERIC_READ,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                              nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return false;
+    if (GetFileType(file) != FILE_TYPE_DISK) {
+        CloseHandle(file);
+        return false;
+    }
+
+    LARGE_INTEGER size{};
+    if (!GetFileSizeEx(file, &size) || size.QuadPart <= 0 || size.QuadPart > 4096) {
+        CloseHandle(file);
+        return false;
+    }
+
+    std::string raw(static_cast<size_t>(size.QuadPart), '\0');
+    size_t offset = 0;
+    while (offset < raw.size()) {
+        DWORD chunk = 0;
+        if (!ReadFile(file, raw.data() + offset, static_cast<DWORD>(raw.size() - offset), &chunk, nullptr) || chunk == 0)
+            break;
+        offset += chunk;
+    }
+    CloseHandle(file);
+    if (offset != raw.size()) return false;
+
+    size_t start = 0;
+    if (raw.size() >= 3 && static_cast<unsigned char>(raw[0]) == 0xEF
+        && static_cast<unsigned char>(raw[1]) == 0xBB && static_cast<unsigned char>(raw[2]) == 0xBF) {
+        start = 3;
+    }
+    auto isAsciiSpace = [](char ch) { return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'; };
+    size_t end = raw.size();
+    while (start < end && isAsciiSpace(raw[start])) ++start;
+    while (end > start && isAsciiSpace(raw[end - 1])) --end;
+    if (start >= end) return false;
+
+    std::string trimmed = raw.substr(start, end - start);
+    if (trimmed.find('\0') != std::string::npos) return false;
+
+    int needed = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, trimmed.data(),
+                                     static_cast<int>(trimmed.size()), nullptr, 0);
+    if (needed <= 0) return false;
+    std::wstring wide(static_cast<size_t>(needed), L'\0');
+    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, trimmed.data(),
+                            static_cast<int>(trimmed.size()), wide.data(), needed) != needed) {
+        return false;
+    }
+    if (wide.find(L'\0') != std::wstring::npos) return false;
+
+    const bool drivePath = wide.size() >= 3 && iswalpha(wide[0]) && wide[1] == L':'
+        && (wide[2] == L'\\' || wide[2] == L'/');
+    const bool uncPath = wide.size() >= 5 && wide[0] == L'\\' && wide[1] == L'\\' && wide[2] != L'\\';
+    if ((!drivePath && !uncPath) || !isRadarExecutableLeaf(wide)) return false;
+
+    target = std::move(wide);
+    return true;
+}
+
 void startCompanion(const std::wstring& gameDirectory) {
     // Only start the companion installed with this game. Never search PATH or the current directory.
-    std::wstring directory = gameDirectory + L"\\BGRadar";
-    std::wstring exe = directory + L"\\BG Radar Overlay.exe";
-    if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        directory = gameDirectory + L"\\BG2Radar"; // Existing manual installs.
-        exe = directory + L"\\BG Radar Overlay.exe";
+    std::wstring exe;
+    std::wstring directory;
+    std::wstring pointerTarget;
+    if (!resolveExecutablePath(gameDirectory + L"\\BGRadar\\BG Radar Overlay.exe", exe, directory)
+        && !resolveExecutablePath(gameDirectory + L"\\BG2Radar\\BG Radar Overlay.exe", exe, directory)
+        && !(readPathPointer(gameDirectory + L"\\BGRadar\\radar-path.txt", pointerTarget)
+             && resolveExecutablePath(pointerTarget, exe, directory))) {
+        return;
     }
-    if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) return;
     HANDLE existing = OpenMutexW(SYNCHRONIZE, FALSE, L"Local\\BG2Radar.Companion");
     if (existing) {
         CloseHandle(existing);
         return;
     }
     // Start the resolved apphost beside its own runtime, GameFiles and translations.
-    HANDLE file = CreateFileW(exe.c_str(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                              nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (file == INVALID_HANDLE_VALUE) return;
-    DWORD length = GetFinalPathNameByHandleW(file, nullptr, 0, FILE_NAME_NORMALIZED);
-    std::wstring resolved(length, L'\0');
-    DWORD copied = length ? GetFinalPathNameByHandleW(file, resolved.data(), length, FILE_NAME_NORMALIZED) : 0;
-    CloseHandle(file);
-    if (!copied || copied >= length) return;
-    resolved.resize(copied);
-    if (resolved.rfind(L"\\\\?\\UNC\\", 0) == 0) exe = L"\\\\" + resolved.substr(8);
-    else if (resolved.rfind(L"\\\\?\\", 0) == 0) exe = resolved.substr(4);
-    else exe = resolved;
-    directory = exe.substr(0, exe.find_last_of(L'\\'));
-    std::wstring command = L"\"" + exe + L"\" --game-pid " + std::to_wstring(GetCurrentProcessId());
+    std::wstring arguments = L"--game-pid " + std::to_wstring(GetCurrentProcessId());
+    std::wstring command = L"\"" + exe + L"\" " + arguments;
     STARTUPINFOW startup{};
     startup.cb = sizeof(startup);
     startup.dwFlags = STARTF_USESHOWWINDOW;
@@ -435,6 +549,18 @@ void startCompanion(const std::wstring& gameDirectory) {
                        directory.c_str(), &startup, &child)) {
         CloseHandle(child.hThread);
         CloseHandle(child.hProcess);
+        return;
+    }
+    if (GetLastError() == ERROR_ELEVATION_REQUIRED) {
+        std::unique_ptr<ShellLaunchArgs> payload(new (std::nothrow) ShellLaunchArgs{
+            std::move(exe), std::move(arguments), std::move(directory)
+        });
+        if (!payload) return;
+        HANDLE worker = CreateThread(nullptr, 0, launchElevatedCompanion, payload.get(), 0, nullptr);
+        if (worker) {
+            payload.release();
+            CloseHandle(worker);
+        }
     }
 }
 
