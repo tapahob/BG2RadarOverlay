@@ -9,6 +9,7 @@
 #include <cwchar>
 #include <cstring>
 #include <string>
+#include <filesystem>
 #include <new>
 #include <atomic>
 #include <memory>
@@ -398,32 +399,45 @@ IDirect3D9* WINAPI createRadar9(UINT sdk) {
     return result;
 }
 void startCompanion(const std::wstring& gameDirectory) {
-    // Only start the companion installed with this game. Never search PATH or the current directory.
+    // The installer records the absolute apphost path even on volumes without symlinks.
     std::wstring directory = gameDirectory + L"\\BGRadar";
     std::wstring exe = directory + L"\\BG Radar Overlay.exe";
-    if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) {
+    const auto config = directory + L"\\companion.ini";
+    if (GetFileAttributesW(config.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        std::wstring value(32768, L'\0');
+        DWORD count = GetPrivateProfileStringW(L"Radar", L"Executable", L"", value.data(),
+                                               static_cast<DWORD>(value.size()), config.c_str());
+        if (!count || count >= value.size() - 1) return;
+        value.resize(count);
+        const std::filesystem::path path(value);
+        if (!path.is_absolute() || _wcsicmp(path.extension().c_str(), L".exe") != 0) return;
+        exe = value;
+    } else if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) {
         directory = gameDirectory + L"\\BG2Radar"; // Existing manual installs.
         exe = directory + L"\\BG Radar Overlay.exe";
     }
-    if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) return;
+    DWORD attributes = GetFileAttributesW(exe.c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY)) return;
     HANDLE existing = OpenMutexW(SYNCHRONIZE, FALSE, L"Local\\BG2Radar.Companion");
     if (existing) {
         CloseHandle(existing);
         return;
     }
-    // Start the resolved apphost beside its own runtime, GameFiles and translations.
-    HANDLE file = CreateFileW(exe.c_str(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                              nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (file == INVALID_HANDLE_VALUE) return;
-    DWORD length = GetFinalPathNameByHandleW(file, nullptr, 0, FILE_NAME_NORMALIZED);
-    std::wstring resolved(length, L'\0');
-    DWORD copied = length ? GetFinalPathNameByHandleW(file, resolved.data(), length, FILE_NAME_NORMALIZED) : 0;
-    CloseHandle(file);
-    if (!copied || copied >= length) return;
-    resolved.resize(copied);
-    if (resolved.rfind(L"\\\\?\\UNC\\", 0) == 0) exe = L"\\\\" + resolved.substr(8);
-    else if (resolved.rfind(L"\\\\?\\", 0) == 0) exe = resolved.substr(4);
-    else exe = resolved;
+    // Older installs place a symlink here. Start its target beside its own runtime.
+    if (attributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+        HANDLE file = CreateFileW(exe.c_str(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                                  nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE) return;
+        DWORD length = GetFinalPathNameByHandleW(file, nullptr, 0, FILE_NAME_NORMALIZED);
+        std::wstring resolved(length, L'\0');
+        DWORD copied = length ? GetFinalPathNameByHandleW(file, resolved.data(), length, FILE_NAME_NORMALIZED) : 0;
+        CloseHandle(file);
+        if (!copied || copied >= length) return;
+        resolved.resize(copied);
+        if (resolved.rfind(L"\\\\?\\UNC\\", 0) == 0) exe = L"\\\\" + resolved.substr(8);
+        else if (resolved.rfind(L"\\\\?\\", 0) == 0) exe = resolved.substr(4);
+        else exe = resolved;
+    }
     directory = exe.substr(0, exe.find_last_of(L'\\'));
     std::wstring command = L"\"" + exe + L"\" --game-pid " + std::to_wstring(GetCurrentProcessId());
     STARTUPINFOW startup{};

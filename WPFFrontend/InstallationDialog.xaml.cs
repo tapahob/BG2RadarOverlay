@@ -96,10 +96,7 @@ internal partial class InstallationDialog : Window
     internal static string DescribeError(Exception ex)
     {
         Logger.Error("Native radar installation", ex);
-        string message = ex.Message;
-        if ((ex.HResult & 0xffff) == 1314)
-            message += "\n" + RadarLocalization.Get("Str_NativeLinkPermission");
-        return message;
+        return ex.Message;
     }
 
     private DispatcherTimer KeepAboveLaunchingGame(int gameProcessId)

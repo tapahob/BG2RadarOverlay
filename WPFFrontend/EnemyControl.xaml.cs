@@ -37,19 +37,8 @@ namespace WPFFrontend
                 this.mainWindow = mainWindow;
                 this.updateView(bgEntity);
 
-                double left = 0;
-                var width   = this.mainWindow.CardLayoutWidth;
-                var x       = width * (bgEntity.X - bgEntity.MousePosX1) / bgEntity.ViewportWidth;
-
-                if (x > (width / 2))
-                {
-                    left = x - this.Width - 50;
-                }
-                else
-                {
-                    left = x + 50;
-                }
-                Canvas.SetLeft(this, left);
+                // Wait for the localized width and the hosting canvas to finish layout.
+                Loaded += PlaceCard;
                 this.MouseRightButtonUp += EnemyControl_MouseRightButtonDown;
                 WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);
                 WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
@@ -58,6 +47,17 @@ namespace WPFFrontend
             {
                 Logger.Error("Enemy Control error!", ex);
             }            
+        }
+
+        private void PlaceCard(object sender, RoutedEventArgs e)
+        {
+            Loaded -= PlaceCard;
+            var width = mainWindow.MainCanvas.ActualWidth;
+            var x = BGEntity.ViewportWidth > 0
+                ? width * ((double)BGEntity.X - BGEntity.MousePosX1) / BGEntity.ViewportWidth
+                : width / 2;
+            var left = x > width / 2 ? x - ActualWidth - 50 : x + 50;
+            Canvas.SetLeft(this, Math.Clamp(left, 0, Math.Max(0, width - ActualWidth)));
         }
 
         private void fetchWeaponEffects(BGEntity bgEntity)

@@ -221,16 +221,24 @@ namespace WPFFrontend
                     // monitor Windows picks at startup, which is not necessarily the game's monitor.
                     // Position and size the borderless window explicitly onto the game's monitor instead.
                     this.WindowState = WindowState.Normal;
-                    this.Left        = bounds.Left;
-                    this.Top         = bounds.Top;
-                    this.Width       = bounds.Width;
-                    this.Height      = bounds.Height;
+                    FitOverlayToBounds();
                 }
                 catch (Exception ex)
                 {
                     Logger.Error($"{nameof(moveToGameScreen)} error!", ex);
                 }
             });
+        }
+
+        private void FitOverlayToBounds()
+        {
+            // Monitor and game bounds are screen pixels, including the virtual desktop origin.
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            if (GetWindowRect(hwnd, out var current) && current.Left == bounds.Left && current.Top == bounds.Top
+                && current.Right == bounds.Right && current.Bottom == bounds.Bottom) return;
+            const uint noZOrder = 0x0004, noActivate = 0x0010;
+            WinApiBindings.WinAPIBindings.SetWindowPos(hwnd, IntPtr.Zero, bounds.Left, bounds.Top,
+                bounds.Width, bounds.Height, noZOrder | noActivate);
         }
 
         private void updateEnemyListPosition()

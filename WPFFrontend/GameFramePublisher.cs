@@ -18,7 +18,6 @@ namespace WPFFrontend
 {
     public partial class MainWindow
     {
-        internal double CardLayoutWidth => _insideGame ? MainCanvas.ActualWidth : SystemParameters.PrimaryScreenWidth;
         private const int FrameHeaderSize = 56;
         private int _maxFrameSide;
         private int _framePid, _revision;
@@ -67,6 +66,7 @@ namespace WPFFrontend
         private sealed record GameTarget(Rect Bounds, Action Click, Action RightClick, FrameworkElement DragElement, EnemyListRow Row = null);
 
         [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out ClientRect rect);
+        [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out ClientRect rect);
         [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int virtualKey);
         [DllImport("user32.dll")] private static extern bool ClientToScreen(IntPtr hwnd, ref System.Drawing.Point pt);
         [StructLayout(LayoutKind.Sequential)]
@@ -255,10 +255,7 @@ namespace WPFFrontend
                 bounds = new System.Drawing.Rectangle(origin.X, origin.Y, client.Right, client.Bottom);
                 var dpi = VisualTreeHelper.GetDpi(this);
                 if (WindowState != WindowState.Normal) { closeWindowLayer(); return; }
-                Left = bounds.Left / dpi.DpiScaleX;
-                Top = bounds.Top / dpi.DpiScaleY;
-                Width = bounds.Width / dpi.DpiScaleX;
-                Height = bounds.Height / dpi.DpiScaleY;
+                FitOverlayToBounds();
                 if (MainCanvas.ActualWidth < 1 || MainCanvas.ActualHeight < 1) return;
                 prepareWindowLayer(client);
 

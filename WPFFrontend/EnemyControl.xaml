@@ -9,7 +9,7 @@
              xmlns:bg="clr-namespace:BGOverlay;assembly=BGOverlayAPI"
     x:Class="WPFFrontend.EnemyControl"
              mc:Ignorable="d"
-             Height="Auto" Width="{DynamicResource EnemyControlWidth}"
+             Height="Auto" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Canvas}}"
     Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="3" VerticalAlignment="Center" MouseUp="UserControl_MouseUp" MouseLeave="UserControl_MouseLeave">
     <UserControl.Resources>
         <wpffrontend:BitmapToImageSourceConverter x:Key="BitmapToImageSourceConverter"/>
@@ -52,7 +52,8 @@
     <i:Interaction.Behaviors>
         <i:MouseDragElementBehavior/>
     </i:Interaction.Behaviors>
-    <Grid>
+    <Viewbox StretchDirection="DownOnly">
+    <Grid Width="{DynamicResource EnemyControlWidth}">
         <!-- The paper ends underneath the outer ink stroke of the frame. -->
         <Border Margin="3,4.5,3,2" CornerRadius="5">
             <Border.Background>
@@ -390,4 +391,5 @@
             </Border>
         </StackPanel>
     </Grid>
+    </Viewbox>
 </UserControl>

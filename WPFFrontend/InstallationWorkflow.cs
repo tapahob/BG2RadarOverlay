@@ -51,8 +51,7 @@ public partial class MainWindow
     private void RefreshSavedInstallation(GameInstallation game)
     {
         if (!File.Exists(game.Executable) || !game.HasNativeModule) return;
-        var destination = NativeInstallation.LinkDestination(game);
-        if (destination == null && !game.Native) return;
+        if (!game.Native && !File.Exists(game.CompanionConfig) && NativeInstallation.LinkDestination(game) == null) return;
         var hasEEex = game.HasEEex;
         var newlyDetected = NativeInstallation.Refresh(game, hasEEex);
         if (game.LastKnownEEex != hasEEex)

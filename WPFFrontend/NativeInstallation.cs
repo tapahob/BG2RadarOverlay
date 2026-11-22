@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using BGOverlay;
@@ -21,6 +22,7 @@ internal sealed record GameInstallation(string Name, string Executable, bool Nat
     public string Folder => Path.GetDirectoryName(Executable);
     internal string GameExe => Path.GetFileName(Executable);
     internal string Link => Path.Combine(Folder, "BGRadar", "BG Radar Overlay.exe");
+    internal string CompanionConfig => Path.Combine(Folder, "BGRadar", "companion.ini");
 
     [JsonIgnore]
     public bool HasNativeModule => NativeInstallation.ModulePaths(this).Any(File.Exists);
@@ -110,6 +112,7 @@ internal static class NativeInstallation
         // winmm.dll is a shared ASI loader and may still be needed by other mods.
         if (new FileInfo(game.Link).LinkTarget != null)
             File.Delete(game.Link);
+        if (File.Exists(game.CompanionConfig)) File.Delete(game.CompanionConfig);
     }
 
     internal static string LinkDestination(GameInstallation game)
@@ -123,29 +126,27 @@ internal static class NativeInstallation
         // For a pre-upgrade entry, an existing patch is the best evidence that
         // this installation already used EEex. A routine repair isn't a new install.
         var previouslyHadEEex = game.LastKnownEEex ?? File.Exists(Path.Combine(game.Folder, "override", CriticalScript));
-        if (hasEEex)
-            Install(game, RadarExe, null, installLoader: false, hasEEex: true);
-        else
-        {
-            CleanModuleBackups(game);
-            SetLink(game, RadarExe);
-        }
+        Install(game, RadarExe, null, installLoader: false, hasEEex: hasEEex);
         return hasEEex && !previouslyHadEEex;
     }
 
-    private static void SetLink(GameInstallation game, string radarExe)
+    private static void ConfigureCompanion(GameInstallation game, string radarExe)
     {
         var link = new FileInfo(game.Link);
         var destination = LinkDestination(game);
-        if (SamePath(destination, radarExe)) return;
-        if (destination == null && link.Exists)
+        bool configured = File.Exists(game.CompanionConfig);
+        if (!configured && SamePath(destination, radarExe)) return;
+        if (destination == null && link.Exists && !SamePath(link.FullName, radarExe))
             throw new IOException(string.Format(Get("Str_NativeLinkOccupied"), link.FullName));
+        string config = "[Radar]\r\nExecutable=\"" + radarExe + "\"\r\n";
+        if (configured && File.ReadAllText(game.CompanionConfig) == config) return;
         Directory.CreateDirectory(link.DirectoryName);
-        var temp = game.Link + "." + Guid.NewGuid().ToString("N");
+        var temp = game.CompanionConfig + "." + Guid.NewGuid().ToString("N");
         try
         {
-            File.CreateSymbolicLink(temp, radarExe);
-            File.Move(temp, game.Link, destination != null);
+            // The Win32 profile API reads Unicode INI files with a UTF-16 BOM.
+            File.WriteAllText(temp, config, Encoding.Unicode);
+            File.Move(temp, game.CompanionConfig, true);
         }
         finally { File.Delete(temp); }
     }
@@ -193,7 +194,7 @@ internal static class NativeInstallation
                 committed++;
             }
             injectorInstalled?.Invoke();
-            SetLink(game, radarExe);
+            ConfigureCompanion(game, radarExe);
         }
         catch
         {
