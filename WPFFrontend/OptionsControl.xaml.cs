@@ -61,6 +61,7 @@ namespace WPFFrontend
             this.EnableBorderlessMode.Click += updateConfig;
             this.RefreshRate.TextChanged    += updateConfig;
             this.BigBuffIcons.Click         += updateConfig;
+            this.CenterBuffIcons.Click      += updateConfig;
             this.AnimateEnemyListNumbers.Click += updateConfig;
             this.AnimateCharacterCardNumbers.Click += updateConfig;
             this.UseShiftClick.Click        += updateConfig;
@@ -454,6 +455,7 @@ namespace WPFFrontend
             if (int.TryParse(this.RefreshRate.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out refreshMs))
                 Configuration.RefreshTimeMS   = refreshMs;
             Configuration.BigBuffIcons        = (bool)this.BigBuffIcons.IsChecked;
+            Configuration.CenterBuffIcons     = this.CenterBuffIcons.IsChecked == true;
             Configuration.AnimateEnemyListNumbers = this.AnimateEnemyListNumbers.IsChecked == true;
             Configuration.AnimateCharacterCardNumbers = this.AnimateCharacterCardNumbers.IsChecked == true;
             Configuration.UseShiftClick       = (bool)this.UseShiftClick.IsChecked;
@@ -807,6 +809,7 @@ namespace WPFFrontend
                 this.EnableBorderlessMode.IsChecked = Configuration.Borderless;
                 this.RefreshRate.Text               = Configuration.RefreshTimeMS.ToString();
                 this.BigBuffIcons.IsChecked         = Configuration.BigBuffIcons;
+                this.CenterBuffIcons.IsChecked      = Configuration.CenterBuffIcons;
                 this.AnimateEnemyListNumbers.IsChecked = Configuration.AnimateEnemyListNumbers;
                 this.AnimateCharacterCardNumbers.IsChecked = Configuration.AnimateCharacterCardNumbers;
                 this.UseShiftClick.IsChecked        = Configuration.UseShiftClick;

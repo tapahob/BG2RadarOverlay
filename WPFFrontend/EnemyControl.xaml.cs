@@ -229,24 +229,7 @@ namespace WPFFrontend
                 this.DataContext = this.BGEntity;
                 this.updateLocalizedLabels(item);
 
-                if (Configuration.BigBuffIcons && BuffStack.Columns == 16)
-                {
-                    BuffStack.Columns = 8;
-                    foreach (var buff in buffs)
-                    {
-                        buff.Value.Invalidate();
-                    }
-                }
-
-                if (!Configuration.BigBuffIcons && BuffStack.Columns == 8)
-                {
-                    BuffStack.Columns = 16;
-                    foreach (var buff in buffs)
-                    {
-                        buff.Value.Invalidate();
-                    }
-                }
-
+                BuffStack.CenterRows = Configuration.CenterBuffIcons;
                 foreach (var buff in buffs)
                 {
                     if ((buff.Value.BuffDurationAbsolute != 0 && buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0)
@@ -267,6 +250,7 @@ namespace WPFFrontend
                         bool isPresent = buffs.ContainsKey(x.Item1);
                         if (isPresent)
                         {
+                            buffs[x.Item1].Invalidate();
                             buffs[x.Item1].BuffDuration = x.Item3 == uint.MaxValue ? float.MaxValue : durationFloat;
                             return;
                         }

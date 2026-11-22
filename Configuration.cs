@@ -58,6 +58,7 @@ namespace BGOverlay
         public static bool HideAllies { get; set; }
         public static IntPtr HWndPtr { get; set; }
         public static bool BigBuffIcons { get; set; }
+        public static bool CenterBuffIcons { get; set; }
         public static bool AnimateEnemyListNumbers { get; set; } = true;
         public static bool AnimateCharacterCardNumbers { get; set; } = true;
         public static string Font1 { get; set; }
@@ -109,6 +110,7 @@ namespace BGOverlay
             RefreshTimeMS       = 100;
             Locale              = "en_US";            
             BigBuffIcons        = true;
+            CenterBuffIcons     = true;
             AnimateEnemyListNumbers = true;
             AnimateCharacterCardNumbers = true;
             Font1               = "Segoe Print";
@@ -163,6 +165,7 @@ namespace BGOverlay
                 $"HideNeutrals={HideNeutrals}",
                 $"HideAllies={HideAllies}",
                 $"BigBuffIcons={BigBuffIcons}",
+                $"{nameof(CenterBuffIcons)}={CenterBuffIcons}",
                 $"AnimateEnemyListNumbers={AnimateEnemyListNumbers}",
                 $"AnimateCharacterCardNumbers={AnimateCharacterCardNumbers}",
                 $"Font1={Font1}",
@@ -243,6 +246,7 @@ namespace BGOverlay
                 HideNeutrals        = getProperty("HideNeutrals", "false").Equals("true");
                 HideAllies          = getProperty("HideAllies", "false").Equals("true");
                 BigBuffIcons        = getProperty("BigBuffIcons", "false").Equals("true");
+                CenterBuffIcons     = getProperty(nameof(CenterBuffIcons), "true").Equals("true");
                 AnimateEnemyListNumbers = getProperty(nameof(AnimateEnemyListNumbers), "true").Equals("true");
                 AnimateCharacterCardNumbers = getProperty(nameof(AnimateCharacterCardNumbers), "true").Equals("true");
                 Font1               = getProperty("Font1", "Segoe Print");

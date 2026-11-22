@@ -53,7 +53,15 @@
                 <Label x:Name="ClassesAndLevels" Content="{Binding ClassString}" d:Content="Warrior Thief Mage" HorizontalAlignment="Center" ClipToBounds="True">
                 </Label>
                 <Label x:Name="Race" d:Content="78m" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <UniformGrid x:Name="BuffStack" Columns="8"/>
+                <wpffrontend:CenteredWrapPanel x:Name="BuffStack" Margin="5,0">
+                    <wpffrontend:CenteredWrapPanel.Resources>
+                        <Style TargetType="{x:Type wpffrontend:BuffControl}">
+                            <Setter Property="Margin" Value="1"/>
+                            <Setter Property="Width" Value="{Binding MaxWidth, RelativeSource={RelativeSource Self}}"/>
+                            <Setter Property="Height" Value="{Binding MaxHeight, RelativeSource={RelativeSource Self}}"/>
+                        </Style>
+                    </wpffrontend:CenteredWrapPanel.Resources>
+                </wpffrontend:CenteredWrapPanel>
             </StackPanel>
         </Border>
 

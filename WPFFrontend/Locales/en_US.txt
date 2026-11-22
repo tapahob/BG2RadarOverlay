@@ -501,6 +501,7 @@ Str_HideNeutrals=Hide Neutrals
 Str_HideAllies=Hide Allies
 Str_BuffPanel=Buff Panel
 Str_BigBuffIcons=Big Buff icons
+Str_CenterBuffIcons=Center buff icons
 Str_BorderlessMode=Borderless Mode
 Str_BorderlessOnStartup=Borderless on startup
 Str_ForceBorderlessNow=Force Borderless now!

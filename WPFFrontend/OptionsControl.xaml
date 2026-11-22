@@ -98,6 +98,7 @@
                     <StackPanel Grid.Row="0" Grid.Column="3" Margin="5,5,5,5">
                         <Label d:Content="Buff Panel" Content="{DynamicResource Str_BuffPanel}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                         <CheckBox x:Name="BigBuffIcons" VerticalContentAlignment="Center" d:Content="Big Buff icons" Content="{DynamicResource Str_BigBuffIcons}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                        <CheckBox x:Name="CenterBuffIcons" VerticalContentAlignment="Center" d:Content="Center buff icons" Content="{DynamicResource Str_CenterBuffIcons}" FontFamily="Segoe Print" FontWeight="Bold"/>
                     </StackPanel>
                     <Border Grid.ColumnSpan="3" Grid.Row="1" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="2"/>
                     <StackPanel Grid.ColumnSpan="3" Grid.Row="2" Grid.Column="1" Margin="5,5,5,5">

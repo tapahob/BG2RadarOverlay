@@ -495,6 +495,7 @@ Str_HideNeutrals=Скрыть нейтральных
 Str_HideAllies=Скрыть союзников
 Str_BuffPanel=Панель баффов
 Str_BigBuffIcons=Крупные иконки баффов
+Str_CenterBuffIcons=Центрировать иконки баффов
 Str_BorderlessMode=Режим без рамки
 Str_BorderlessOnStartup=Без рамки при запуске
 Str_ForceBorderlessNow=Убрать рамку сейчас!
