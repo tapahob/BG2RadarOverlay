@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using BGOverlay;
 using BGOverlay.Input;
+using WPFFrontend.CombatText;
 
 namespace WPFFrontend
 {
@@ -19,7 +20,7 @@ namespace WPFFrontend
     {
         internal double CardLayoutWidth => _insideGame ? MainCanvas.ActualWidth : SystemParameters.PrimaryScreenWidth;
         private const int FrameHeaderSize = 56;
-        private const int MaxFrameSide = 2048;
+        private int _maxFrameSide;
         private int _framePid, _revision;
         private IntPtr _gameWindow;
         private DispatcherTimer _frameTimer;
@@ -27,6 +28,9 @@ namespace WPFFrontend
         private MemoryMappedViewAccessor _frameView;
         private Mutex _frameLock;
         private EventWaitHandle _frameReady;
+        private EventWaitHandle _windowLayerAllowed;
+        private GameWindowLayer _windowLayer;
+        private long _nextLayerAttempt;
         private byte[] _frameBytes, _publishedBytes;
         private int _publishedWidth, _publishedHeight;
         private Rect _publishedArea;
@@ -42,6 +46,11 @@ namespace WPFFrontend
         private ListViewItem _desktopHover;
         private bool _gameIconHovered;
         private GameHandCursor _gameHand;
+        private IntPtr _desktopCursorBeforeBuff;
+        private CombatEventReader _combatEvents;
+        private volatile bool _hasCombatEvents;
+        private readonly ActorProjection _combatProjection = new();
+        private long _lastCombatFrame, _lastOverheadFrame;
         private sealed class GamePress
         {
             public GameTarget Target;
@@ -50,13 +59,15 @@ namespace WPFFrontend
             // Updated only on the UI thread.
             public bool Dragging;
             public long DragStarted;
-            public Point StartOffset;
-            public double PanelBaseLeft;
+            public Matrix CardStart;
+            public MatrixTransform CardTransform;
+            public double PanelStartX, PanelBaseLeft;
         }
 
         private sealed record GameTarget(Rect Bounds, Action Click, Action RightClick, FrameworkElement DragElement, EnemyListRow Row = null);
 
         [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out ClientRect rect);
+        [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int virtualKey);
         [DllImport("user32.dll")] private static extern bool ClientToScreen(IntPtr hwnd, ref System.Drawing.Point pt);
         [StructLayout(LayoutKind.Sequential)]
         private struct ClientRect { public int Left, Top, Right, Bottom; }
@@ -66,13 +77,23 @@ namespace WPFFrontend
             stopGameFrames();
             _framePid = pid;
             _gameWindow = hwnd;
-            _frameTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _combatEvents = new CombatEventReader(pid);
+            _combatEvents.Poll(Environment.TickCount64, CombatLayer.Add);
+            _hasCombatEvents = _combatEvents.Connected;
+            _frameTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(32) };
             _frameTimer.Tick += publishGameFrame;
             _frameTimer.Start();
         }
 
         private void stopGameFrames()
         {
+            _combatEvents?.Dispose();
+            _combatEvents = null;
+            _hasCombatEvents = false;
+            _framePid = 0;
+            CombatLayer.Clear();
+            BuffLayer.Clear();
+            updateDesktopBuffCursor(false);
             stopDesktopOutline();
             _actorOutline = null;
             closeGameOptions();
@@ -80,6 +101,10 @@ namespace WPFFrontend
             _lastRenderingTime = TimeSpan.MinValue;
             _frameTimer?.Stop();
             _frameTimer = null;
+            closeWindowLayer();
+            _windowLayerAllowed?.Dispose();
+            _windowLayerAllowed = null;
+            _nextLayerAttempt = 0;
             _frameView?.Dispose();
             _frameMap?.Dispose();
             _frameLock?.Dispose();
@@ -112,8 +137,12 @@ namespace WPFFrontend
             {
                 _frameMap = MemoryMappedFile.OpenExisting(name);
                 _frameLock = Mutex.OpenExisting(name + ".Lock");
-                _frameView = _frameMap.CreateViewAccessor(0, FrameHeaderSize + MaxFrameSide * MaxFrameSide * 4);
+                _frameView = _frameMap.CreateViewAccessor();
+                // Both modules use a square BGRA buffer after the same header. Read
+                // its capacity so an existing 2048-side installation still works.
+                _maxFrameSide = (int)Math.Sqrt((_frameView.Capacity - FrameHeaderSize) / 4);
                 EventWaitHandle.TryOpenExisting(name + ".Updated", out _frameReady);
+                EventWaitHandle.TryOpenExisting(name + ".WindowLayer", out _windowLayerAllowed);
                 _revision = _frameView.ReadInt32(16);
                 return true;
             }
@@ -140,24 +169,75 @@ namespace WPFFrontend
             publishGameFrame(sender, args);
         }
 
+        private void closeWindowLayer()
+        {
+            if (_windowLayer == null) return;
+            _windowLayer.Dispose();
+            _windowLayer = null;
+            DesktopActorOutline.Visibility = Visibility.Collapsed;
+            DesktopActorOutline.Source = null;
+            if (_frameTimer != null) _frameTimer.Interval = TimeSpan.FromMilliseconds(16);
+        }
+
+        private void prepareWindowLayer(ClientRect client)
+        {
+            bool allowed = _windowLayerAllowed?.WaitOne(0) == true;
+            if (_windowLayer != null && (!allowed || _windowLayer.Parent != _gameWindow || _windowLayer.IsDisposed))
+                closeWindowLayer();
+            if (!allowed || Environment.TickCount64 < _nextLayerAttempt) return;
+            try
+            {
+                if (_windowLayer == null)
+                {
+                    // Retire any bitmap from fallback mode or an earlier companion.
+                    bool acquired;
+                    try { acquired = _frameLock.WaitOne(0); }
+                    catch (AbandonedMutexException) { acquired = true; }
+                    if (!acquired) return;
+                    try
+                    {
+                        _frameView.Write(20, 0);
+                        _frameView.Write(24, 0);
+                        _frameView.Write(16, ++_revision);
+                        _publishedWidth = _publishedHeight = 0;
+                    }
+                    finally { _frameLock.ReleaseMutex(); }
+                    _frameReady?.Set();
+                    _windowLayer = new GameWindowLayer(_gameWindow, MainCanvas);
+                    // The visible child drives Rendering at display cadence.
+                    _frameTimer.Interval = TimeSpan.FromMilliseconds(200);
+                }
+                _windowLayer.Resize(client.Right, client.Bottom, MainCanvas.RenderSize);
+            }
+            catch (Exception ex)
+            {
+                closeWindowLayer();
+                _nextLayerAttempt = Environment.TickCount64 + 5000;
+                Logger.Error("Could not display the radar in a layered child window", ex);
+            }
+        }
+
         private void publishGameFrame(object sender, EventArgs args)
         {
             try
             {
+                updateActorLayers();
                 if (!connectGameFrames()) return;
                 long lastPresent = _frameView.ReadInt64(0);
                 if (lastPresent == 0 || Environment.TickCount64 - lastPresent > 1500)
                 {
+                    closeWindowLayer();
                     clearGameInput();
                     // An exclusive fullscreen device can stop presenting during Alt+Tab.
                     return;
                 }
                 if (!_insideGame)
                 {
+                    updateDesktopBuffCursor(false);
                     stopDesktopOutline();
                     Topmost = false;
                     _insideGame = true;
-                    _gameHand = new GameHandCursor(_framePid, _processHacker.ResourceManager);
+                    _gameHand ??= new GameHandCursor(_framePid, _processHacker.ResourceManager);
                     CompositionTarget.Rendering += onGameRendering;
                     _frameTimer.Interval = TimeSpan.FromMilliseconds(16);
                 }
@@ -166,6 +246,7 @@ namespace WPFFrontend
                 Configuration.HWndPtr = _gameWindow;
                 if (!GetClientRect(_gameWindow, out var client) || client.Right <= 0 || client.Bottom <= 0)
                 {
+                    closeWindowLayer();
                     clearGameInput();
                     return;
                 }
@@ -173,12 +254,13 @@ namespace WPFFrontend
                 if (!ClientToScreen(_gameWindow, ref origin)) return;
                 bounds = new System.Drawing.Rectangle(origin.X, origin.Y, client.Right, client.Bottom);
                 var dpi = VisualTreeHelper.GetDpi(this);
-                if (WindowState != WindowState.Normal) return;
+                if (WindowState != WindowState.Normal) { closeWindowLayer(); return; }
                 Left = bounds.Left / dpi.DpiScaleX;
                 Top = bounds.Top / dpi.DpiScaleY;
                 Width = bounds.Width / dpi.DpiScaleX;
                 Height = bounds.Height / dpi.DpiScaleY;
                 if (MainCanvas.ActualWidth < 1 || MainCanvas.ActualHeight < 1) return;
+                prepareWindowLayer(client);
 
                 bool pointerInGame = WinApiBindings.WinAPIBindings.GetForegroundWindow() == _gameWindow;
                 var mouse = System.Windows.Forms.Cursor.Position;
@@ -197,7 +279,7 @@ namespace WPFFrontend
                     e.TransformToAncestor(MainCanvas).TransformBounds(new Rect(e.RenderSize));
                 void addLayer(FrameworkElement e)
                 {
-                    if (e.IsVisible && e.ActualWidth > 0 && e.ActualHeight > 0)
+                    if (_windowLayer == null && e.IsVisible && e.ActualWidth > 0 && e.ActualHeight > 0)
                         layers.Add((e, areaOf(e)));
                 }
                 void addTarget(Rect rect, Action click, Action rightClick, FrameworkElement dragElement, EnemyListRow row = null)
@@ -232,7 +314,7 @@ namespace WPFFrontend
                     if (!card.IsVisible) continue;
                     var rect = areaOf(card);
                     addTarget(rect, null, () => card.Label_MouseDown(null, null), card);
-                    addTarget(new Rect(rect.Right - 22, rect.Top, 22, 25), () => card.Label_MouseDown(null, null),
+                    addTarget(areaOf(card.CloseTarget), () => card.Label_MouseDown(null, null),
                         () => card.Label_MouseDown(null, null), null);
                 }
                 if (_optionsHost != null && positionGameOptions(client, out var panel))
@@ -241,10 +323,31 @@ namespace WPFFrontend
                     // including when the graphics backend uses exclusive fullscreen.
                     var rect = new Rect(panel.X * viewport.Width / client.Right, 0,
                         panel.Width * viewport.Width / client.Right, panel.Height * viewport.Height / client.Bottom);
-                    layers.Add((_options, rect));
+                    if (_windowLayer == null) layers.Add((_options, rect));
                     addTarget(rect, null, null, null);
+                    bool overOptions = pointerInGame && press == null && WindowFromPoint(mouse) == _optionsHwnd;
+                    _options.UpdateGameTooltip(overOptions ? pointer : null);
                 }
                 var hit = pointerInGame ? targets.LastOrDefault(t => t.Bounds.Contains(pointer)) : null;
+                var localPointer = new Point((mouse.X - bounds.X) * viewport.Width / bounds.Width,
+                    (mouse.Y - bounds.Y) * viewport.Height / bounds.Height);
+                DrawingGroup cardTooltip = null;
+                if (press == null && hit?.DragElement is EnemyControl hoveredCard
+                    && !isGameOptionsInput(mouse.X, mouse.Y))
+                {
+                    var cardPointer = MainCanvas.TranslatePoint(localPointer, hoveredCard);
+                    var element = hoveredCard.InputHitTest(cardPointer) as Visual;
+                    while (element != null && element != hoveredCard && element is not BuffControl)
+                        element = VisualTreeHelper.GetParent(element) as Visual;
+                    if (element is BuffControl buff)
+                    {
+                        cardTooltip = new DrawingGroup();
+                        using var tooltip = cardTooltip.Open();
+                        string content = BuffControl.TooltipText(buff.BuffName, buff.BuffDurationAbsolute,
+                            hoveredCard.BGEntity.ReadGameTime());
+                        MiniBuffLayer.DrawTooltip(tooltip, viewport, localPointer, content, dpi.PixelsPerDip, abovePointer: true);
+                    }
+                }
                 updateGameHover(press?.Target ?? hit);
                 var outlineArea = locateOutline(press == null ? hit?.Row : null);
                 // The child HWND owns its hardware cursor. Publishing another cursor
@@ -253,24 +356,33 @@ namespace WPFFrontend
                 int cursorFrame = press == null ? 0 : 1;
                 if (press?.Dragging == true)
                     cursorFrame = Environment.TickCount64 - press.DragStarted < 100 ? 44 : 45;
-                _gameHand.SetFrame(hover ? cursorFrame : -1);
+                bool buffHover = pointerInGame && !hover && BuffLayer.IsIconHovered;
+                _gameHand.SetFrame(hover || buffHover ? cursorFrame : -1);
                 var handArea = Rect.Empty;
-                if (hover && _gameHand.UseSoftwareCursor)
+                if ((hover || buffHover) && _gameHand.UseSoftwareCursor)
                 {
-                    var local = new Point((mouse.X - bounds.X) * viewport.Width / bounds.Width,
-                        (mouse.Y - bounds.Y) * viewport.Height / bounds.Height);
-                    handArea = _gameHand.AreaAt(local, dpi);
+                    handArea = _gameHand.AreaAt(localPointer, dpi);
+                }
+                if (_windowLayer != null)
+                {
+                    displayActorOutline(outlineArea);
+                    _windowLayer.DrawPointer(handArea.IsEmpty ? null : _gameHand.Image, handArea, cardTooltip);
+                    _gameTargets = targets.ToArray();
+                    return;
                 }
                 var crop = handArea;
                 crop.Union(outlineArea);
+                crop.Union(CombatLayer.Frame.Bounds);
+                crop.Union(BuffLayer.Frame.Bounds);
+                if (cardTooltip != null) crop.Union(cardTooltip.Bounds);
                 foreach (var layer in layers) crop.Union(layer.Area);
                 crop.Intersect(viewport);
                 if (crop.IsEmpty || crop.Width < 1 || crop.Height < 1) return;
-                // Anchor the raster to the game window. A hovered actor or the
-                // glove can extend the crop by a fraction of a pixel. Fitting
-                // text to that crop again changes the antialiasing of every row.
-                int rasterWidth = Math.Min(client.Right, MaxFrameSide);
-                int rasterHeight = Math.Min(client.Bottom, MaxFrameSide);
+                // Pick the pixel grid before cropping. On a wide display a hovered
+                // actor can push the crop past the buffer limit; fitting that crop to
+                // the buffer would resample even stationary text and options.
+                int rasterWidth = Math.Min(client.Right, _maxFrameSide);
+                int rasterHeight = Math.Min(client.Bottom, _maxFrameSide);
                 double scaleX = rasterWidth / viewport.Width, scaleY = rasterHeight / viewport.Height;
                 int left = (int)Math.Floor(crop.Left * scaleX);
                 int top = (int)Math.Floor(crop.Top * scaleY);
@@ -283,6 +395,8 @@ namespace WPFFrontend
                 using (var dc = visual.RenderOpen())
                 {
                     dc.PushTransform(new MatrixTransform(scaleX, 0, 0, scaleY, -left, -top));
+                    dc.DrawDrawing(BuffLayer.Frame);
+                    dc.DrawDrawing(CombatLayer.Frame);
                     if (!outlineArea.IsEmpty) dc.DrawImage(_actorOutline.Image, outlineArea);
                     foreach (var (element, area) in layers)
                     {
@@ -290,6 +404,7 @@ namespace WPFFrontend
                         dc.DrawRectangle(brush, null, area);
                     }
                     if (!handArea.IsEmpty) dc.DrawImage(_gameHand.Image, handArea);
+                    if (cardTooltip != null) dc.DrawDrawing(cardTooltip);
                 }
                 // A sliding panel changes its clipped size by a few pixels every frame.
                 // Reuse the bitmap and staging buffers throughout that animation.
@@ -340,6 +455,86 @@ namespace WPFFrontend
             }
         }
 
+        private void onHealthLost(int pid, BGEntity actor, int amount)
+        {
+            if (_hasCombatEvents || Dispatcher.HasShutdownStarted) return;
+            long detected = Environment.TickCount64;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (_hasCombatEvents || pid != _framePid || Environment.TickCount64 - detected > 500) return;
+                if (!_combatProjection.TryLocate(actor, out _, out int x, out int y, out int width, out int height)) return;
+                var anchor = new Point((double)x / width, (double)(y - 55) / height);
+                if (anchor.X is >= 0 and <= 1 && anchor.Y is >= 0 and <= 1)
+                {
+                    CombatLayer.Advance(Environment.TickCount64);
+                    CombatLayer.Add(new CombatImpact(actor.Id, DamageKind.Normal, amount, anchor));
+                }
+            }));
+        }
+
+        private void updateActorLayers()
+        {
+            long now = Environment.TickCount64;
+            if (_combatEvents == null || now - _lastCombatFrame < 8) return;
+            _lastCombatFrame = now;
+            CombatLayer.Advance(now);
+            _combatEvents.Poll(now, CombatLayer.Add);
+            _hasCombatEvents = _combatEvents.Connected;
+            bool foreground = WinApiBindings.WinAPIBindings.GetForegroundWindow() == _gameWindow;
+            bool showBuffs = foreground && GetAsyncKeyState(0x12) < 0; // VK_MENU covers either Alt key.
+            var viewport = Rect.Empty;
+            bool needsViewport = CombatLayer.HasEffects || showBuffs || (foreground && Configuration.ShowCastingSpell);
+            if (needsViewport && _insideGame)
+                viewport = new Rect(MainCanvas.RenderSize);
+            else if (needsViewport && _gameWindow == WinApiBindings.WinAPIBindings.GetForegroundWindow()
+                && GetClientRect(_gameWindow, out var client) && client.Right > 0 && client.Bottom > 0)
+            {
+                var origin = new System.Drawing.Point();
+                if (ClientToScreen(_gameWindow, ref origin))
+                    viewport = new Rect(MainCanvas.PointFromScreen(new Point(origin.X, origin.Y)),
+                        MainCanvas.PointFromScreen(new Point(origin.X + client.Right, origin.Y + client.Bottom)));
+            }
+            CombatLayer.Paint(viewport);
+            if (foreground && (Configuration.ShowCastingSpell || showBuffs) && !viewport.IsEmpty && viewport.Width > 0 && viewport.Height > 0)
+            {
+                // The game simulation advances at 15 Hz. Avoid polling idle sprites
+                // at the monitor refresh rate when only casting labels are enabled.
+                if (!showBuffs && now - _lastOverheadFrame < 32) return;
+                _lastOverheadFrame = now;
+                Point? pointer = null;
+                if (showBuffs)
+                {
+                    var cursor = System.Windows.Forms.Cursor.Position;
+                    var local = MainCanvas.PointFromScreen(new Point(cursor.X, cursor.Y));
+                    if (viewport.Contains(local) && MainCanvas.InputHitTest(local) == null
+                        && !isGameOptionsInput(cursor.X, cursor.Y)) pointer = local;
+                }
+                BuffLayer.Paint(viewport, _processHacker.OverheadActors, showBuffs, pointer);
+            }
+            else
+                BuffLayer.Clear();
+            if (!_insideGame) updateDesktopBuffCursor(BuffLayer.IsIconHovered);
+        }
+
+        private void updateDesktopBuffCursor(bool hovering)
+        {
+            if (!hovering && _desktopCursorBeforeBuff == IntPtr.Zero) return;
+            if (hovering)
+                _gameHand ??= new GameHandCursor(_framePid, _processHacker.ResourceManager);
+            var hand = _gameHand?.PointingHandle ?? IntPtr.Zero;
+            var current = GameHandCursor.VisibleCursor;
+            if (hovering && hand != IntPtr.Zero && current != IntPtr.Zero && current != hand)
+            {
+                _desktopCursorBeforeBuff = current;
+                SetCursor(hand);
+            }
+            else if (!hovering && _desktopCursorBeforeBuff != IntPtr.Zero)
+            {
+                if (current == hand) SetCursor(_desktopCursorBeforeBuff);
+                _desktopCursorBeforeBuff = IntPtr.Zero;
+            }
+        }
+
         private void updateGameDrag(GamePress press, Point position)
         {
             var element = press.Target.DragElement;
@@ -356,28 +551,28 @@ namespace WPFFrontend
                 press.DragStarted = Environment.TickCount64;
                 if (card)
                 {
-                    double x = Canvas.GetLeft(element), y = Canvas.GetTop(element);
-                    press.StartOffset = new Point(double.IsNaN(x) ? 0 : x, double.IsNaN(y) ? 0 : y);
+                    press.CardStart = element.RenderTransform.Value;
+                    press.CardTransform = new MatrixTransform(press.CardStart);
+                    element.RenderTransform = press.CardTransform;
                 }
                 else
                 {
                     var transform = (TranslateTransform)element.RenderTransform;
-                    press.StartOffset = new Point(transform.X, 0);
+                    press.PanelStartX = transform.X;
                     press.PanelBaseLeft = element.TranslatePoint(new Point(), MainCanvas).X - transform.X;
                 }
             }
             if (card)
             {
-                Canvas.SetLeft(element, press.StartOffset.X + dx);
-                Canvas.SetTop(element, press.StartOffset.Y + dy);
-                // Capture and hit-test the arranged card at its new location in this same frame.
-                MainCanvas.UpdateLayout();
+                var positionTransform = press.CardStart;
+                positionTransform.Translate(dx, dy);
+                press.CardTransform.Matrix = positionTransform;
             }
             else
             {
                 double min = -press.PanelBaseLeft;
                 double max = Math.Max(min, MainCanvas.ActualWidth - element.ActualWidth + min);
-                ((TranslateTransform)element.RenderTransform).X = Math.Clamp(press.StartOffset.X + dx, min, max);
+                ((TranslateTransform)element.RenderTransform).X = Math.Clamp(press.PanelStartX + dx, min, max);
             }
         }
 
@@ -427,7 +622,11 @@ namespace WPFFrontend
                 stopDesktopOutline();
                 return;
             }
-            var area = locateOutline(_desktopHover.DataContext as EnemyListRow);
+            displayActorOutline(locateOutline(_desktopHover.DataContext as EnemyListRow));
+        }
+
+        private void displayActorOutline(Rect area)
+        {
             if (area.IsEmpty)
             {
                 DesktopActorOutline.Visibility = Visibility.Collapsed;
@@ -458,6 +657,7 @@ namespace WPFFrontend
 
         private void clearGameInput()
         {
+            if (_optionsHost != null) _options.UpdateGameTooltip(null);
             _gameTargets = Array.Empty<GameTarget>();
             updateGameHover(null);
             cancelGamePress();
@@ -467,7 +667,7 @@ namespace WPFFrontend
         private void cancelGamePress() => saveGameDrag(Interlocked.Exchange(ref _gamePress, null));
 
         // Only button edges cross the hook thread. The presenter samples the latest
-        // pointer position once per game frame, even outside the original rectangle.
+        // pointer position on each overlay update, even outside the original rectangle.
         private bool handleGameButton(MouseMessageEventArgs e)
         {
             var code = (MouseMessageCode)e.MessageCode;

@@ -13,11 +13,7 @@ namespace WPFFrontend
     /// </summary>
     public partial class BuffControl : UserControl
     {
-        public string BuffName 
-        { 
-            get { return ""; }
-            set { Image.ToolTip = value; } 
-        }
+        public string BuffName { get; set; }
         public float BuffDuration 
         { 
             get { return 0; } 
@@ -29,7 +25,22 @@ namespace WPFFrontend
                 this.Label1.Content = str; this.Label2.Content = str; 
             } 
         }
-        public float BuffDurationAbsolute { get; set; }
+        public uint BuffDurationAbsolute { get; set; }
+
+        internal void UpdateTooltip(uint gameTime)
+        {
+            var tooltip = (ToolTip)ToolTip;
+            string text = TooltipText(BuffName, BuffDurationAbsolute, gameTime);
+            if (!Equals(tooltip.Content, text)) tooltip.Content = text;
+        }
+
+        internal static string TooltipText(string name, uint expires, uint now)
+        {
+            // The game clock advances 15 ticks per second and stops while paused.
+            long seconds = (Math.Max(0L, (long)expires - now) + 14) / 15;
+            string remaining = expires is 0 or uint.MaxValue ? "\u221e" : $"{seconds / 60}:{seconds % 60:00}";
+            return name + "\n" + remaining;
+        }
         public BitmapSource Icon
         {
             get { return _icon; }
@@ -80,7 +91,11 @@ namespace WPFFrontend
         public BuffControl()
         {
             InitializeComponent();
-            Image.ToolTip = BuffName;
+            ToolTip = new ToolTip
+            {
+                Placement = System.Windows.Controls.Primitives.PlacementMode.Top,
+                VerticalOffset = -6
+            };
             Invalidate();
         }
 

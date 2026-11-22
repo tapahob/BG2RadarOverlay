@@ -7,7 +7,7 @@
 Str_WaitingForGame=Čekání na hru
 
 # EnemyControl - panel postavy
-EnemyControlWidth=530
+EnemyControlWidth=650
 Str_Level=Úr.{0}
 Str_Race=Rasa: {0}
 Str_STR=SÍL: {0}
@@ -21,6 +21,7 @@ Str_EnemyListHP=ŽB: {0}
 Str_Attacks=Útoky: {0}
 Str_ArmorClass=Třída zbroje: {0}
 Str_THAC0=THAC0: {0}
+Str_DamageRange=Zranění: {0}
 Str_Experience=Zkušenosti: {0}
 Str_Alignment=Zaměření: {0}
 Alignment_NONE=Žádné
@@ -471,7 +472,6 @@ Str_UseShiftClick=Použít Shift+klik
 Str_UseShiftClickTooltip=Použít Shift + pravé tlačítko místo pravého tlačítka
 Str_DebugMode=Ladicí režim
 Str_Locale=Jazyk:
-Str_LocaleRestartNote=Plně se projeví až po restartu radaru
 Str_Save=Uložit
 
 # Race enum (Resources/CREReader.RACE) - shown in the "Race: ..." EnemyControl label.
@@ -772,3 +772,50 @@ Class_SOD_TMP=Dočasný
 Class_SPECTRAL_TROLL=Přízračný troll
 Class_WIGHT=Wight
 Class_NO_CLASS=Žádná
+
+# Games tab and native Radar installation dialogs
+# Use \n for line breaks in dialog details.
+Str_TabGames=Hry
+Str_NativeInject=Nainstalovat
+Str_NativeRemove=Odebrat modul
+Str_InstallationClose=Zavřít
+Str_InstallationOK=OK
+Str_InstallationCancel=Zrušit
+Str_InstallationLater=Později
+Str_NativeSetup=Nastavení integrovaného radaru
+Str_NativeLinkPermission=Chcete-li vytvořit symbolický odkaz, zapněte ve Windows režim pro vývojáře nebo spusťte Radar jako správce.
+Str_NativeUpdateLink=Aktualizovat odkaz
+Str_NativeUpdateAndRestart=Aktualizovat a restartovat
+Str_NativeUpdateTitle=Aktualizovat odkaz na Radar pro hru {0}?
+Str_NativeUpdateDetails={0}\n\nAktuální cíl: {1}\nSpuštěný Radar: {2}
+Str_NativeMissingLink=(odkaz chybí)
+Str_NativeDetectedTitle=Byla nalezena nová instalace hry {0}! Nainstalovat integrovaný radar?
+Str_NativeDetectedDetails={0}\n\nIntegrovaný radar:\n• Funguje na celé obrazovce i v okně\n• Podporuje alternativní i původní vykreslování\n• Vypadá lépe, mňau! Vyzkoušejte ho!
+Str_NativeDetectedYes=Ano, mňau!
+Str_NativeDetectedNo=Přestaň mňoukat! Ne!
+Str_NativeRemoveTitle=Odebrat integrovaný radar ze hry {0}?
+Str_NativeRemovedTitle=Integrovaný radar byl odebrán
+Str_NativeRemovedDetails=Restartujte hru a přejděte na překryvnou vrstvu plochy.
+Str_NativeReadyTitle=Pro hru {0} je vše připraveno!
+Str_NativeReadyDetails=Integrovaný radar se spustí spolu se hrou.
+Str_NativeRestartTitle=Restartovat hru {0} nyní?
+Str_NativeRestartDetails=Integrovaný radar je nainstalován ve složce {0}. Před restartem si uložte hru.
+Str_NativeRestartNow=Restartovat nyní
+Str_NativeCloseTimeout=Hra stále běží. Zavřete ji a znovu spusťte, až budete chtít.
+Str_NativeInvalidList=Neplatný seznam instalací her.
+Str_NativeInvalidEntry=Neplatná položka v seznamu instalací her.
+Str_NativeLinkOccupied=Na cestě {0} již existuje soubor. Před vytvořením odkazu jej přesuňte.
+Str_NativeGameMissing=Hru se nepodařilo najít ve složce {0}.
+Str_NativeLoaderConflict=Ve složce {0} je již nainstalován jiný soubor winmm.dll. Ověřte kompatibilitu zavaděče.
+Str_ShowCastingSpell=Zobrazovat názvy kouzel nad sesilateli
+
+Str_NativeProgressDetected=Nalezena instalace hry {0}
+Str_NativeProgressInjector=Instalace injektoru radaru
+Str_NativeProgressAutostart=Nastavení spouštění Radar Overlay spolu s hrou z tohoto umístění:
+Str_NativeProgressInstalling=Nastavování radaru…
+Str_NativeProgressRestart=Radar se aktivuje po restartování hry.
+Str_NativeProgressFailed=Nastavení radaru se nepodařilo dokončit.
+
+Str_EEexPatchDetectedTitle=Zjištěna nová instalace EEex
+Str_EEexPatchDetectedDetails=Oprava kompatibility byla nainstalována. Restartujte prosím InfinityLoader.
+Str_EEexPatchInstallStep=Instalace opravy kompatibility s EEex

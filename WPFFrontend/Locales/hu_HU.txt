@@ -7,7 +7,7 @@
 Str_WaitingForGame=Várakozás a játékra
 
 # EnemyControl - karakterpanel
-EnemyControlWidth=530
+EnemyControlWidth=650
 Str_Level=Sz.{0}
 Str_Race=Faj: {0}
 Str_STR=ERŐ: {0}
@@ -21,6 +21,7 @@ Str_EnemyListHP=ÉP: {0}
 Str_Attacks=Támadások: {0}
 Str_ArmorClass=Páncélosztály: {0}
 Str_THAC0=THAC0: {0}
+Str_DamageRange=Sebzés: {0}
 Str_Experience=Tapasztalat: {0}
 Str_Alignment=Beállítottság: {0}
 Alignment_NONE=Nincs
@@ -471,7 +472,6 @@ Str_UseShiftClick=Shift+kattintás használata
 Str_UseShiftClickTooltip=Shift + jobb klikk használata jobb klikk helyett
 Str_DebugMode=Hibakereső mód
 Str_Locale=Nyelv:
-Str_LocaleRestartNote=Teljesen csak a Radar újraindítása után lép érvénybe
 Str_Save=Mentés
 
 # Race enum (Resources/CREReader.RACE) - shown in the "Race: ..." EnemyControl label.
@@ -772,3 +772,50 @@ Class_SOD_TMP=Ideiglenes
 Class_SPECTRAL_TROLL=Kísérteties troll
 Class_WIGHT=Wight
 Class_NO_CLASS=Nincs
+
+# Games tab and native Radar installation dialogs
+# Use \n for line breaks in dialog details.
+Str_TabGames=Játékok
+Str_NativeInject=Telepítés
+Str_NativeRemove=Modul eltávolítása
+Str_InstallationClose=Bezárás
+Str_InstallationOK=OK
+Str_InstallationCancel=Mégse
+Str_InstallationLater=Később
+Str_NativeSetup=A beépített radar beállítása
+Str_NativeLinkPermission=Szimbolikus hivatkozás létrehozásához kapcsold be a Windows fejlesztői módját, vagy futtasd a Radart rendszergazdaként.
+Str_NativeUpdateLink=Hivatkozás frissítése
+Str_NativeUpdateAndRestart=Frissítés és újraindítás
+Str_NativeUpdateTitle=Frissíted a Radar hivatkozását ehhez a játékhoz: {0}?
+Str_NativeUpdateDetails={0}\n\nJelenlegi cél: {1}\nFutó Radar: {2}
+Str_NativeMissingLink=(hiányzó hivatkozás)
+Str_NativeDetectedTitle=Új játéktelepítés észlelve: {0}! Telepíted a beépített radart?
+Str_NativeDetectedDetails={0}\n\nBeépített radar:\n• Teljes képernyős és ablakos módban is működik\n• Támogatja az alternatív és az eredeti renderelőt is\n• Jobban néz ki, miau! Próbáld ki!
+Str_NativeDetectedYes=Igen, miau!
+Str_NativeDetectedNo=Ne nyávogj! Nem!
+Str_NativeRemoveTitle=Eltávolítod a beépített radart ebből a játékból: {0}?
+Str_NativeRemovedTitle=A beépített radart eltávolítottuk
+Str_NativeRemovedDetails=Indítsd újra a játékot az asztali átfedésre váltáshoz.
+Str_NativeReadyTitle=Minden kész ehhez a játékhoz: {0}!
+Str_NativeReadyDetails=A beépített radar a játékkal együtt indul.
+Str_NativeRestartTitle=Most újraindítod ezt a játékot: {0}?
+Str_NativeRestartDetails=A beépített radar telepítési helye: {0}. Újraindítás előtt mentsd a játékot.
+Str_NativeRestartNow=Újraindítás most
+Str_NativeCloseTimeout=A játék még fut. Zárd be, majd indítsd újra, amikor készen állsz.
+Str_NativeInvalidList=Érvénytelen a játékok telepítési listája.
+Str_NativeInvalidEntry=Érvénytelen bejegyzés a játékok telepítési listájában.
+Str_NativeLinkOccupied=Ezen az útvonalon már van egy fájl: {0}. Helyezd át a hivatkozás létrehozása előtt.
+Str_NativeGameMissing=A játék nem található ebben a mappában: {0}.
+Str_NativeLoaderConflict=Ebben a mappában már van egy másik winmm.dll fájl: {0}. Ellenőrizd a betöltő kompatibilitását.
+Str_ShowCastingSpell=Varázslatnevek megjelenítése a varázslók felett
+
+Str_NativeProgressDetected=A játék telepítése észlelve: {0}
+Str_NativeProgressInjector=A Radar injektor telepítése
+Str_NativeProgressAutostart=A Radar Overlay automatikus indítása a játékkal a következő helyről:
+Str_NativeProgressInstalling=A Radar beállítása…
+Str_NativeProgressRestart=A Radar aktiválásához indítsd újra a játékot.
+Str_NativeProgressFailed=Nem sikerült befejezni a Radar beállítását.
+
+Str_EEexPatchDetectedTitle=Új EEex-telepítés észlelve
+Str_EEexPatchDetectedDetails=A kompatibilitási javítás telepítve. Indítsd újra az InfinityLoadert.
+Str_EEexPatchInstallStep=Az EEex kompatibilitási javításának telepítése

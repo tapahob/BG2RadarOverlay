@@ -31,7 +31,16 @@ namespace WPFFrontend
         // interpolate through intermediate values instead of jumping straight to the new one.
         private static readonly DependencyProperty DisplayedHPProperty =
             DependencyProperty.Register("DisplayedHP", typeof(int), typeof(HpRollText),
-                new PropertyMetadata(0, OnDisplayedHPChanged));
+                new PropertyMetadata(0, OnDisplayChanged));
+
+        private static readonly DependencyProperty FormatProperty =
+            DependencyProperty.Register("Format", typeof(string), typeof(HpRollText),
+                new PropertyMetadata("{0}", OnDisplayChanged));
+
+        public HpRollText()
+        {
+            SetResourceReference(FormatProperty, "Str_EnemyListHP");
+        }
 
         private static void OnHPChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -59,11 +68,11 @@ namespace WPFFrontend
         // Str_EnemyListHP is a "<label>{0}" format string (e.g. "HP: {0}") - split it at the
         // placeholder so the label can render bold while the number itself stays regular weight,
         // instead of setting Text to the fully-formatted string as one uniformly-styled run.
-        private static void OnDisplayedHPChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void OnDisplayChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var self   = (HpRollText)d;
-            var format = RadarLocalization.Get("Str_EnemyListHP");
-            var value  = ((int)e.NewValue).ToString();
+            var format = (string)self.GetValue(FormatProperty);
+            var value  = ((int)self.GetValue(DisplayedHPProperty)).ToString();
 
             self.Inlines.Clear();
             var placeholderIndex = format.IndexOf("{0}", StringComparison.Ordinal);

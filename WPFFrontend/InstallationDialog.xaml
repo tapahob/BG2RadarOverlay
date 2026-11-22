@@ -1,0 +1,83 @@
+﻿<Window x:Class="WPFFrontend.InstallationDialog" x:ClassModifier="internal" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="BG Radar Overlay"
+        WindowStyle="None" ResizeMode="NoResize" SizeToContent="Height" Width="465"
+        WindowStartupLocation="CenterOwner" Topmost="True" ShowInTaskbar="False" FontFamily="Segoe Print"
+        PreviewKeyDown="Dialog_PreviewKeyDown">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="TwitchOptionsTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="StepMark" TargetType="TextBlock">
+                <Setter Property="DockPanel.Dock" Value="Left"/>
+                <Setter Property="Width" Value="24"/>
+                <Setter Property="FontFamily" Value="Segoe UI Symbol"/>
+                <Setter Property="FontSize" Value="17"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Foreground" Value="#225A30"/>
+                <Setter Property="VerticalAlignment" Value="Top"/>
+            </Style>
+            <Style x:Key="StepTitle" TargetType="TextBlock">
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            <Style x:Key="StepPath" TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Border BorderBrush="#38251A" BorderThickness="4">
+        <Border.Background><ImageBrush ImageSource="/pexels-photo-235985.jpeg" Stretch="UniformToFill"/></Border.Background>
+        <StackPanel Margin="18,14">
+            <DockPanel Margin="0,0,0,10">
+                <Button x:Name="CloseButton" DockPanel.Dock="Right" Width="28" Height="28" Padding="0" VerticalAlignment="Top"
+                        Content="×" FontFamily="Segoe UI" FontSize="18" Click="Close_Click"/>
+                <Image Source="/radar.png" Width="28" Height="28" Margin="0,0,8,0"/>
+                <TextBlock Text="BG Radar Overlay" FontSize="19" FontWeight="Bold"/>
+            </DockPanel>
+            <TextBlock x:Name="Question" TextWrapping="Wrap" FontWeight="Bold" FontSize="15"/>
+            <TextBlock x:Name="Details" Margin="0,8,0,14" FontWeight="Bold" FontSize="12" TextWrapping="Wrap"/>
+            <StackPanel x:Name="InstallationProgress" Visibility="Collapsed" Margin="0,8,0,10">
+                <Border Style="{StaticResource Section}">
+                    <DockPanel>
+                        <TextBlock Style="{StaticResource StepMark}" Text="&#x2713;"/>
+                        <StackPanel>
+                            <TextBlock x:Name="DetectedGame" Style="{StaticResource StepTitle}"/>
+                            <TextBlock x:Name="GamePath" Style="{StaticResource StepPath}"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+                <Border Style="{StaticResource Section}" Margin="0,5">
+                    <DockPanel>
+                        <TextBlock x:Name="InjectorMark" Style="{StaticResource StepMark}"/>
+                        <TextBlock Style="{StaticResource StepTitle}" Text="{DynamicResource Str_NativeProgressInjector}"/>
+                    </DockPanel>
+                </Border>
+                <Border x:Name="EEexPatchStep" Style="{StaticResource Section}" Visibility="Collapsed" Margin="0,0,0,5">
+                    <DockPanel>
+                        <TextBlock x:Name="EEexPatchMark" Style="{StaticResource StepMark}"/>
+                        <TextBlock Style="{StaticResource StepTitle}" Text="{DynamicResource Str_EEexPatchInstallStep}"/>
+                    </DockPanel>
+                </Border>
+                <Border Style="{StaticResource Section}">
+                    <DockPanel>
+                        <TextBlock x:Name="AutostartMark" Style="{StaticResource StepMark}"/>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource StepTitle}" Text="{DynamicResource Str_NativeProgressAutostart}"/>
+                            <TextBlock x:Name="RadarPath" Style="{StaticResource StepPath}"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+                <TextBlock x:Name="InstallationStatus" Margin="0,10,0,0" FontWeight="Bold"
+                           TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            </StackPanel>
+            <WrapPanel HorizontalAlignment="Right">
+                <Button x:Name="Decline" Margin="3" Click="Decline_Click"/>
+                <Button x:Name="Accept" Margin="3" Click="Accept_Click"/>
+            </WrapPanel>
+        </StackPanel>
+    </Border>
+</Window>

@@ -5,6 +5,7 @@
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:wpffrontend="clr-namespace:WPFFrontend"
+        xmlns:combat="clr-namespace:WPFFrontend.CombatText"
         mc:Ignorable="d" AllowsTransparency="True" WindowStyle="None" WindowStartupLocation="Manual"
         Title="BG Overlay" ShowActivated="False" Topmost="True" Height="1080" Width="1920" ResizeMode="NoResize">
     <Window.Background>
@@ -31,6 +32,10 @@
         </Style>
     </Window.Resources>
     <Canvas x:Name="MainCanvas">
+        <wpffrontend:MiniBuffLayer x:Name="BuffLayer" IsHitTestVisible="False"
+                Width="{Binding ActualWidth, ElementName=MainCanvas}" Height="{Binding ActualHeight, ElementName=MainCanvas}"/>
+        <combat:CombatTextLayer x:Name="CombatLayer" IsHitTestVisible="False"
+                Width="{Binding ActualWidth, ElementName=MainCanvas}" Height="{Binding ActualHeight, ElementName=MainCanvas}"/>
         <Image x:Name="DesktopActorOutline" IsHitTestVisible="False" Visibility="Collapsed"
                Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
         <Image Visibility="Collapsed" x:Name="DebugPointer" Source="/icons/not_found.png" Height="10"/>
@@ -72,7 +77,7 @@
                         PreviewMouseLeftButtonUp="EnemyList_PreviewMouseLeftButtonUp">
                 <ListView x:Name="ListView" Foreground="Black" BorderBrush="Black" BorderThickness="2" Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" VerticalAlignment="Top" SelectionChanged="ListView_SelectionChanged">
                     <ListView.Background>
-                        <ImageBrush Stretch="UniformToFill" ImageSource="/pexels-photo-235985.jpeg"/>
+                        <ImageBrush Stretch="UniformToFill" ImageSource="/artwork/enemy-list-parchment.png"/>
                     </ListView.Background>
                     <ListView.Template>
                         <ControlTemplate TargetType="ListView">

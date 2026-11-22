@@ -1,5 +1,6 @@
 ﻿using BGOverlay;
 using System;
+using BGOverlay.Resources;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -19,7 +20,6 @@ namespace WPFFrontend
         private MainWindow mainWindow;
 
         private Dictionary<String, BuffControl> buffs = new Dictionary<string, BuffControl>();
-        private string cachedWeaponName;
 
         private BitmapImage emptyBuffIcon = new BitmapImage(new Uri($"icons/not_found.png", UriKind.Relative));
 
@@ -62,56 +62,41 @@ namespace WPFFrontend
 
         private void fetchWeaponEffects(BGEntity bgEntity)
         {
-            if (bgEntity.Reader.EquippedWeaponName != this.cachedWeaponName 
-                && !(bgEntity.Reader.EquippedWeaponName == "None" && bgEntity.Reader.Enchantment == 0) 
-                && this.BGEntity.Reader.OnHitEffectsStrings.Count > 0)
+            var reader = bgEntity.Reader;
+            if (!bgEntity.HasEquippedWeapon || string.IsNullOrEmpty(reader?.EquippedWeaponName))
             {
-                this.itemEffectsListView.Items.Clear();
-                BitmapSource newIcon;
-                var icon = bgEntity.Reader.EquippedWeaponIcon;
-                if (icon != null)
-                {
-                    newIcon = Imaging.CreateBitmapSourceFromHBitmap(
-                    icon.GetHbitmap(),
-                    IntPtr.Zero,
-                    Int32Rect.Empty,
-                    BitmapSizeOptions.FromWidthAndHeight(icon.Width, icon.Height));
-                    var item = new StackPanel() { Orientation = Orientation.Horizontal };
-                    item.Children.Add(new Image() { MaxHeight = 24, Source = newIcon });
-                    item.Children.Add(weaponLabel(this.BGEntity.Reader.OnHitEffectsStrings[0]));
-                    this.itemEffectsListView.Items.Add(item);
-                    // Only add a second row when there's actually more content - an empty Label
-                    // still takes up its own height, which left an unbalanced gap under the
-                    // weapon name/icon row whenever OnHitEffectsStrings had just the one entry.
-                    if (this.BGEntity.Reader.OnHitEffectsStrings.Count > 1)
-                    {
-                        var extra = weaponLabel(string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings.Skip(1)));
-                        extra.Padding = new Thickness(0, 0, 0, -10);
-                        this.itemEffectsListView.Items.Add(extra);
-                    }
-                }
-                else
-                {
-                    this.itemEffectsListView.Items.Add(weaponLabel(string.Join("\n", this.BGEntity.Reader.OnHitEffectsStrings)));
-                }
-                this.cachedWeaponName = bgEntity.Reader.EquippedWeaponName;
-                this.itemEffectsListView.Visibility = Visibility.Visible;
+                WeaponPanel.Visibility = Visibility.Collapsed;
+                return;
             }
+
+            var lines = reader.OnHitEffectsStrings;
+            var launcher = bgEntity.EquippedLauncher;
+            WeaponIcon.DataContext = launcher.HasValue ? launcher.Value.Icon : reader.EquippedWeaponIcon;
+            WeaponDescription.Text = launcher?.Name ?? lines[0];
+            WeaponEffects.Text = string.Join("\n", lines.Skip(1));
+            WeaponEffects.Visibility = lines.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            Damage.Content = new WeaponDamageDisplay(reader.WeaponDamageType, bgEntity.DamageRange);
+
+            var offHand = bgEntity.OffHandWeapon;
+            SecondaryWeaponDescription.Visibility = launcher.HasValue || offHand != null ? Visibility.Visible : Visibility.Collapsed;
+            SecondaryWeaponIcon.DataContext = launcher.HasValue ? reader.EquippedWeaponIcon : offHand?.Icon;
+            SecondaryWeaponDescription.Text = launcher.HasValue ? lines[0] : offHand?.IdentifiedName;
+            SecondaryWeaponDamage.Visibility = offHand != null ? Visibility.Visible : Visibility.Collapsed;
+            SecondaryWeaponDamage.Content = offHand != null
+                ? new WeaponDamageDisplay(offHand.DamageType, bgEntity.OffHandDamageRange)
+                : null;
+            WeaponPanel.Visibility = Visibility.Visible;
         }
 
-        /// <summary>
-        /// A Label for the Weapon section using FontFamily2/FontSize2 explicitly (matching the
-        /// default Label style it'd get anyway, but pinned here so it stays in lockstep with
-        /// Pockets' own explicit choice rather than relying on the implicit style). SetResourceReference
-        /// (not a one-time value read) so it keeps tracking a live font change from Options, the
-        /// same way DynamicResource would in XAML.
-        /// </summary>
-        private Label weaponLabel(string content)
+        private sealed class WeaponDamageDisplay(DamageType? type, string range)
         {
-            var label = new Label { Content = content };
-            label.SetResourceReference(Control.FontFamilyProperty, "FontFamily2");
-            label.SetResourceReference(Control.FontSizeProperty, "FontSize2");
-            return label;
+            public string Range { get; } = range ?? "—";
+            public string AccessibleName => string.Format(RadarLocalization.Get("Str_DamageRange"), Range);
+            public bool Slashing { get; } = type is DamageType.Slashing or DamageType.Piercing_or_Slashing or DamageType.Crushing_or_Slashing;
+            public bool Piercing { get; } = type is DamageType.Piercing or DamageType.Piercing_or_Crushing or DamageType.Piercing_or_Slashing;
+            public bool Blunt { get; } = type is DamageType.Crushing or DamageType.Crushing_AC or DamageType.Crushing_Uses_Base_AC
+                or DamageType.Piercing_or_Crushing or DamageType.Crushing_or_Slashing or DamageType.Blunt_Missile;
+            public bool Missile { get; } = type is DamageType.Missile or DamageType.Blunt_Missile;
         }
 
         private void EnemyControl_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -189,7 +174,7 @@ namespace WPFFrontend
             R(this.AC, "Str_ArmorClass", item.DerivedStatsTemp.ArmorClass);
             R(this.THAC0, "Str_THAC0", item.THAC0);
             R(this.XP, "Str_Experience", item.Reader.XPGained);
-            this.Alignment.Format       = F("Str_Alignment", item.Reader.ShortAlignment);
+            this.Alignment.Format       = F("Str_Alignment", item.ShortAlignment);
             R(this.SaveDeath, "Str_SaveDeath", item.DerivedStatsTemp.SaveVsDeath);
             R(this.SaveWands, "Str_SaveWands", item.DerivedStatsTemp.SaveVsWands);
             R(this.SavePolymorph, "Str_SavePoly", item.DerivedStatsTemp.SaveVsPoly);
@@ -232,7 +217,7 @@ namespace WPFFrontend
                 BuffStack.CenterRows = Configuration.CenterBuffIcons;
                 foreach (var buff in buffs)
                 {
-                    if ((buff.Value.BuffDurationAbsolute != 0 && buff.Value.BuffDurationAbsolute - this.BGEntity.GameTime < 0)
+                    if ((buff.Value.BuffDurationAbsolute != 0 && buff.Value.BuffDurationAbsolute < this.BGEntity.GameTime)
                             || !this.BGEntity.SpellProtection.Any(x => x.Item1 == buff.Key))
                     {
                         this.BuffStack.Children.Remove(buff.Value);
@@ -251,7 +236,9 @@ namespace WPFFrontend
                         if (isPresent)
                         {
                             buffs[x.Item1].Invalidate();
+                            buffs[x.Item1].BuffDurationAbsolute = x.Item3;
                             buffs[x.Item1].BuffDuration = x.Item3 == uint.MaxValue ? float.MaxValue : durationFloat;
+                            buffs[x.Item1].UpdateTooltip(this.BGEntity.GameTime);
                             return;
                         }
                         BitmapSource newIcon;
@@ -275,21 +262,15 @@ namespace WPFFrontend
                             Icon = newIcon,
                             BuffDurationAbsolute = x.Item3
                         };
+                        buffControl.UpdateTooltip(this.BGEntity.GameTime);
                         BuffStack.Children.Add(buffControl);
                         this.buffs.Add(x.Item1, buffControl);
                     });
-                    this.BuffStack.Visibility = Visibility.Visible;
                 }
+                BuffStack.Visibility = BuffStack.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-                if (this.BGEntity.Protections.Count > 0)
-                {
-                    this.protectionsListView.Visibility = Visibility.Visible;
-                }
-
-                if (this.BGEntity.Pockets.Count > 0)
-                {
-                    this.pocketsSection.Visibility = Visibility.Visible;
-                }
+                protectionsPanel.Visibility = item.Protections.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                pocketsSection.Visibility = item.Pockets.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             } catch (Exception ex)
             {
                 Logger.Error("Enemy Control: Update View error!", ex);

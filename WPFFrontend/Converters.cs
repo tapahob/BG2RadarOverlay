@@ -9,6 +9,29 @@ using System.Windows.Media.Imaging;
 
 namespace WPFFrontend
 {
+    public class GameExecutableIconConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not string executable || !System.IO.File.Exists(executable)) return null;
+            try
+            {
+                using var icon = System.Drawing.Icon.ExtractAssociatedIcon(executable);
+                if (icon == null) return null;
+                var image = Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty,
+                    BitmapSizeOptions.FromEmptyOptions());
+                image.Freeze();
+                return image;
+            }
+            catch (ArgumentException) { return null; }
+            catch (System.IO.IOException) { return null; }
+            catch (System.ComponentModel.Win32Exception) { return null; }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
     /// <summary>
     /// Converts a System.Drawing.Bitmap (as returned by the game-resource readers, e.g. a
     /// spell's icon) into a WPF ImageSource for direct XAML binding - the manual

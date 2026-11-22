@@ -6,6 +6,13 @@
     <Application.Resources>
         <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary>
+                    <!-- Locale resources can override these fallback widths. -->
+                    <system:Double x:Key="EnemyControlWidth">570</system:Double>
+                    <system:Double x:Key="OptionsControlWidth">445</system:Double>
+                </ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
 
             <!--BoldCyrilic-->
             <FontFamily x:Key="FontFamily1">Segoe Print</FontFamily>
@@ -18,16 +25,6 @@
             <FontFamily x:Key="FontFamilyBuff">Bahnschrift Condensed</FontFamily>
             <system:Double x:Key="FontSize3Big">16</system:Double>
             <system:Double x:Key="FontSize3Small">12</system:Double>
-
-            <!-- EnemyControl's/OptionsControl's default/fallback width - some languages need
-                 more room for their translated labels than English does; a locale file can
-                 override either via the EnemyControlWidth/OptionsControlWidth key (see
-                 MainWindow.applyLocalization). 445 is OptionsControl's previous fixed width
-                 (the sum of its Grid's column widths: 10+180+15+180+10) plus the 50px widened
-                 for the Locale row's restart note, now the default/fallback instead of a
-                 hardcoded value on the control itself. -->
-            <system:Double x:Key="EnemyControlWidth">450</system:Double>
-            <system:Double x:Key="OptionsControlWidth">445</system:Double>
 
             <Style TargetType="{x:Type Label}">
                 <Setter Property="FontSize" Value="{DynamicResource FontSize2}" />
@@ -97,26 +94,82 @@
                 <Setter Property="FontSize" Value="{DynamicResource FontSize3Small}" />
             </Style>
 
-            <!-- OptionsControl's tabs (General/Twitch Integration) - the default Aero2 tab strip
-                 is a light-themed Windows control and clashes with the dark parchment skin, so
-                 this flattens it to a simple bordered header matching the rest of the UI (dark
-                 #FF151313 borders, Segoe Print) instead of pulling in system theme chrome. -->
+            <Style x:Key="OptionsHover" TargetType="Border">
+                <Setter Property="Background" Value="#75FFE2A4"/>
+                <Setter Property="IsHitTestVisible" Value="False"/>
+                <Setter Property="Opacity" Value="0"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                        <DataTrigger.EnterActions>
+                            <BeginStoryboard><Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.12"/>
+                            </Storyboard></BeginStoryboard>
+                        </DataTrigger.EnterActions>
+                        <DataTrigger.ExitActions>
+                            <BeginStoryboard><Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12"/>
+                            </Storyboard></BeginStoryboard>
+                        </DataTrigger.ExitActions>
+                    </DataTrigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Visibility" Value="Hidden"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <LinearGradientBrush x:Key="TabLeather" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#573821" Offset="0"/>
+                <GradientStop Color="#38251A" Offset="1"/>
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="SelectedTabLeather" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#865D36" Offset="0"/>
+                <GradientStop Color="#573821" Offset="1"/>
+            </LinearGradientBrush>
+
             <Style TargetType="{x:Type TabItem}">
                 <Setter Property="FontFamily" Value="Segoe Print" />
                 <Setter Property="FontWeight" Value="Bold" />
                 <Setter Property="FontSize" Value="13" />
+                <Setter Property="Foreground" Value="#E7C990" />
+                <Setter Property="Background" Value="{StaticResource TabLeather}" />
+                <Setter Property="Padding" Value="9,3" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type TabItem}">
-                            <Border x:Name="Border" BorderBrush="#FF151313" BorderThickness="1,1,1,0" Margin="0,0,2,0" Padding="10,4">
-                                <ContentPresenter x:Name="ContentSite" ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border x:Name="Frame" BorderBrush="#302015" BorderThickness="1" Margin="0,0,2,0"
+                                    Background="{TemplateBinding Background}">
+                                <Grid>
+                                    <Border x:Name="HeaderHover" Background="#28FFE2A4" IsHitTestVisible="False" Opacity="0"/>
+                                    <Border x:Name="Rim" BorderBrush="#99815C" BorderThickness="1" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
                             </Border>
                             <ControlTemplate.Triggers>
+                                <!-- TabItem.IsMouseOver also tracks its logically parented content. -->
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition SourceName="Frame" Property="IsMouseOver" Value="True"/>
+                                        <Condition Property="IsEnabled" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <MultiTrigger.EnterActions>
+                                        <BeginStoryboard><Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HeaderHover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.12"/>
+                                        </Storyboard></BeginStoryboard>
+                                    </MultiTrigger.EnterActions>
+                                    <MultiTrigger.ExitActions>
+                                        <BeginStoryboard><Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HeaderHover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12"/>
+                                        </Storyboard></BeginStoryboard>
+                                    </MultiTrigger.ExitActions>
+                                </MultiTrigger>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter TargetName="Border" Property="Background" Value="#FFDDD3B8"/>
+                                    <Setter Property="Background" Value="{StaticResource SelectedTabLeather}"/>
+                                    <Setter Property="Foreground" Value="#FFE8B9"/>
+                                    <Setter TargetName="Rim" Property="BorderBrush" Value="#D9B36F"/>
                                 </Trigger>
-                                <Trigger Property="IsSelected" Value="False">
-                                    <Setter TargetName="Border" Property="Background" Value="#88DDD3B8"/>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Rim" Property="BorderBrush" Value="#FFE8B9"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -136,8 +189,8 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <TabPanel Grid.Row="0" IsItemsHost="True" Background="Transparent"/>
-                                <Border Grid.Row="1" BorderBrush="#FF151313" BorderThickness="1" Background="Transparent">
-                                    <ContentPresenter ContentSource="SelectedContent"/>
+                                <Border Grid.Row="1" BorderBrush="#705037" BorderThickness="1" Background="Transparent">
+                                    <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"/>
                                 </Border>
                             </Grid>
                         </ControlTemplate>

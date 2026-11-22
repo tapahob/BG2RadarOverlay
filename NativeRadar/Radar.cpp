@@ -15,11 +15,12 @@
 #include "Composition.h"
 
 using Microsoft::WRL::ComPtr;
+void startCombatEvents(const std::wstring& gameDirectory);
 
 namespace {
 // Layout shared with GameFramePublisher.cs. The renderer owns the mapping;
 // every participant uses try-lock, so a stalled companion cannot stop a frame.
-constexpr int maxSide = 2048;
+constexpr int maxSide = 4096;
 struct FrameHeader {
     uint64_t lastPresent, lastUpdate;
     uint32_t revision, width, height;
@@ -32,6 +33,7 @@ constexpr size_t capacity = sizeof(FrameHeader) + maxSide * maxSide * 4;
 HANDLE frameMutex;
 FrameHeader* shared;
 HANDLE frameUpdated;
+HANDLE windowLayerAllowed;
 std::atomic<HWND> compositionWindow{}, composedWindow{};
 // SDL can set a new hardware cursor between presents. Remember what the game
 // requested so leaving the radar restores the action under the pointer.
@@ -111,6 +113,7 @@ void updatePointer(HWND window) {
     pointer.hand = next;
     pointer.source = next ? wanted : nullptr;
 }
+
 struct Snapshot {
     FrameHeader frame{};
     std::vector<unsigned char> pixels;
@@ -140,6 +143,7 @@ struct Snapshot {
                 } else pixels.clear();
             }
             frame.lastUpdate = h.lastUpdate;
+            frame.window = h.window;
             ReleaseMutex(frameMutex);
         }
         return !pixels.empty() && frame.lastUpdate && frame.lastUpdate + 1500 > now
@@ -148,7 +152,13 @@ struct Snapshot {
     bool update(HWND window, bool compositable = true) {
         updatePointer(window);
         HWND desired = compositable ? window : nullptr;
-        if (compositionWindow.exchange(desired) != desired && frameUpdated) SetEvent(frameUpdated);
+        if (compositionWindow.exchange(desired) != desired) {
+            if (windowLayerAllowed) {
+                if (desired) SetEvent(windowLayerAllowed);
+                else ResetEvent(windowLayerAllowed);
+            }
+            if (frameUpdated) SetEvent(frameUpdated);
+        }
         return read(window);
     }
 };
@@ -168,8 +178,8 @@ DWORD WINAPI composeRadar(void*) {
             && client.right > 0 && client.bottom > 0 && snapshot.read()
             && snapshot.frame.window == reinterpret_cast<uintptr_t>(window);
         if (!visible || owner != window || (layer && !layer->healthy())) {
-            composedWindow.store(nullptr);
             layer.reset();
+            composedWindow.store(nullptr);
             drawn = 0;
             owner = window;
         }
@@ -177,22 +187,24 @@ DWORD WINAPI composeRadar(void*) {
         if (!layer) {
             if (GetTickCount64() < retry) continue;
             layer = std::make_unique<RadarComposition>();
-            if (!layer->open(window, maxSide)) {
+            if (!layer->open(window)) {
                 layer.reset();
                 retry = GetTickCount64() + 2000;
                 continue;
             }
         }
         const auto& f = snapshot.frame;
-        if (drawn == f.revision && EqualRect(&previous, &client)) continue;
+        const bool resized = !EqualRect(&previous, &client);
+        if (drawn == f.revision && !resized) continue;
+        if (compositionWindow.load() != window) continue;
+        composedWindow.store(window);
         if (layer->draw(snapshot.pixels.data(), f.width, f.height, client.right*f.left, client.bottom*f.top,
-                        client.right*(f.right-f.left), client.bottom*(f.bottom-f.top))) {
+                        client.right*(f.right-f.left), client.bottom*(f.bottom-f.top), resized)) {
             previous = client;
             shared->drawnRevision = drawn = f.revision;
-            composedWindow.store(window);
         } else {
-            composedWindow.store(nullptr);
             layer.reset();
+            composedWindow.store(nullptr);
             drawn = 0;
             retry = GetTickCount64() + 2000;
         }
@@ -387,14 +399,32 @@ IDirect3D9* WINAPI createRadar9(UINT sdk) {
 }
 void startCompanion(const std::wstring& gameDirectory) {
     // Only start the companion installed with this game. Never search PATH or the current directory.
-    const std::wstring directory = gameDirectory + L"\\BG2Radar";
-    const std::wstring exe = directory + L"\\BG Radar Overlay.exe";
+    std::wstring directory = gameDirectory + L"\\BGRadar";
+    std::wstring exe = directory + L"\\BG Radar Overlay.exe";
+    if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        directory = gameDirectory + L"\\BG2Radar"; // Existing manual installs.
+        exe = directory + L"\\BG Radar Overlay.exe";
+    }
     if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) return;
     HANDLE existing = OpenMutexW(SYNCHRONIZE, FALSE, L"Local\\BG2Radar.Companion");
     if (existing) {
         CloseHandle(existing);
         return;
     }
+    // Start the resolved apphost beside its own runtime, GameFiles and translations.
+    HANDLE file = CreateFileW(exe.c_str(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                              nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return;
+    DWORD length = GetFinalPathNameByHandleW(file, nullptr, 0, FILE_NAME_NORMALIZED);
+    std::wstring resolved(length, L'\0');
+    DWORD copied = length ? GetFinalPathNameByHandleW(file, resolved.data(), length, FILE_NAME_NORMALIZED) : 0;
+    CloseHandle(file);
+    if (!copied || copied >= length) return;
+    resolved.resize(copied);
+    if (resolved.rfind(L"\\\\?\\UNC\\", 0) == 0) exe = L"\\\\" + resolved.substr(8);
+    else if (resolved.rfind(L"\\\\?\\", 0) == 0) exe = resolved.substr(4);
+    else exe = resolved;
+    directory = exe.substr(0, exe.find_last_of(L'\\'));
     std::wstring command = L"\"" + exe + L"\" --game-pid " + std::to_wstring(GetCurrentProcessId());
     STARTUPINFOW startup{};
     startup.cb = sizeof(startup);
@@ -414,17 +444,22 @@ extern "C" __declspec(dllexport) void InitializeASI() {
     wchar_t path[MAX_PATH]{};
     if (!GetModuleFileNameW(nullptr, path, MAX_PATH)) return;
     const wchar_t* filename = wcsrchr(path, L'\\');
-    if (!filename || _wcsicmp(filename + 1, L"Baldur.exe")) return;
+    if (!filename || (_wcsicmp(filename + 1, L"Baldur.exe") && _wcsicmp(filename + 1, L"icewind.exe"))) return;
     static std::once_flag once;
     std::call_once(once, [&] {
         wchar_t name[96];
         swprintf_s(name, L"Local\\BG2Radar.Frame.1.%lu.Lock", GetCurrentProcessId());
         frameMutex = CreateMutexW(nullptr, FALSE, name);
+        // Advertise child-window support before the companion can open the frame mapping.
+        swprintf_s(name, L"Local\\BG2Radar.Frame.1.%lu.WindowLayer", GetCurrentProcessId());
+        windowLayerAllowed = CreateEventW(nullptr, TRUE, FALSE, name);
         swprintf_s(name, L"Local\\BG2Radar.Frame.1.%lu", GetCurrentProcessId());
         HANDLE mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, capacity, name);
         if (!mapping || !frameMutex) return;
         shared = static_cast<FrameHeader*>(MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, capacity));
         if (!shared || MH_Initialize() != MH_OK) return;
+        const std::wstring gameDirectory(path, static_cast<size_t>(filename - path));
+        startCombatEvents(gameDirectory);
         swprintf_s(name, L"Local\\BG2Radar.Frame.1.%lu.Updated", GetCurrentProcessId());
         frameUpdated = CreateEventW(nullptr, FALSE, FALSE, name);
         if (frameUpdated) {
@@ -435,6 +470,6 @@ extern "C" __declspec(dllexport) void InitializeASI() {
         attach(reinterpret_cast<void*>(&SwapBuffers), swapRadarBuffers, swapGameBuffers);
         HMODULE d3d = LoadLibraryExW(L"d3d9.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (d3d) attach(reinterpret_cast<void*>(GetProcAddress(d3d, "Direct3DCreate9")), createRadar9, createGame9);
-        startCompanion(std::wstring(path, static_cast<size_t>(filename - path)));
+        startCompanion(gameDirectory);
     });
 }

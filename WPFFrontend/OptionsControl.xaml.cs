@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Input;
@@ -13,6 +14,9 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Button = System.Windows.Controls.Button;
+using ComboBox = System.Windows.Controls.ComboBox;
+using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
+using ContentControl = System.Windows.Controls.ContentControl;
 using UserControl = System.Windows.Controls.UserControl;
 
 namespace WPFFrontend
@@ -22,7 +26,19 @@ namespace WPFFrontend
     /// </summary>
     public partial class OptionsControl : UserControl
     {
+        internal event Func<GameInstallation, System.Threading.Tasks.Task> NativeInstallationToggleRequested;
+
+        private async void ToggleNativeInstallation_Click(object sender, RoutedEventArgs e)
+        {
+            var button = (Button)sender;
+            if (button.DataContext is not GameInstallation game || NativeInstallationToggleRequested == null) return;
+            button.IsEnabled = false;
+            try { await NativeInstallationToggleRequested(game); }
+            finally { button.IsEnabled = true; }
+        }
+
         private bool hidden = true;
+        private readonly DrawingGroup gameTooltipDrawing = new();
         internal event Action WindowCloseRequested;
 
         internal void SetWindowHosted(bool open)
@@ -32,6 +48,37 @@ namespace WPFFrontend
             Visibility = open ? Visibility.Visible : Visibility.Collapsed;
             hidden = !open;
             if (open) updateEEexModStatus();
+            else UpdateGameTooltip(null);
+        }
+
+        private void OptionTooltip_Opening(object sender, System.Windows.Controls.ToolTipEventArgs e)
+        {
+            if (WindowCloseRequested != null) e.Handled = true;
+        }
+
+        internal void UpdateGameTooltip(Point? screenPointer)
+        {
+            if (screenPointer is Point pointer)
+            {
+                var position = PointFromScreen(pointer);
+                var viewport = new Rect(RenderSize);
+                var element = viewport.Contains(position) ? InputHitTest(position) as Visual : null;
+                while (element != null && element != this)
+                {
+                    if (element is FrameworkElement { IsEnabled: true, ToolTip: string content }
+                        && !string.IsNullOrWhiteSpace(content))
+                    {
+                        // This visual is displayed both in the Options HWND and in the game frame.
+                        using var drawing = gameTooltipDrawing.Open();
+                        drawing.DrawRectangle(Brushes.Transparent, null, viewport);
+                        MiniBuffLayer.DrawTooltip(drawing, viewport, position, content,
+                            VisualTreeHelper.GetDpi(this).PixelsPerDip, abovePointer: true);
+                        return;
+                    }
+                    element = VisualTreeHelper.GetParent(element) as Visual;
+                }
+            }
+            if (gameTooltipDrawing.Children.Count > 0) gameTooltipDrawing.Children.Clear();
         }
 
         /// <summary>
@@ -43,17 +90,19 @@ namespace WPFFrontend
         public event Action DebugModeChanged;
 
         /// <summary>
-        /// Raised right after a new locale is picked (Configuration.Locale and
-        /// RadarLocalization.Strings are already updated by then) - MainWindow uses this the
-        /// same way as DebugModeChanged, since some display text (e.g. the Pockets section's
-        /// Stealable/Droppable flag words) is also only computed once, when a CREReader is
-        /// first cached.
+        /// Raised after the game string table and radar UI resources have been updated.
         /// </summary>
         public event Action LocaleChanged;
 
         public OptionsControl()
         {
             InitializeComponent();
+            GameTooltip.Background = new DrawingBrush(gameTooltipDrawing)
+            {
+                Stretch = Stretch.None,
+                AlignmentX = AlignmentX.Left,
+                AlignmentY = AlignmentY.Top
+            };
             this.Version.Content             = $"Ver. {Configuration.Version}";
             this.HidePartyMembers.Click     += updateConfig;
             this.HideNeutrals.Click         += updateConfig;
@@ -65,6 +114,14 @@ namespace WPFFrontend
             this.BuffInkFilter.Click        += updateConfig;
             this.AnimateEnemyListNumbers.Click += updateConfig;
             this.AnimateCharacterCardNumbers.Click += updateConfig;
+            AddCombatChoices<CombatTrajectory>(CombatPath);
+            AddCombatChoices<CombatEasing>(CombatEasingPicker);
+            ShowCastingSpell.Click += updateConfig;
+            CombatScale.ValueChanged += updateConfig;
+            CombatSpeed.ValueChanged += updateConfig;
+            CombatPush.ValueChanged += updateConfig;
+            CombatPath.SelectionChanged += updateConfig;
+            CombatEasingPicker.SelectionChanged += updateConfig;
             this.UseShiftClick.Click        += updateConfig;
             this.DebugMode.Click            += updateConfig;
             this.DebugMode.Click            += (s, e) => DebugModeChanged?.Invoke();
@@ -100,13 +157,7 @@ namespace WPFFrontend
         private void initTwitchStatusPolling()
         {
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            timer.Tick += (s, e) =>
-            {
-                updateTwitchStatusLabel();
-                // Captions are set in code rather than bound to a DynamicResource, so this is
-                // also what picks up a language change while the tab is open.
-                updateStreamKeyButtons();
-            };
+            timer.Tick += (s, e) => updateTwitchStatusLabel();
             timer.Start();
             updateTwitchStatusLabel();
             updateStreamKeyButtons();
@@ -281,32 +332,24 @@ namespace WPFFrontend
                 default:                         key = "Str_TwitchModInstalled"; break;
             }
 
-            this.EEexModStatusLabel.Content = RadarLocalization.Get(key);
+            this.EEexModStatusLabel.SetResourceReference(ContentControl.ContentProperty, key);
         }
+
+        private (string Key, object[] Arguments)? modInstallResult;
 
         private void InstallEEexMod_Click(object sender, RoutedEventArgs e)
         {
-            string error;
-            if (EEexModInstaller.TryInstall(out error))
-            {
-                // The game reads override/ when it loads, so a copy made while it is running
-                // changes nothing until the next start. Saying so here saves the streamer
-                // wondering why the summon they just paid for did nothing.
-                this.EEexModResult.Text = string.Format(
-                    CultureInfo.InvariantCulture,
-                    RadarLocalization.Get("Str_TwitchModInstallOk"),
-                    EEexModInstaller.FileNames.Length,
-                    EEexModInstaller.OverrideFolder);
-            }
-            else
-            {
-                this.EEexModResult.Text = string.Format(
-                    CultureInfo.InvariantCulture,
-                    RadarLocalization.Get("Str_TwitchModInstallFailed"),
-                    error);
-            }
-
+            modInstallResult = EEexModInstaller.TryInstall(out var error)
+                ? ("Str_TwitchModInstallOk", new object[] { EEexModInstaller.FileNames.Length, EEexModInstaller.OverrideFolder })
+                : ("Str_TwitchModInstallFailed", new object[] { error });
+            updateModInstallResult();
             updateEEexModStatus();
+        }
+
+        private void updateModInstallResult()
+        {
+            if (modInstallResult is { } result)
+                EEexModResult.Text = string.Format(CultureInfo.InvariantCulture, RadarLocalization.Get(result.Key), result.Arguments);
         }
 
         /// <summary>
@@ -359,20 +402,49 @@ namespace WPFFrontend
             // always because it's paused. Without this the summon just appears to do nothing.
             var queued = GameSpawnBridge.Instance.QueueLength;
             if (queued > 0 && GameSpawnBridge.Instance.IsStalled)
-                showSummonResult(false, string.Format(RadarLocalization.Get("Str_TwitchSummonStalled"), queued));
+                showSummonResult(false, "Str_TwitchSummonStalled", queued);
         }
+
+        private Task pendingLocaleChange = Task.CompletedTask;
 
         private void initLocale()
         {
-            var availableLocales          = new DirectoryInfo(Path.Combine(Configuration.GameFolder, "lang")).EnumerateDirectories();
-            this.Locale.ItemsSource       = availableLocales.Select(x => x.ToString().ToLower().Substring(x.ToString().LastIndexOf('\\') + 1));
-            this.Locale.SelectedItem      = Configuration.Locale;
-            this.Locale.SelectionChanged += updateConfig;
-            // updateConfig() (above) writes the new selection into Configuration.Locale first;
-            // reload the radar's own UI text right after so the change is visible immediately
-            // instead of only after restarting the radar.
-            this.Locale.SelectionChanged += (s, e) => MainWindow.ApplyLocalization();
-            this.Locale.SelectionChanged += (s, e) => LocaleChanged?.Invoke();
+            var folder = new DirectoryInfo(Path.Combine(Configuration.GameFolder, "lang"));
+            var locales = folder.EnumerateDirectories().Select(x => x.Name.ToLowerInvariant()).ToArray();
+            this.Locale.ItemsSource = locales;
+            this.Locale.SelectedItem = Configuration.Locale.ToLowerInvariant();
+            this.Locale.SelectionChanged += (s, e) =>
+            {
+                if (this.Locale.SelectedItem is string locale
+                    && !string.Equals(locale, Configuration.Locale, StringComparison.OrdinalIgnoreCase))
+                    pendingLocaleChange = applySelectedLocale(locale);
+            };
+        }
+
+        private async Task applySelectedLocale(string locale)
+        {
+            this.Locale.IsEnabled = false;
+            try
+            {
+                if (!await ResourceManager.Instance.ReloadGameStringsAsync(locale))
+                    return;
+                Configuration.Locale = locale;
+                MainWindow.ApplyLocalization(this);
+                LocaleChanged?.Invoke();
+                updateDiagnostics();
+                updateModInstallResult();
+                updateSummonResult();
+                updateTwitchStatusLabel();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Could not apply locale '{locale}'", ex);
+            }
+            finally
+            {
+                this.Locale.SelectedItem = Configuration.Locale.ToLowerInvariant();
+                this.Locale.IsEnabled = true;
+            }
         }
 
         private void OptionsControl_MouseUp(object sender, MouseButtonEventArgs e)
@@ -409,13 +481,22 @@ namespace WPFFrontend
             e.Handled = regex.IsMatch(e.Text);
         }
 
-        private void ForceBorderless_Click(object sender, System.Windows.RoutedEventArgs e)
+        private async void ForceBorderless_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            Configuration.ForceBorderless();
+            ForceBorderless.IsEnabled = false;
+            try
+            {
+                await System.Threading.Tasks.Task.Run(Configuration.ForceBorderless);
+            }
+            finally
+            {
+                ForceBorderless.IsEnabled = true;
+            }
         }
 
-        private void Save_Click(object sender, System.Windows.RoutedEventArgs e)
+        private async void Save_Click(object sender, System.Windows.RoutedEventArgs e)
         {
+            await pendingLocaleChange;
             // Pull the tab's current values across first rather than trusting that each field's
             // own TextChanged has already run - the stream key and control key in particular have
             // no such handler, being read-only and only ever set by newStreamKey().
@@ -436,6 +517,16 @@ namespace WPFFrontend
         /// the moment the Options panel is opened - and a Save from there persists the blank.
         /// </summary>
         private bool suppressConfigSync = false;
+
+        private static void AddCombatChoices<T>(ComboBox box) where T : struct, Enum
+        {
+            foreach (var value in Enum.GetValues<T>())
+            {
+                var item = new ComboBoxItem { Tag = value };
+                item.SetResourceReference(ContentControl.ContentProperty, "Str_Combat" + value);
+                box.Items.Add(item);
+            }
+        }
 
         private void updateConfig(object sender, object args)
         {
@@ -460,9 +551,14 @@ namespace WPFFrontend
             Configuration.BuffInkFilter       = this.BuffInkFilter.IsChecked == true;
             Configuration.AnimateEnemyListNumbers = this.AnimateEnemyListNumbers.IsChecked == true;
             Configuration.AnimateCharacterCardNumbers = this.AnimateCharacterCardNumbers.IsChecked == true;
+            Configuration.ShowCastingSpell = ShowCastingSpell.IsChecked == true;
+            Configuration.CombatTextScale = (int)CombatScale.Value;
+            Configuration.CombatTextSpeed = (int)CombatSpeed.Value;
+            Configuration.CombatTextPush = (int)CombatPush.Value;
+            if (CombatPath.SelectedValue is CombatTrajectory path) Configuration.CombatTextPath = path;
+            if (CombatEasingPicker.SelectedValue is CombatEasing easing) Configuration.CombatTextEasing = easing;
             Configuration.UseShiftClick       = (bool)this.UseShiftClick.IsChecked;
             Configuration.DebugMode           = (bool)this.DebugMode.IsChecked;
-            Configuration.Locale              = this.Locale.SelectedValue.ToString();
             Configuration.TwitchIntegrationEnabled = (bool)this.TwitchIntegrationEnabled.IsChecked;
             Configuration.TwitchRelayUrl       = this.TwitchRelayUrl.Text;
             Configuration.TwitchStreamKey      = this.TwitchStreamKey.Text;
@@ -501,7 +597,7 @@ namespace WPFFrontend
             // printable ASCII, since the engine's message log renders from a single-byte
             // codepage, so a translated string would show up in game as an empty line.
             GameSpawnBridge.Instance.Enqueue(pack.Entries, "Test summon from the radar overlay");
-            showSummonResult(true, string.Format(RadarLocalization.Get("Str_TwitchPackQueued"), pack.ToString()));
+            showSummonResult(true, "Str_TwitchPackQueued", pack.ToString());
         }
 
         private SpawnPack selectedPack()
@@ -555,12 +651,26 @@ namespace WPFFrontend
             this.PackEntries.Text   = "";
         }
 
-        private void showSummonResult(bool ok, string text)
+        private (string Key, object[] Arguments)? summonResult;
+
+        private void showSummonResult(bool ok, string key, params object[] arguments)
         {
             this.SummonResult.Foreground = ok
                 ? System.Windows.Media.Brushes.DarkGreen
                 : System.Windows.Media.Brushes.DarkRed;
-            this.SummonResult.Text = text;
+            summonResult = (key, arguments);
+            updateSummonResult();
+        }
+
+        private void updateSummonResult()
+        {
+            if (summonResult is { } result)
+            {
+                var text = RadarLocalization.Get(result.Key);
+                this.SummonResult.Text = result.Arguments.Length == 0
+                    ? text
+                    : string.Format(text, result.Arguments);
+            }
         }
 
         /// <summary>
@@ -610,7 +720,7 @@ namespace WPFFrontend
                 !int.TryParse(this.PackLevelTo.Text.Trim(), out var to) ||
                 from < 1 || to < from)
             {
-                showSummonResult(false, RadarLocalization.Get("Str_TwitchPackBadRange"));
+                showSummonResult(false, "Str_TwitchPackBadRange");
                 return;
             }
 
@@ -620,14 +730,14 @@ namespace WPFFrontend
             var cost = 0;
             if (costText.Length > 0 && (!int.TryParse(costText, out cost) || cost < 0))
             {
-                showSummonResult(false, RadarLocalization.Get("Str_TwitchPackBadCost"));
+                showSummonResult(false, "Str_TwitchPackBadCost");
                 return;
             }
 
             var entries = SpawnPack.ParseEntryLines(this.PackEntries.Text, out var rejected);
             if (entries.Count == 0)
             {
-                showSummonResult(false, RadarLocalization.Get("Str_TwitchPackNoCreatures"));
+                showSummonResult(false, "Str_TwitchPackNoCreatures");
                 return;
             }
 
@@ -658,10 +768,10 @@ namespace WPFFrontend
 
             // Surfaced rather than silently dropped, so a typo'd ResRef doesn't vanish without
             // the user noticing it never made it into the pack.
-            showSummonResult(rejected.Count == 0,
-                rejected.Count == 0
-                    ? RadarLocalization.Get("Str_TwitchPackSaved")
-                    : string.Format(RadarLocalization.Get("Str_TwitchPackSavedWithErrors"), string.Join(", ", rejected)));
+            if (rejected.Count == 0)
+                showSummonResult(true, "Str_TwitchPackSaved");
+            else
+                showSummonResult(false, "Str_TwitchPackSavedWithErrors", string.Join(", ", rejected));
         }
 
         private void PackDelete_Click(object sender, RoutedEventArgs e)
@@ -675,7 +785,7 @@ namespace WPFFrontend
 
             // Keep a neighbour selected so the buttons don't go dead after every delete.
             refreshPackList(Math.Min(index, spawnPacks.Count - 1));
-            showSummonResult(true, RadarLocalization.Get("Str_TwitchPackDeleted"));
+            showSummonResult(true, "Str_TwitchPackDeleted");
         }
 
         /// <summary>
@@ -790,9 +900,9 @@ namespace WPFFrontend
         {
             var hasKey = !string.IsNullOrWhiteSpace(this.TwitchStreamKey.Text);
 
-            this.GenerateStreamKey.Content = RadarLocalization.Get(
+            this.GenerateStreamKey.SetResourceReference(ContentControl.ContentProperty,
                 hasKey ? "Str_TwitchConnect" : "Str_TwitchGenerateKey");
-            this.RegenerateStreamKey.Content = RadarLocalization.Get("Str_TwitchNewKey");
+            this.RegenerateStreamKey.SetResourceReference(ContentControl.ContentProperty, "Str_TwitchNewKey");
             this.RegenerateStreamKey.Visibility = hasKey ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -815,6 +925,12 @@ namespace WPFFrontend
                 this.BuffInkFilter.IsChecked        = Configuration.BuffInkFilter;
                 this.AnimateEnemyListNumbers.IsChecked = Configuration.AnimateEnemyListNumbers;
                 this.AnimateCharacterCardNumbers.IsChecked = Configuration.AnimateCharacterCardNumbers;
+                ShowCastingSpell.IsChecked = Configuration.ShowCastingSpell;
+                CombatScale.Value = Configuration.CombatTextScale;
+                CombatSpeed.Value = Configuration.CombatTextSpeed;
+                CombatPush.Value = Configuration.CombatTextPush;
+                CombatPath.SelectedValue = Configuration.CombatTextPath;
+                CombatEasingPicker.SelectedValue = Configuration.CombatTextEasing;
                 this.UseShiftClick.IsChecked        = Configuration.UseShiftClick;
                 this.DebugMode.IsChecked            = Configuration.DebugMode;
                 this.TwitchIntegrationEnabled.IsChecked = Configuration.TwitchIntegrationEnabled;

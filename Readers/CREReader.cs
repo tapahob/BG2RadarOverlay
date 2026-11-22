@@ -269,8 +269,8 @@ namespace BGOverlay
             {
                 return new List<string>
                 {                    
-                    String.Format("Weapon: \"{0}\" {1}", EquippedWeaponName,
-                    EquippedWeaponName.Contains($"{+Enchantment}") ? "" : $"(Strikes as +{Enchantment}) {WeaponDamageType}")
+                    $"Weapon: \"{EquippedWeaponName}\"" +
+                    (EquippedWeaponName.Contains($"+{Enchantment}") ? "" : $" (Strikes as +{Enchantment})")
                 }.Concat(ItemEffects.Select(x => x.ToString())).ToList();
             }  
         }
@@ -653,16 +653,15 @@ namespace BGOverlay
 
         private ALIGNMENT alignment;
 
-        public string ShortAlignment
-        {
-            get
-            {
-                if (RadarLocalization.TryGet($"Alignment_{alignment}", out var localized))
-                    return localized;
+        public string ShortAlignment => FormatAlignment(alignment);
 
-                var alignmentString = alignment.ToString().ToLowerInvariant().Replace("_", " ");
-                return alignmentString[0].ToString().ToUpperInvariant() + alignmentString.Substring(1);
-            }
+        internal static string FormatAlignment(ALIGNMENT alignment)
+        {
+            if (RadarLocalization.TryGet($"Alignment_{alignment}", out var localized))
+                return localized;
+
+            var alignmentString = alignment.ToString().ToLowerInvariant().Replace("_", " ");
+            return alignmentString[0].ToString().ToUpperInvariant() + alignmentString.Substring(1);
         }
 
         private void setAlignment(ALIGNMENT value)
@@ -676,7 +675,7 @@ namespace BGOverlay
         public int Enchantment { get; set; }
         public string EquippedWeaponName { get; set; }
         public Bitmap EquippedWeaponIcon { get; set; }
-        public String WeaponDamageType { get; set; }
+        public DamageType? WeaponDamageType { get; set; }
         public List<PocketItemEntry> Pockets { get; private set; } = new List<PocketItemEntry>();
     }
 }

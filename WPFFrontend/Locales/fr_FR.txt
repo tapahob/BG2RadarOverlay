@@ -7,7 +7,7 @@
 Str_WaitingForGame=En attente du jeu
 
 # EnemyControl - panneau du personnage
-EnemyControlWidth=530
+EnemyControlWidth=650
 Str_Level=Niv.{0}
 Str_Race=Race : {0}
 Str_STR=FOR : {0}
@@ -21,6 +21,7 @@ Str_EnemyListHP=PV: {0}
 Str_Attacks=Attaques : {0}
 Str_ArmorClass=Classe d'Armure : {0}
 Str_THAC0=THAC0 : {0}
+Str_DamageRange=Dégâts: {0}
 Str_Experience=Expérience : {0}
 Str_Alignment=Alignement : {0}
 Alignment_NONE=Aucun
@@ -472,7 +473,6 @@ Str_UseShiftClick=Utiliser Maj+Clic
 Str_UseShiftClickTooltip=Utiliser Maj + Clic droit au lieu de Clic droit
 Str_DebugMode=Mode débogage
 Str_Locale=Langue :
-Str_LocaleRestartNote=S'applique pleinement après redémarrage du Radar
 Str_Save=Enregistrer
 
 # Race enum (Resources/CREReader.RACE) - shown in the "Race: ..." EnemyControl label.
@@ -773,3 +773,50 @@ Class_SOD_TMP=Temporaire
 Class_SPECTRAL_TROLL=Troll spectral
 Class_WIGHT=Spectre
 Class_NO_CLASS=Aucune
+
+# Games tab and native Radar installation dialogs
+# Use \n for line breaks in dialog details.
+Str_TabGames=Jeux
+Str_NativeInject=Installer
+Str_NativeRemove=Retirer le module
+Str_InstallationClose=Fermer
+Str_InstallationOK=OK
+Str_InstallationCancel=Annuler
+Str_InstallationLater=Plus tard
+Str_NativeSetup=Configuration du radar intégré
+Str_NativeLinkPermission=Activez le mode développeur de Windows ou lancez Radar en tant qu’administrateur pour créer un lien symbolique.
+Str_NativeUpdateLink=Mettre à jour le lien
+Str_NativeUpdateAndRestart=Mettre à jour et relancer
+Str_NativeUpdateTitle=Mettre à jour le lien vers Radar pour {0} ?
+Str_NativeUpdateDetails={0}\n\nCible actuelle : {1}\nRadar en cours d’exécution : {2}
+Str_NativeMissingLink=(lien manquant)
+Str_NativeDetectedTitle=Nouvelle installation de {0} détectée ! Installer le radar intégré ?
+Str_NativeDetectedDetails={0}\n\nRadar intégré :\n• Fonctionne en plein écran et en mode fenêtré\n• Prend en charge le moteur de rendu alternatif et celui d’origine\n• Il est plus joli, miaou ! Essayez-le !
+Str_NativeDetectedYes=Oui, miaou !
+Str_NativeDetectedNo=Arrête de miauler ! Non !
+Str_NativeRemoveTitle=Retirer le radar intégré de {0} ?
+Str_NativeRemovedTitle=Radar intégré retiré
+Str_NativeRemovedDetails=Relancez le jeu pour passer à la superposition du bureau.
+Str_NativeReadyTitle=Tout est prêt pour {0} !
+Str_NativeReadyDetails=Le radar intégré se lancera avec le jeu.
+Str_NativeRestartTitle=Relancer {0} maintenant ?
+Str_NativeRestartDetails=Le radar intégré est installé dans {0}. Sauvegardez votre partie avant de relancer le jeu.
+Str_NativeRestartNow=Relancer
+Str_NativeCloseTimeout=Le jeu est encore en cours d’exécution. Fermez-le, puis relancez-le quand vous le souhaitez.
+Str_NativeInvalidList=Liste des installations de jeux non valide.
+Str_NativeInvalidEntry=Entrée non valide dans la liste des installations de jeux.
+Str_NativeLinkOccupied=Un fichier existe déjà à l’emplacement {0}. Déplacez-le avant de créer le lien.
+Str_NativeGameMissing=Jeu introuvable dans {0}.
+Str_NativeLoaderConflict=Un autre fichier winmm.dll est déjà installé dans {0}. Vérifiez la compatibilité du chargeur.
+Str_ShowCastingSpell=Afficher le nom des sorts au-dessus des lanceurs
+
+Str_NativeProgressDetected=Installation du jeu détectée : {0}
+Str_NativeProgressInjector=Installation de l’injecteur de Radar
+Str_NativeProgressAutostart=Configuration du lancement de Radar Overlay avec le jeu depuis cet emplacement :
+Str_NativeProgressInstalling=Configuration de Radar…
+Str_NativeProgressRestart=Veuillez redémarrer le jeu pour activer Radar.
+Str_NativeProgressFailed=La configuration de Radar n’a pas pu aboutir.
+
+Str_EEexPatchDetectedTitle=Nouvelle installation d’EEex détectée
+Str_EEexPatchDetectedDetails=Le correctif de compatibilité a été installé. Veuillez redémarrer InfinityLoader.
+Str_EEexPatchInstallStep=Installation du correctif de compatibilité avec EEex

@@ -30,7 +30,10 @@ namespace WinApiBindings
         }
 
         [DllImport("user32.dll")]
-        public static extern int ShowWindow(int hwnd, int nCmdShow);
+        public static extern bool ShowWindow(IntPtr hwnd, int nCmdShow);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool PostMessage(IntPtr hwnd, uint message, IntPtr wParam, IntPtr lParam);
 
         public static IntPtr GetModuleBaseAddress(Process proc, string modName)
         {
@@ -413,7 +416,7 @@ namespace WinApiBindings
             SW_MAX             = 11
         }
         
-        [DllImport("user32.dll", EntryPoint = "SetWindowLong")]
+        [DllImport("user32.dll", EntryPoint = "SetWindowLong", SetLastError = true)]
         public static extern int SetWindowLong32(IntPtr hWnd, int nIndex, long dwNewLong);
 
         [DllImport("user32.dll", EntryPoint = "GetWindowLong")]

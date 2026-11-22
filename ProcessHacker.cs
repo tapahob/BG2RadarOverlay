@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using BGOverlay.Diagnostics;
@@ -25,12 +26,16 @@ namespace BGOverlay
         public event ProcessStateChangedHandler ProcessDestroyed;
         public event ProcessStateChangedHandler ProcessFound;
         public event ProcessStateChangedHandler ProcessHooked;
+        public event Action<int, BGEntity, int> HealthLost;
 
         public List<BGEntity> entityList;
 
         public ObservableCollection<String> TextEntries = new ObservableCollection<string>();
         public ResourceManager ResourceManager { get; private set; }
         public List<BGEntity> NearestEnemies { get; private set; }
+        // A completed scan for the overhead display, including actors hidden from the radar list.
+        private volatile BGEntity[] overheadActors = Array.Empty<BGEntity>();
+        public IReadOnlyList<BGEntity> OverheadActors => overheadActors;
 
         private List<BGEntity> entityListTemp = new List<BGEntity>();
         private List<BGEntity> allEntities    = new List<BGEntity>();
@@ -40,7 +45,8 @@ namespace BGOverlay
         // Slot index -> already-constructed BGEntity, kept across ticks so an unchanged
         // creature only pays for a full pointer-chasing reconstruction once, and every
         // later tick just re-reads its volatile fields (position/HP/buffs-pointer targets).
-        private readonly Dictionary<int, BGEntity> entityPool = new Dictionary<int, BGEntity>();
+        private readonly Dictionary<int, (BGEntity Template, short HP, uint Time)> entityPool =
+            new Dictionary<int, (BGEntity, short, uint)>();
         private readonly HashSet<int> seenIndexes = new HashSet<int>();
 
         // Set from the UI thread (InvalidateEntityCache), consumed only at the top of MainLoop()
@@ -110,11 +116,11 @@ namespace BGOverlay
             if (Proc.HasExited)
             {
                 if (launchGame != null) return; // The companion exits with its launching game.
-                NearestEnemies.Clear();
+                NearestEnemies?.Clear();
                 TextEntries.Clear();
                 entityPool.Clear();
                 deadSlots.Clear();
-                ProcessDestroyed?.Invoke(Proc.ProcessName, Proc.Id);
+                ProcessDestroyed?.Invoke(gameName, Proc.Id);
                 this.Init();
             }
 
@@ -171,11 +177,16 @@ namespace BGOverlay
                         // always holds a fresh, private-to-this-tick snapshot, same as when
                         // every entity was fully reconstructed from scratch.
                         BGEntity newEntity = null;
-                        if (entityPool.TryGetValue(index, out var template))
+                        if (entityPool.TryGetValue(index, out var previous))
                         {
-                            newEntity = template.RefreshedCopy();
+                            newEntity = previous.Template.RefreshedCopy();
                             if (newEntity != null)
+                            {
                                 entitiesReused++;
+                                entityPool[index] = (previous.Template, newEntity.CurrentHP, newEntity.GameTime);
+                                if (previous.HP > 0 && newEntity.CurrentHP < previous.HP && newEntity.GameTime >= previous.Time)
+                                    HealthLost?.Invoke(Proc.Id, newEntity, previous.HP - newEntity.CurrentHP);
+                            }
                             CycleProfiler.Instance.AddRefresh();
                         }
 
@@ -229,7 +240,7 @@ namespace BGOverlay
                             }
 
                             deadSlots.Remove(i);
-                            entityPool[index] = newEntity;
+                            entityPool[index] = (newEntity, newEntity.CurrentHP, newEntity.GameTime);
                         }
 
                         if (newEntity.Name2 == "<ERROR>" || newEntity.CurrentHP == 0)
@@ -279,7 +290,8 @@ namespace BGOverlay
 
             entityList = entityListTemp;
 
-            if (!entityList.Any())
+            overheadActors = allEntities.Where(clip).ToArray();
+            if (allEntities.Count == 0)
             {
                 entityListPtr = entityListPtr == staticEntityList27 ? staticEntityList26 : staticEntityList27;
             }
@@ -328,6 +340,7 @@ namespace BGOverlay
 
         public void Init()
         {
+            overheadActors = Array.Empty<BGEntity>();
             Logger.Init();
             Logger.Info("Waiting for game process ...");
             
@@ -366,7 +379,9 @@ namespace BGOverlay
         public void makeBorderless(IntPtr handle)
         {
             Configuration.HWndPtr = handle;
-            if (!Configuration.Borderless) 
+            // Keep the engine's chosen display mode at startup when using the in-game renderer.
+            if (!Configuration.Borderless || File.Exists(Path.Combine(Configuration.GameFolder, "BG2Radar.asi"))
+                || File.Exists(Path.Combine(Configuration.GameFolder, "scripts", "BG2Radar.asi")))
                 return;
             Configuration.ForceBorderless();            
         }
@@ -384,10 +399,6 @@ namespace BGOverlay
         /// already-pooled creature would keep showing the old value until it left and
         /// re-entered the pool on its own. Safe to call from any thread - the actual Clear()
         /// happens on MainLoop()'s own thread (see cacheInvalidationRequested).
-        ///
-        /// Does NOT drop ResourceManager.CREReaderCache - CREReader data is parsed straight
-        /// from the CRE file's bytes and doesn't depend on anything that changes at runtime,
-        /// so a cached CREReader never goes stale.
         /// </summary>
         public void InvalidateEntityCache()
         {

@@ -17,60 +17,100 @@
         <wpffrontend:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <wpffrontend:PocketCountToSuffixConverter x:Key="PocketCountToSuffixConverter"/>
         <wpffrontend:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
+        <BitmapImage x:Key="Ink1" UriSource="/artwork/character-dividers/divider_01.png"/>
+        <BitmapImage x:Key="Ink2" UriSource="/artwork/character-dividers/divider_02.png"/>
+        <BitmapImage x:Key="Ink3" UriSource="/artwork/character-dividers/divider_03.png"/>
+        <BitmapImage x:Key="Ink4" UriSource="/artwork/character-dividers/divider_04.png"/>
+        <BitmapImage x:Key="Ink5" UriSource="/artwork/character-dividers/divider_05.png"/>
+        <!-- All five strokes are 1180 x 19 pixels. Draw the outer tenths at half
+             size, and let the middle absorb differences in localized card widths. -->
+        <DataTemplate x:Key="InkDivider">
+            <Grid Height="9.5" IsHitTestVisible="False" RenderOptions.BitmapScalingMode="HighQuality">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="59"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="59"/>
+                </Grid.ColumnDefinitions>
+                <Rectangle Grid.Column="0">
+                    <Rectangle.Fill>
+                        <ImageBrush ImageSource="{Binding}" Viewbox="0,0,0.1,1" Stretch="Fill"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Rectangle Grid.Column="1">
+                    <Rectangle.Fill>
+                        <ImageBrush ImageSource="{Binding}" Viewbox="0.1,0,0.8,1" Stretch="Fill"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Rectangle Grid.Column="2">
+                    <Rectangle.Fill>
+                        <ImageBrush ImageSource="{Binding}" Viewbox="0.9,0,0.1,1" Stretch="Fill"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Grid>
+        </DataTemplate>
     </UserControl.Resources>
-    <UserControl.BorderBrush>
-        <ImageBrush/>
-    </UserControl.BorderBrush>
-    <UserControl.Background>
-        <ImageBrush ImageSource="/pexels-photo-235985.jpeg" Stretch="UniformToFill"/>
-    </UserControl.Background>
     <i:Interaction.Behaviors>
         <i:MouseDragElementBehavior/>
     </i:Interaction.Behaviors>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="10"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="10"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="10"/>
-        </Grid.ColumnDefinitions>
-        <Border Grid.RowSpan="9" Grid.ColumnSpan="4" BorderThickness="5" BorderBrush="#FF151313"/>
-        <Label x:Name="Level" Grid.Row="1" Grid.Column="1" d:Content="41" />
-        <Label Grid.Row="1" Grid.Column="2" Content="X" d:Content="X" HorizontalAlignment="Right" MouseDown="Label_MouseDown" Margin="0,0,3,0"/>
-        <Border Grid.ColumnSpan="2" Grid.Row="1" Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="1">
-            <StackPanel Margin="5,5,5,5">
-                <Label x:Name="EnemyName" Style="{StaticResource Bold}" d:Content="Дуэргар" HorizontalAlignment="Center" ClipToBounds="True" Content="{Binding Name2}"/>
-                <Label x:Name="ClassesAndLevels" Content="{Binding ClassString}" d:Content="Warrior Thief Mage" HorizontalAlignment="Center" ClipToBounds="True">
-                </Label>
-                <Label x:Name="Race" d:Content="78m" HorizontalAlignment="Center" ClipToBounds="True"/>
-                <wpffrontend:CenteredWrapPanel x:Name="BuffStack" Margin="5,0">
-                    <wpffrontend:CenteredWrapPanel.Resources>
-                        <Style TargetType="{x:Type wpffrontend:BuffControl}">
-                            <Setter Property="Margin" Value="1"/>
-                            <Setter Property="Width" Value="{Binding MaxWidth, RelativeSource={RelativeSource Self}}"/>
-                            <Setter Property="Height" Value="{Binding MaxHeight, RelativeSource={RelativeSource Self}}"/>
-                        </Style>
-                    </wpffrontend:CenteredWrapPanel.Resources>
-                </wpffrontend:CenteredWrapPanel>
-            </StackPanel>
+        <!-- The paper ends underneath the outer ink stroke of the frame. -->
+        <Border Margin="3,4.5,3,2" CornerRadius="5">
+            <Border.Background>
+                <ImageBrush ImageSource="/pexels-photo-235985.jpeg" Stretch="UniformToFill"/>
+            </Border.Background>
         </Border>
-
-        <Border Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="4" BorderBrush="Black" BorderThickness="0" Margin="1">
-            <!-- VerticalAlignment="Center" so this row's fixed 30px height doesn't leave a
-                 bigger gap below the text than above it (the default Top alignment would let
-                 any extra row height pile up entirely under the text instead of split evenly). -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid IsHitTestVisible="False"
+              UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality">
+            <Grid.Resources>
+                <Style TargetType="Image">
+                    <Setter Property="Stretch" Value="Fill"/>
+                </Style>
+            </Grid.Resources>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="16"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="16"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+            </Grid.ColumnDefinitions>
+            <Image Grid.Row="0" Grid.Column="0" Source="/artwork/character-frame/top_left.png"/>
+            <Image Grid.Row="0" Grid.Column="1" Source="/artwork/character-frame/top.png"/>
+            <Image Grid.Row="0" Grid.Column="2" Source="/artwork/character-frame/top_right.png"/>
+            <Image Grid.Row="1" Grid.Column="0" Source="/artwork/character-frame/left.png"/>
+            <Image Grid.Row="1" Grid.Column="2" Source="/artwork/character-frame/right.png"/>
+            <Image Grid.Row="2" Grid.Column="0" Source="/artwork/character-frame/bottom_left.png"/>
+            <Image Grid.Row="2" Grid.Column="1" Source="/artwork/character-frame/bottom.png"/>
+            <Image Grid.Row="2" Grid.Column="2" Source="/artwork/character-frame/bottom_right.png"/>
+        </Grid>
+        <StackPanel Margin="10">
+            <Grid>
+                <Label x:Name="Level" d:Content="41" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                <StackPanel Margin="56,2">
+                    <Label x:Name="EnemyName" Style="{StaticResource Bold}" d:Content="Дуэргар" HorizontalAlignment="Center" ClipToBounds="True" Content="{Binding Name2}"/>
+                    <Label x:Name="ClassesAndLevels" Content="{Binding ClassString}" d:Content="Warrior Thief Mage" HorizontalAlignment="Center" ClipToBounds="True"/>
+                    <Label x:Name="Race" d:Content="78m" HorizontalAlignment="Center" ClipToBounds="True"/>
+                </StackPanel>
+                <Label x:Name="CloseTarget" Content="×" FontFamily="Segoe UI" FontSize="28" FontWeight="Bold"
+                       Width="44" Height="44" Padding="0" Background="Transparent" Cursor="Hand"
+                       HorizontalAlignment="Right" VerticalAlignment="Top"
+                       HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MouseDown="Label_MouseDown"/>
+            </Grid>
+            <ContentPresenter Content="{StaticResource Ink1}" ContentTemplate="{StaticResource InkDivider}"
+                              Visibility="{Binding Visibility, ElementName=BuffStack}"/>
+            <wpffrontend:CenteredWrapPanel x:Name="BuffStack" Margin="5,0" Visibility="Collapsed">
+                <wpffrontend:CenteredWrapPanel.Resources>
+                    <Style TargetType="{x:Type wpffrontend:BuffControl}">
+                        <Setter Property="Margin" Value="1"/>
+                        <Setter Property="Width" Value="{Binding MaxWidth, RelativeSource={RelativeSource Self}}"/>
+                        <Setter Property="Height" Value="{Binding MaxHeight, RelativeSource={RelativeSource Self}}"/>
+                    </Style>
+                </wpffrontend:CenteredWrapPanel.Resources>
+            </wpffrontend:CenteredWrapPanel>
+            <ContentPresenter Content="{StaticResource Ink2}" ContentTemplate="{StaticResource InkDivider}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,1">
                 <!-- Only the base STR score animates - the "/exceptional" percentile (18/xx) is
                      baked into the Format string as a literal suffix, like Health's max HP. -->
                 <wpffrontend:RollingLabel Style="{StaticResource RollingLabelAttributes}" x:Name="STR" HorizontalAlignment="Center" d:Text="STR: 18/76"/>
@@ -80,135 +120,274 @@
                 <wpffrontend:RollingLabel Style="{StaticResource RollingLabelAttributes}" x:Name="WIS" HorizontalAlignment="Center" ClipToBounds="True" d:Text="WIS: 12"/>
                 <wpffrontend:RollingLabel Style="{StaticResource RollingLabelAttributes}" x:Name="CHA" HorizontalAlignment="Center" ClipToBounds="True" d:Text="CHR: 14"/>
             </StackPanel>
-        </Border>
+            <ContentPresenter Content="{StaticResource Ink3}" ContentTemplate="{StaticResource InkDivider}"/>
+            <Grid Margin="1,0" UseLayoutRounding="True">
+                <Grid.Resources>
+                    <Style TargetType="Image">
+                        <Setter Property="MaxWidth" Value="40"/>
+                        <Setter Property="Height" Value="22"/>
+                        <Setter Property="Stretch" Value="Uniform"/>
+                        <Setter Property="Margin" Value="3,2,4,3"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="IsHitTestVisible" Value="False"/>
+                        <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+                    </Style>
+                    <Style TargetType="wpffrontend:RollingLabel" BasedOn="{StaticResource RollingLabelDefault}">
+                        <Setter Property="Margin" Value="0,2,4,3"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="TextWrapping" Value="Wrap"/>
+                    </Style>
+                </Grid.Resources>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="14*"/>
+                    <ColumnDefinition Width="36*"/>
+                    <ColumnDefinition Width="14*"/>
+                    <ColumnDefinition Width="36*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-        <Border Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="2" BorderBrush="Black" BorderThickness="1" Margin="1"/>
-        <!-- Margin="4,0,0,4" on every row below (left/bottom, no top/right) by analogy with the
-             per-spell Margin="0,0,8,2" in the "Immune to spells" section - offset lives on each
-             row itself rather than on the StackPanel as a whole. -->
-        <StackPanel Grid.Row="3" Grid.Column="1" Margin="1,5,1,1">
-            <wpffrontend:RollingLabel x:Name="Health" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Health: 87/95"/>
-            <!-- No number to roll (Attacks can be fractional, e.g. "3/2") - RollingLabel.Format
-                 is just the fully-resolved text with no "{0}" in it, which string.Format leaves
-                 untouched, so this is only here for consistent styling/spacing with its
-                 neighbors, not for the animation itself. -->
-            <wpffrontend:RollingLabel x:Name="APR" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Attacks: 3/2"/>
-            <wpffrontend:RollingLabel x:Name="AC" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Armor Class: -2"/>
-            <wpffrontend:RollingLabel x:Name="THAC0" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="THAC0: 11"/>
-            <wpffrontend:RollingLabel x:Name="XP" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" Panel.ZIndex="1" d:Text="Experience: 12000"/>
-            <!-- Same reasoning as APR above - Alignment is a string (e.g. "Lawful good"), not a
-                 number, so this is purely for consistent styling with its RollingLabel neighbors. -->
-            <wpffrontend:RollingLabel x:Name="Alignment" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Alignment: Chaotic evil"/>
-            <wpffrontend:RollingLabel x:Name="SaveDeath" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Save vs Death: 6"/>
-            <wpffrontend:RollingLabel x:Name="SaveWands" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Save vs Wands: 7"/>
-            <wpffrontend:RollingLabel x:Name="SavePolymorph" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Save vs Polymorph: 8"/>
-            <wpffrontend:RollingLabel x:Name="SaveBreath" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Save vs Breath: 9"/>
-            <wpffrontend:RollingLabel x:Name="SaveSpells" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Save vs Spells: 8"/>
-        </StackPanel>
-        <StackPanel Grid.Row="3" Grid.Column="2" Margin="1,5,1,1">
-            <wpffrontend:RollingLabel x:Name="ResFire" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Fire: 10"/>
-            <wpffrontend:RollingLabel x:Name="ResCold" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Cold: 10"/>
-            <wpffrontend:RollingLabel x:Name="ResElectro" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Electricity: 0"/>
-            <wpffrontend:RollingLabel x:Name="ResAcid" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Acid: 0"/>
-            <wpffrontend:RollingLabel x:Name="ResMagic" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Magic: 10"/>
-            <wpffrontend:RollingLabel x:Name="ResMagicDamage" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Magic Dmg: 0"/>
-            <wpffrontend:RollingLabel x:Name="ResPoison" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Poison: 0"/>
-            <wpffrontend:RollingLabel x:Name="ResSlashing" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Slashing: 0"/>
-            <wpffrontend:RollingLabel x:Name="ResCrushing" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Crushing: 0"/>
-            <wpffrontend:RollingLabel x:Name="ResPiercing" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Piercing: 0"/>
-            <wpffrontend:RollingLabel x:Name="ResMissile" Style="{StaticResource RollingLabelDefault}" Margin="6,2,0,4" HorizontalAlignment="Left" ClipToBounds="True" d:Text="Resist Missile: 0"/>
-        </StackPanel>
-        <ListView x:Name="protectionsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False" HorizontalContentAlignment="Stretch" Grid.Row="5" ItemsSource="{Binding Protections}" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
-            <ListView.Resources>
-                <!-- Most Protections entries are plain strings, rendered exactly as before.
-                     Implicit (DataType-keyed, no x:Key) templates here let this single
-                     ListView render both plain-string lines and the icon-carrying
-                     SpellImmunityLine entry below without a template selector. -->
-                <DataTemplate DataType="{x:Type sys:String}">
-                    <TextBlock Text="{Binding}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
-                </DataTemplate>
+                <Image Grid.Row="0" Grid.Column="0" Source="/icons/character/health.png"/>
+                <wpffrontend:RollingLabel x:Name="Health" Grid.Row="0" Grid.Column="1" d:Text="Health: 87/95"/>
+                <Image Grid.Row="0" Grid.Column="2" Source="/icons/character/resist_fire.png"/>
+                <wpffrontend:RollingLabel x:Name="ResFire" Grid.Row="0" Grid.Column="3" d:Text="Resist Fire: 10"/>
 
-                <!-- The "Immune to spells" entry carries each spell's icon (when the resource
-                     has one) alongside its name instead of one long comma-joined string. -->
-                <DataTemplate DataType="{x:Type bg:SpellImmunityLine}">
-                    <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch">
-                        <!-- HorizontalAlignment="Stretch" + TextAlignment="Center" (rather than
-                             HorizontalAlignment="Center", which shrinks the TextBlock to its own
-                             text and can look off-center against the ItemsControl below it) so
-                             the header spans the exact same width as the UniformGrid underneath
-                             and centers within that, not within its own tight bounding box. -->
-                        <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource FontFamily1}" FontSize="13" FontWeight="Bold" Foreground="Black"
-                                   TextWrapping="Wrap" HorizontalAlignment="Stretch" TextAlignment="Center"/>
-                        <!-- 2 columns to save space, by analogy with the Pockets section - no
-                             trailing commas needed once spells aren't run together in a wrapped
-                             single-line list. -->
-                        <ItemsControl ItemsSource="{Binding Spells}" Margin="0,2,0,0">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="3"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type bg:SpellIconEntry}">
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,8,2">
-                                        <!-- No icon in the resource -> no placeholder, just the name (Visibility Collapsed removes the slot instead of leaving blank space). -->
-                                        <Image Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
-                                               Width="24" Height="24" Margin="0,0,3,0">
-                                            <Image.Source>
-                                                <MultiBinding Converter="{StaticResource InkIconConverter}" Mode="OneWay">
-                                                    <Binding Path="Icon" Converter="{StaticResource BitmapToImageSourceConverter}"/>
-                                                    <Binding Path="(bg:Configuration.BuffInkFilter)"/>
-                                                </MultiBinding>
-                                            </Image.Source>
-                                        </Image>
-                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </DataTemplate>
-            </ListView.Resources>
-        </ListView>
-        <ListView x:Name="itemEffectsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"  Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Background="{x:Null}" Foreground="{x:Null}" Visibility="Collapsed">
-        </ListView>
+                <Image Grid.Row="1" Grid.Column="0" Source="/icons/character/attacks.png"/>
+                <wpffrontend:RollingLabel x:Name="APR" Grid.Row="1" Grid.Column="1" d:Text="Attacks: 3/2"/>
+                <Image Grid.Row="1" Grid.Column="2" Source="/icons/character/resist_cold.png"/>
+                <wpffrontend:RollingLabel x:Name="ResCold" Grid.Row="1" Grid.Column="3" d:Text="Resist Cold: 10"/>
 
-        <!-- Items this creature is carrying that can be stolen via pickpocket
-             (BGEntity.Pockets already excludes ones with the Unstealable flag set). -->
-        <StackPanel x:Name="pocketsSection" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="1,5,1,1" Visibility="Collapsed">
-            <Label x:Name="PocketsHeader" d:Content="Pockets" HorizontalAlignment="Left" Padding="0"/>
-            <ListView x:Name="pocketsListView" BorderThickness="1" BorderBrush="Black" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False" HorizontalContentAlignment="Stretch" ItemsSource="{Binding Pockets}" Background="{x:Null}" Foreground="{x:Null}">
-                <!-- 2 columns to save vertical space - each item's own Grid (icon/name/flags)
-                     still adapts to whatever width that gives it. -->
-                <ListView.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="2"/>
-                    </ItemsPanelTemplate>
-                </ListView.ItemsPanel>
-                <ListView.ItemTemplate>
-                    <DataTemplate DataType="{x:Type bg:PocketItemEntry}">
-                        <!-- Stacked (icon+name on top, flags below) rather than a single wide row -
-                             each item only gets half the control's width in the 2-column layout
-                             above, and a same-row right-aligned FlagsText would easily overflow
-                             that narrower slot. -->
-                        <StackPanel Orientation="Vertical" Margin="0,0,8,0">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                                <!-- No icon in the resource -> no placeholder, just the name. -->
-                                <Image Source="{Binding Icon, Converter={StaticResource BitmapToImageSourceConverter}}"
-                                       Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
-                                       Width="24" Height="24" Margin="0,0,3,0"/>
-                                <!-- FontFamily2/FontSize2 instead of Protections' own
-                                     FontFamily1/FontSize1. -->
-                                <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" Foreground="Black" TextWrapping="Wrap"/>
-                                <!-- "x{Count}" for 2+ of the same item, nothing for a single one. -->
-                                <TextBlock Text="{Binding Count, Converter={StaticResource PocketCountToSuffixConverter}}" Style="{StaticResource Protections}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" Foreground="Black"/>
+                <Image Grid.Row="2" Grid.Column="0" Source="/icons/character/armor_class.png"/>
+                <wpffrontend:RollingLabel x:Name="AC" Grid.Row="2" Grid.Column="1" d:Text="Armor Class: -2"/>
+                <Image Grid.Row="2" Grid.Column="2" Source="/icons/character/resist_electricity.png"/>
+                <wpffrontend:RollingLabel x:Name="ResElectro" Grid.Row="2" Grid.Column="3" d:Text="Resist Electricity: 0"/>
+
+                <Image Grid.Row="3" Grid.Column="0" Source="/icons/character/thac0.png"/>
+                <wpffrontend:RollingLabel x:Name="THAC0" Grid.Row="3" Grid.Column="1" d:Text="THAC0: 11"/>
+                <Image Grid.Row="3" Grid.Column="2" Source="/icons/character/resist_acid.png"/>
+                <wpffrontend:RollingLabel x:Name="ResAcid" Grid.Row="3" Grid.Column="3" d:Text="Resist Acid: 0"/>
+
+                <Image Grid.Row="4" Grid.Column="0" Source="/icons/character/experience.png"/>
+                <wpffrontend:RollingLabel x:Name="XP" Grid.Row="4" Grid.Column="1" d:Text="Experience: 12000"/>
+                <Image Grid.Row="4" Grid.Column="2" Source="/icons/character/resist_magic.png"/>
+                <wpffrontend:RollingLabel x:Name="ResMagic" Grid.Row="4" Grid.Column="3" d:Text="Resist Magic: 10"/>
+
+                <Image Grid.Row="5" Grid.Column="0" Source="/icons/character/alignment.png"/>
+                <wpffrontend:RollingLabel x:Name="Alignment" Grid.Row="5" Grid.Column="1" d:Text="Alignment: Chaotic evil"/>
+                <Image Grid.Row="5" Grid.Column="2" Source="/icons/character/resist_magic_damage.png"/>
+                <wpffrontend:RollingLabel x:Name="ResMagicDamage" Grid.Row="5" Grid.Column="3" d:Text="Resist Magic Dmg: 0"/>
+
+                <Image Grid.Row="6" Grid.Column="0" Source="/icons/character/save_vs_death.png"/>
+                <wpffrontend:RollingLabel x:Name="SaveDeath" Grid.Row="6" Grid.Column="1" d:Text="Save vs Death: 6"/>
+                <Image Grid.Row="6" Grid.Column="2" Source="/icons/character/resist_poison.png"/>
+                <wpffrontend:RollingLabel x:Name="ResPoison" Grid.Row="6" Grid.Column="3" d:Text="Resist Poison: 0"/>
+
+                <Image Grid.Row="7" Grid.Column="0" Source="/icons/character/save_vs_wands.png"/>
+                <wpffrontend:RollingLabel x:Name="SaveWands" Grid.Row="7" Grid.Column="1" d:Text="Save vs Wands: 7"/>
+                <Image Grid.Row="7" Grid.Column="2" Source="/icons/character/resist_slashing.png"/>
+                <wpffrontend:RollingLabel x:Name="ResSlashing" Grid.Row="7" Grid.Column="3" d:Text="Resist Slashing: 0"/>
+
+                <Image Grid.Row="8" Grid.Column="0" Source="/icons/character/save_vs_polymorph.png"/>
+                <wpffrontend:RollingLabel x:Name="SavePolymorph" Grid.Row="8" Grid.Column="1" d:Text="Save vs Polymorph: 8"/>
+                <Image Grid.Row="8" Grid.Column="2" Source="/icons/character/resist_crushing.png"/>
+                <wpffrontend:RollingLabel x:Name="ResCrushing" Grid.Row="8" Grid.Column="3" d:Text="Resist Crushing: 0"/>
+
+                <Image Grid.Row="9" Grid.Column="0" Source="/icons/character/save_vs_breath.png"/>
+                <wpffrontend:RollingLabel x:Name="SaveBreath" Grid.Row="9" Grid.Column="1" d:Text="Save vs Breath: 9"/>
+                <Image Grid.Row="9" Grid.Column="2" Source="/icons/character/resist_piercing.png"/>
+                <wpffrontend:RollingLabel x:Name="ResPiercing" Grid.Row="9" Grid.Column="3" d:Text="Resist Piercing: 0"/>
+
+                <Image Grid.Row="10" Grid.Column="0" Source="/icons/character/save_vs_spells.png"/>
+                <wpffrontend:RollingLabel x:Name="SaveSpells" Grid.Row="10" Grid.Column="1" d:Text="Save vs Spells: 8"/>
+                <Image Grid.Row="10" Grid.Column="2" Source="/icons/character/resist_missile.png"/>
+                <wpffrontend:RollingLabel x:Name="ResMissile" Grid.Row="10" Grid.Column="3" d:Text="Resist Missile: 0"/>
+            </Grid>
+            <ContentPresenter Content="{StaticResource Ink4}" ContentTemplate="{StaticResource InkDivider}"
+                              Visibility="{Binding Visibility, ElementName=protectionsPanel}"/>
+            <Border x:Name="protectionsPanel" Padding="5,0" Visibility="Collapsed">
+                <ListView BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"
+                          HorizontalContentAlignment="Stretch" ItemsSource="{Binding Protections}" Background="{x:Null}" Foreground="{x:Null}">
+                    <ListView.Resources>
+                        <!-- Most Protections entries are plain strings, rendered exactly as before.
+                             Implicit (DataType-keyed, no x:Key) templates here let this single
+                             ListView render both plain-string lines and the icon-carrying
+                             SpellImmunityLine entry below without a template selector. -->
+                        <DataTemplate DataType="{x:Type sys:String}">
+                            <TextBlock Text="{Binding}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
+                        </DataTemplate>
+
+                        <!-- The "Immune to spells" entry carries each spell's icon (when the resource
+                             has one) alongside its name instead of one long comma-joined string. -->
+                        <DataTemplate DataType="{x:Type bg:SpellImmunityLine}">
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch">
+                                <!-- HorizontalAlignment="Stretch" + TextAlignment="Center" (rather than
+                                     HorizontalAlignment="Center", which shrinks the TextBlock to its own
+                                     text and can look off-center against the ItemsControl below it) so
+                                     the header spans the exact same width as the UniformGrid underneath
+                                     and centers within that, not within its own tight bounding box. -->
+                                <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource FontFamily1}" FontSize="13" FontWeight="Bold" Foreground="Black"
+                                           TextWrapping="Wrap" HorizontalAlignment="Stretch" TextAlignment="Center"/>
+                                <!-- 2 columns to save space, by analogy with the Pockets section - no
+                                     trailing commas needed once spells aren't run together in a wrapped
+                                     single-line list. -->
+                                <ItemsControl ItemsSource="{Binding Spells}" Margin="0,2,0,0">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="3"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type bg:SpellIconEntry}">
+                                            <DockPanel Margin="0,0,8,2">
+                                                <!-- No icon in the resource -> no placeholder, just the name (Visibility Collapsed removes the slot instead of leaving blank space). -->
+                                                <Image Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
+                                                       Width="24" Height="24" Margin="0,0,3,0">
+                                                    <Image.Source>
+                                                        <MultiBinding Converter="{StaticResource InkIconConverter}" Mode="OneWay">
+                                                            <Binding Path="Icon" Converter="{StaticResource BitmapToImageSourceConverter}"/>
+                                                            <Binding Path="(bg:Configuration.BuffInkFilter)"/>
+                                                        </MultiBinding>
+                                                    </Image.Source>
+                                                </Image>
+                                                <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
-                            <TextBlock Text="{Binding FlagsText}" Style="{StaticResource Protections}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" Foreground="Black" TextWrapping="Wrap" Margin="27,0,0,0"
-                                       Visibility="{Binding FlagsText, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
+                        </DataTemplate>
+                        <DataTemplate DataType="{x:Type bg:EffectImmunityLine}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource FontFamily1}" FontSize="13" FontWeight="Bold" Foreground="Black"
+                                           TextWrapping="Wrap" TextAlignment="Center"/>
+                                <ItemsControl ItemsSource="{Binding Rows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <ItemsControl ItemsSource="{Binding}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Rows="1" Columns="3"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" Style="{StaticResource Protections}" Foreground="Black"
+                                                                   TextWrapping="Wrap" Margin="0,0,6,0"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.Resources>
+                </ListView>
+            </Border>
+            <ContentPresenter Content="{StaticResource Ink5}" ContentTemplate="{StaticResource InkDivider}"
+                              Visibility="{Binding Visibility, ElementName=WeaponPanel}"/>
+            <Border x:Name="WeaponPanel" Padding="6" Visibility="Collapsed"
+                    TextElement.FontFamily="{DynamicResource FontFamily2}" TextElement.FontSize="{DynamicResource FontSize2}" TextElement.FontWeight="Bold">
+                <Border.Resources>
+                    <BooleanToVisibilityConverter x:Key="DamageIconVisibility"/>
+                    <Style x:Key="WeaponRowIcon" TargetType="Image">
+                        <Setter Property="Width" Value="32"/>
+                        <Setter Property="Height" Value="32"/>
+                        <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+                    </Style>
+                    <DataTemplate x:Key="WeaponDamageTemplate">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <StackPanel.Resources>
+                                <Style TargetType="Image" BasedOn="{StaticResource WeaponRowIcon}">
+                                    <Setter Property="Margin" Value="0,0,6,0"/>
+                                </Style>
+                            </StackPanel.Resources>
+                            <Image Source="/icons/damage/slashing.png" Visibility="{Binding Slashing, Converter={StaticResource DamageIconVisibility}}"/>
+                            <Image Source="/icons/damage/piercing.png" Visibility="{Binding Piercing, Converter={StaticResource DamageIconVisibility}}"/>
+                            <Image Source="/icons/damage/blunt.png" Visibility="{Binding Blunt, Converter={StaticResource DamageIconVisibility}}"/>
+                            <Image Source="/icons/damage/missile.png" Visibility="{Binding Missile, Converter={StaticResource DamageIconVisibility}}"/>
+                            <TextBlock Text="{Binding Range}" AutomationProperties.Name="{Binding AccessibleName}" VerticalAlignment="Center" d:Text="6–9"/>
                         </StackPanel>
                     </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                </Border.Resources>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Image x:Name="WeaponIcon" Style="{StaticResource WeaponRowIcon}" Source="{Binding Converter={StaticResource BitmapToImageSourceConverter}}"/>
+                    <TextBlock x:Name="WeaponDescription" Grid.Column="1" Margin="4,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <ContentPresenter x:Name="Damage" Grid.Column="2" ContentTemplate="{StaticResource WeaponDamageTemplate}"/>
+                    <Image x:Name="SecondaryWeaponIcon" Grid.Row="1" Style="{StaticResource WeaponRowIcon}"
+                           Source="{Binding Converter={StaticResource BitmapToImageSourceConverter}}"
+                           Visibility="{Binding Visibility, ElementName=SecondaryWeaponDescription}"/>
+                    <TextBlock x:Name="SecondaryWeaponDescription" Grid.Row="1" Grid.Column="1" Margin="4,0" VerticalAlignment="Center"
+                               TextWrapping="Wrap" Visibility="Collapsed"/>
+                    <ContentPresenter x:Name="SecondaryWeaponDamage" Grid.Row="1" Grid.Column="2" Visibility="Collapsed"
+                                      ContentTemplate="{StaticResource WeaponDamageTemplate}"/>
+                    <TextBlock x:Name="WeaponEffects" Grid.Row="2" Grid.ColumnSpan="3" TextWrapping="Wrap"/>
+                </Grid>
+            </Border>
+
+            <!-- Items this creature is carrying that can be stolen via pickpocket
+                 (BGEntity.Pockets already excludes ones with the Unstealable flag set). -->
+            <ContentPresenter Content="{StaticResource Ink2}" ContentTemplate="{StaticResource InkDivider}"
+                              Visibility="{Binding Visibility, ElementName=pocketsSection}"/>
+            <Border x:Name="pocketsSection" Padding="4,1" Visibility="Collapsed">
+                <StackPanel>
+                    <Label x:Name="PocketsHeader" d:Content="Pockets" HorizontalAlignment="Left" Padding="0"/>
+                    <ListView x:Name="pocketsListView" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False" HorizontalContentAlignment="Stretch" ItemsSource="{Binding Pockets}" Background="{x:Null}" Foreground="{x:Null}">
+                        <!-- 2 columns to save vertical space - each item's own Grid (icon/name/flags)
+                             still adapts to whatever width that gives it. -->
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="2"/>
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
+                        <ListView.ItemTemplate>
+                            <DataTemplate DataType="{x:Type bg:PocketItemEntry}">
+                                <!-- Stacked (icon+name on top, flags below) rather than a single wide row -
+                                     each item only gets half the control's width in the 2-column layout
+                                     above, and a same-row right-aligned FlagsText would easily overflow
+                                     that narrower slot. -->
+                                <StackPanel Orientation="Vertical" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                        <!-- No icon in the resource -> no placeholder, just the name. -->
+                                        <Image Source="{Binding Icon, Converter={StaticResource BitmapToImageSourceConverter}}"
+                                               Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
+                                               Width="24" Height="24" Margin="0,0,3,0"/>
+                                        <!-- FontFamily2/FontSize2 instead of Protections' own
+                                             FontFamily1/FontSize1. -->
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" Foreground="Black" TextWrapping="Wrap"/>
+                                        <!-- "x{Count}" for 2+ of the same item, nothing for a single one. -->
+                                        <TextBlock Text="{Binding Count, Converter={StaticResource PocketCountToSuffixConverter}}" Style="{StaticResource Protections}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" Foreground="Black"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding FlagsText}" Style="{StaticResource Protections}" FontFamily="{DynamicResource FontFamily2}" FontSize="{DynamicResource FontSize2}" Foreground="Black" TextWrapping="Wrap" Margin="27,0,0,0"
+                                               Visibility="{Binding FlagsText, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </Grid>
 </UserControl>

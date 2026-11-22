@@ -7,7 +7,7 @@
 Str_WaitingForGame=Ожидание запуска игры
 
 # EnemyControl - панель персонажа
-EnemyControlWidth=580
+EnemyControlWidth=700
 Str_Level=Ур.{0}
 Str_Race=Раса: {0}
 Str_STR=СИЛ: {0}
@@ -21,6 +21,7 @@ Str_EnemyListHP=ОЗ: {0}
 Str_Attacks=Атаки: {0}
 Str_ArmorClass=Класс брони: {0}
 Str_THAC0=THAC0: {0}
+Str_DamageRange=Урон: {0}
 Str_Experience=Опыт: {0}
 Str_Alignment=Мировоззрение: {0}
 Alignment_NONE=Нет
@@ -512,7 +513,6 @@ Str_UseShiftClick=Использовать Shift+клик
 Str_UseShiftClickTooltip=Использовать Shift + ПКМ вместо ПКМ
 Str_DebugMode=Режим отладки
 Str_Locale=Язык:
-Str_LocaleRestartNote=Полностью применяется после перезапуска радара
 Str_Save=Сохранить
 
 # Race enum (Resources/CREReader.RACE) - shown in the "Race: ..." EnemyControl label.
@@ -858,3 +858,75 @@ Str_TwitchChannelInvalid=Это не похоже на логин Twitch. Нуж
 Str_TwitchNeedsEEex=EEex не установлен в папке игры. Без него призывы с Twitch не работают - установите EEex (у него свой установщик), затем включите это.
 Str_TwitchPackTags=Теги:
 Str_TwitchPackTagsHint=Через ";". Награда за баллы канала может брать только паки с указанными тегами - так на одном канале можно сделать несколько наград из одного списка паков.
+
+# Games tab and native Radar installation dialogs
+# Use \n for line breaks in dialog details.
+Str_TabGames=Игры
+Str_NativeInject=Установить
+Str_NativeRemove=Удалить модуль
+Str_InstallationClose=Закрыть
+Str_InstallationOK=ОК
+Str_InstallationCancel=Отмена
+Str_InstallationLater=Позже
+Str_NativeSetup=Настройка встроенного радара
+Str_NativeLinkPermission=Для создания символической ссылки включите режим разработчика в Windows или запустите радар от имени администратора.
+Str_NativeUpdateLink=Обновить ссылку
+Str_NativeUpdateAndRestart=Обновить и перезапустить
+Str_NativeUpdateTitle=Обновить ссылку на радар для {0}?
+Str_NativeUpdateDetails={0}\n\nТекущая цель ссылки: {1}\nЗапущенный радар: {2}
+Str_NativeMissingLink=(ссылка отсутствует)
+Str_NativeDetectedTitle=Обнаружена новая установка игры {0}! Установить встроенный радар?
+Str_NativeDetectedDetails={0}\n\nВстроенный радар:\n• Работает в полноэкранном и оконном режимах\n• Поддерживает альтернативный и стандартный рендереры\n• Выглядит лучше, мяу! Попробуйте!
+Str_NativeDetectedYes=Да, мяу!
+Str_NativeDetectedNo=Хватит мяукать! Нет!
+Str_NativeProgressDetected=Обнаружена установка игры {0}
+Str_NativeProgressInjector=Установка Radar Injector
+Str_NativeProgressAutostart=Настройка автозапуска Radar Overlay вместе с игрой по пути:
+Str_NativeProgressInstalling=Идёт настройка радара…
+Str_NativeProgressRestart=Пожалуйста, перезапустите игру, чтобы включить радар.
+Str_NativeProgressFailed=Не удалось завершить настройку радара.
+Str_NativeRemoveTitle=Удалить встроенный радар из {0}?
+Str_NativeRemovedTitle=Встроенный радар удалён
+Str_NativeRemovedDetails=Перезапустите игру, чтобы переключиться на оверлей рабочего стола.
+Str_NativeReadyTitle=Всё готово для {0}!
+Str_NativeReadyDetails=Встроенный радар запустится вместе с игрой.
+Str_NativeRestartTitle=Перезапустить {0} сейчас?
+Str_NativeRestartDetails=Встроенный радар установлен в {0}. Сохраните игру перед перезапуском.
+Str_NativeRestartNow=Перезапустить
+Str_NativeCloseTimeout=Игра всё ещё запущена. Закройте её и запустите снова, когда будете готовы.
+Str_NativeInvalidList=Некорректный список установленных игр.
+Str_NativeInvalidEntry=Некорректная запись об установленной игре.
+Str_NativeLinkOccupied=По пути {0} уже есть файл. Переместите его, прежде чем создавать ссылку.
+Str_NativeGameMissing=Не удалось найти игру в папке {0}.
+Str_NativeLoaderConflict=В папке {0} уже установлен другой файл winmm.dll. Проверьте совместимость загрузчика.
+
+
+Str_ShowCastingSpell=Показывать названия заклинаний над заклинателями
+Str_CombatScale=Масштаб
+Str_CombatSpeed=Скорость
+Str_CombatPush=Сила выталкивания
+Str_CombatPath=Траектория
+Str_CombatEasing=Изменение скорости
+Str_CombatUp=Строго вверх
+Str_CombatArcRight=Дуга вправо
+Str_CombatParabola=Парабола
+Str_CombatArcLeft=Дуга влево
+Str_CombatDiagonal=По диагонали
+Str_CombatWave=Волна вверх
+Str_CombatFan=Веер по очереди
+Str_CombatCircOut=Круговое замедление
+Str_CombatQuadOut=Квадратичное замедление
+Str_CombatCubicOut=Кубическое замедление
+Str_CombatSineOut=Синусное замедление
+Str_CombatCubicInOut=Разгон и замедление
+Str_CombatQuadIn=Квадратичный разгон
+Str_CombatQuartOut=Резкий старт
+Str_CombatExpoOut=Экспоненциальное затухание
+Str_CombatBackOut=Перелёт с возвратом
+Str_CombatSpringOut=Пружина
+Str_CombatSmoothStep=Мягкие старт и финиш
+Str_CombatLinear=Равномерно
+
+Str_EEexPatchDetectedTitle=Обнаружена новая установка EEex
+Str_EEexPatchDetectedDetails=Патч совместимости установлен. Пожалуйста, перезапустите InfinityLoader.
+Str_EEexPatchInstallStep=Установка патча совместимости с EEex

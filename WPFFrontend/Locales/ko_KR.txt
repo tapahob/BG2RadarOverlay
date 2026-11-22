@@ -7,7 +7,7 @@
 Str_WaitingForGame=게임 대기 중
 
 # EnemyControl - 캐릭터 패널
-EnemyControlWidth=500
+EnemyControlWidth=620
 Str_Level=Lv{0}
 Str_Race=종족: {0}
 Str_STR=근력: {0}
@@ -21,6 +21,7 @@ Str_EnemyListHP=체력: {0}
 Str_Attacks=공격 횟수: {0}
 Str_ArmorClass=방어도: {0}
 Str_THAC0=THAC0: {0}
+Str_DamageRange=피해: {0}
 Str_Experience=경험치: {0}
 Str_Alignment=성향: {0}
 Alignment_NONE=없음
@@ -470,7 +471,6 @@ Str_UseShiftClick=Shift+클릭 사용
 Str_UseShiftClickTooltip=우클릭 대신 Shift + 우클릭 사용
 Str_DebugMode=디버그 모드
 Str_Locale=언어:
-Str_LocaleRestartNote=레이더를 재시작해야 완전히 적용됩니다
 Str_Save=저장
 
 # Race enum (Resources/CREReader.RACE) - shown in the "Race: ..." EnemyControl label.
@@ -771,3 +771,50 @@ Class_SOD_TMP=임시
 Class_SPECTRAL_TROLL=영체 트롤
 Class_WIGHT=와이트
 Class_NO_CLASS=없음
+
+# Games tab and native Radar installation dialogs
+# Use \n for line breaks in dialog details.
+Str_TabGames=게임
+Str_NativeInject=설치
+Str_NativeRemove=모듈 제거
+Str_InstallationClose=닫기
+Str_InstallationOK=확인
+Str_InstallationCancel=취소
+Str_InstallationLater=나중에
+Str_NativeSetup=내장 레이더 설정
+Str_NativeLinkPermission=심볼릭 링크를 만들려면 Windows 개발자 모드를 켜거나 Radar를 관리자 권한으로 실행하세요.
+Str_NativeUpdateLink=링크 업데이트
+Str_NativeUpdateAndRestart=업데이트 후 재시작
+Str_NativeUpdateTitle={0}용 Radar 링크를 업데이트할까요?
+Str_NativeUpdateDetails={0}\n\n현재 링크 대상: {1}\n실행 중인 Radar: {2}
+Str_NativeMissingLink=(링크 없음)
+Str_NativeDetectedTitle={0}의 새 설치를 찾았습니다! 내장 레이더를 설치할까요?
+Str_NativeDetectedDetails={0}\n\n내장 레이더:\n• 전체 화면과 창 모드에서 모두 작동합니다\n• 대체 렌더러와 기본 렌더러를 모두 지원합니다\n• 더 보기 좋다냥! 한번 써 보세요!
+Str_NativeDetectedYes=좋다냥!
+Str_NativeDetectedNo=그만 야옹해! 싫어!
+Str_NativeRemoveTitle={0}에서 내장 레이더를 제거할까요?
+Str_NativeRemovedTitle=내장 레이더가 제거되었습니다
+Str_NativeRemovedDetails=데스크톱 오버레이로 전환하려면 게임을 재시작하세요.
+Str_NativeReadyTitle={0} 준비 완료!
+Str_NativeReadyDetails=내장 레이더는 게임과 함께 시작됩니다.
+Str_NativeRestartTitle=지금 {0}을(를) 재시작할까요?
+Str_NativeRestartDetails=내장 레이더를 {0}에 설치했습니다. 재시작하기 전에 게임을 저장하세요.
+Str_NativeRestartNow=지금 재시작
+Str_NativeCloseTimeout=게임이 아직 실행 중입니다. 게임을 종료하고 준비가 되면 다시 시작하세요.
+Str_NativeInvalidList=게임 설치 목록이 올바르지 않습니다.
+Str_NativeInvalidEntry=게임 설치 목록에 올바르지 않은 항목이 있습니다.
+Str_NativeLinkOccupied={0}에 이미 파일이 있습니다. 링크를 만들기 전에 파일을 옮기세요.
+Str_NativeGameMissing={0}에서 게임을 찾을 수 없습니다.
+Str_NativeLoaderConflict={0}에 다른 winmm.dll이 이미 설치되어 있습니다. 로더의 호환성을 확인하세요.
+Str_ShowCastingSpell=시전자 위에 주문 이름 표시
+
+Str_NativeProgressDetected=설치된 게임을 찾았습니다: {0}
+Str_NativeProgressInjector=Radar 인젝터 설치
+Str_NativeProgressAutostart=게임 시작 시 다음 경로에서 Radar Overlay를 실행하도록 설정:
+Str_NativeProgressInstalling=Radar 설정 중…
+Str_NativeProgressRestart=Radar를 활성화하려면 게임을 다시 시작해 주세요.
+Str_NativeProgressFailed=Radar 설정을 완료하지 못했습니다.
+
+Str_EEexPatchDetectedTitle=새 EEex 설치 감지
+Str_EEexPatchDetectedDetails=호환성 패치를 설치했습니다. InfinityLoader를 다시 시작해 주세요.
+Str_EEexPatchInstallStep=EEex 호환성 패치 설치

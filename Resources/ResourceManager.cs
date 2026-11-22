@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace BGOverlay
 {
@@ -29,7 +31,7 @@ namespace BGOverlay
         public List<BIFResourceEntry> EFFResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.EFF).ToList();
         public List<BIFResourceEntry> ITMResourceEntries => BIFResourceEntries.Values.Where(x => x.Ext == BIFResourceEntry.Extension.ITM).ToList();
 
-        public Dictionary<int, TLKEntry> StringRefs                     = null;
+        internal Dictionary<int, TLKEntry> StringRefs { get; private set; }
         public List<BIFEntry> BIFEntries                                = null; 
         public Dictionary<string, BIFResourceEntry> BIFResourceEntries  = null;
         public Dictionary<string, BIFFReader> BiffReaderCache           = null;
@@ -111,11 +113,113 @@ namespace BGOverlay
         public void Init()
         {
             ResourceManager.Instance = this;
-            new TLKReader(this);
+            StringRefs = new TLKReader(dialogPath(Configuration.GameFolder, Configuration.Locale)).StringRefs;
             new KeyReader(this);
             loadBifs();
+            indexPriestBuffs();
         }
 
+        private readonly object localizedReadersGate = new object();
+
+        public async Task<bool> ReloadGameStringsAsync(string locale)
+        {
+            var gameFolder = Configuration.GameFolder;
+            var path = dialogPath(gameFolder, locale);
+            var strings = await Task.Run(() => new TLKReader(path).StringRefs);
+            if (Instance != this || Configuration.GameFolder != gameFolder)
+                return false;
+
+            // Readers cache resolved display strings, including spell names nested in items
+            // and item names and localized flags nested in creatures.
+            lock (localizedReadersGate)
+            {
+                StringRefs = strings;
+                CREReaderCache.Clear();
+                ITMReaderCache.Clear();
+                SPLReaderCache.Clear();
+                potionSources.Clear();
+            }
+            return true;
+        }
+
+        private static string dialogPath(string gameFolder, string locale) =>
+            Path.Combine(gameFolder, "lang", locale, "dialog.tlk");
+
+        private readonly Dictionary<string, string> priestBuffParents =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // Spell slots and helper resrefs vary between IWDEE and BG installations with IWD spells.
+        // Resolve the installed SPL via SPELL.IDS, then follow its actual cast-spell effects.
+        private void indexPriestBuffs()
+        {
+            priestBuffParents.Clear();
+            var symbols = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+                "CLERIC_CHANT", "CLERIC_PRAYER", "CLERIC_RECITATION", "CLERIC_RIGHTEOUS_WRATH_OF_THE_FAITHFUL"
+            };
+            var ids = ReadResource("SPELL.IDS");
+            if (ids == null) return;
+            foreach (var line in Encoding.ASCII.GetString(ids).Split('\n'))
+            {
+                var fields = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                if (fields.Length < 2 || !symbols.Contains(fields[1]) ||
+                    !int.TryParse(fields[0], out int slot) || slot < 1000 || slot >= 2000) continue;
+
+                string parent = $"SPPR{slot - 1000:D3}.SPL";
+                foreach (var helper in SPLReader.CalledSpells(ReadResource(parent)))
+                    priestBuffParents[helper] = parent;
+            }
+        }
+
+        internal string BuffSpellFilename(string source)
+        {
+            return priestBuffParents.TryGetValue(source, out var parent) ? parent : source + ".SPL";
+        }
+
+        private readonly Dictionary<string, ITMReader> potionSources =
+            new Dictionary<string, ITMReader>(StringComparer.OrdinalIgnoreCase);
+
+        internal ITMReader GetPotionSource(string filename)
+        {
+            lock (localizedReadersGate)
+            {
+                if (!potionSources.TryGetValue(filename, out var potion))
+                {
+                    // Inventory lookups can match a shortened resref by suffix. An effect
+                    // already carries the full resref, so require an exact resource here.
+                    if (BIFResourceEntries.ContainsKey(filename.ToUpperInvariant()) ||
+                        File.Exists(Path.Combine(Configuration.GameFolder, "override", filename)))
+                    {
+                        var item = GetITMReader(filename);
+                        if (item?.ItemType == 9) potion = item; // POTION in ITEMCAT.IDS
+                    }
+                    potionSources[filename] = potion;
+                }
+                return potion;
+            }
+        }
+
+        internal byte[] ReadResource(string filename)
+        {
+            var path = Path.Combine(Configuration.GameFolder, "override", filename);
+            try
+            {
+                if (File.Exists(path)) return File.ReadAllBytes(path);
+                if (!BIFResourceEntries.TryGetValue(filename, out var entry)) return null;
+                var archive = entry.BiffEntry.BIFFilePath;
+                var bif = GetBIFFReader(Path.GetFileName(archive));
+                if (bif == null || !bif.BIFFV1FileEntries.TryGetValue(entry.ResourceLocator & 0xfffff, out var file)) return null;
+                using (var reader = new BinaryReader(File.OpenRead(archive)))
+                {
+                    reader.BaseStream.Position = file.Offset;
+                    return reader.ReadBytes(file.Size);
+                }
+            }
+            catch (IOException ex)
+            {
+                Logger.Error($"Could not read {filename}", ex);
+                return null;
+            }
+        }
 
         private void loadBifs()
         {
@@ -145,11 +249,15 @@ namespace BGOverlay
             SPLReader reader = null;
             try
             {
-                if (!SPLReaderCache.TryGetValue(splFilename, out reader))
+                // The UI resolves active casts while the scanner can resolve effects.
+                lock (localizedReadersGate)
                 {
-                    reader = new SPLReader(this, splFilename);
-                    SPLReaderCache[splFilename] = reader;
-                    Logger.Info($"SPLReader created: {splFilename}");
+                    if (!SPLReaderCache.TryGetValue(splFilename, out reader))
+                    {
+                        reader = new SPLReader(this, splFilename);
+                        SPLReaderCache[splFilename] = reader;
+                        Logger.Info($"SPLReader created: {splFilename}");
+                    }
                 }
             } catch (Exception ex)
             {
@@ -202,97 +310,106 @@ namespace BGOverlay
 
         public CREReader GetCREReader(string creFilename)
         {
-            creFilename = creFilename.ToUpperInvariant();
-            CREReader reader;
-            // Cache entries are always stored under this exact normalized filename (see
-            // BIFResourceEntry.LoadCREFiles), so try the O(1) lookup first and only fall
-            // back to the O(n) suffix scan when that misses.
-            if (!CREReaderCache.TryGetValue(creFilename, out reader))
+            lock (localizedReadersGate)
             {
-                var key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename));
-                if (key != null)
+                creFilename = creFilename.ToUpperInvariant();
+                CREReader reader;
+                // Cache entries are always stored under this exact normalized filename (see
+                // BIFResourceEntry.LoadCREFiles), so try the O(1) lookup first and only fall
+                // back to the O(n) suffix scan when that misses.
+                if (!CREReaderCache.TryGetValue(creFilename, out reader))
                 {
-                    reader = CREReaderCache[key];
-                    return reader;
-                }
-
-                if (creFilename == "<ERROR>.CRE")
-                {
-                    return null;
-                }
-                try
-                {
-                    reader = new CREReader(this, creFilename);
-                    if (reader.Version == null)
+                    var key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename));
+                    if (key != null)
                     {
-                        key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename)) ?? creFilename;
                         reader = CREReaderCache[key];
-                        Logger.Info($"CREReader created: {creFilename}");
+                        return reader;
                     }
-                    else
+
+                    if (creFilename == "<ERROR>.CRE")
                     {
-                        CREReaderCache[creFilename] = reader;
+                        return null;
                     }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Could not create a CREReader: {creFilename}", ex);
-                    reader = null;
+                    try
+                    {
+                        reader = new CREReader(this, creFilename);
+                        if (reader.Version == null)
+                        {
+                            key = CREReaderCache.Keys.FirstOrDefault(x => x.EndsWith(creFilename)) ?? creFilename;
+                            reader = CREReaderCache[key];
+                            Logger.Info($"CREReader created: {creFilename}");
+                        }
+                        else
+                        {
+                            CREReaderCache[creFilename] = reader;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Could not create a CREReader: {creFilename}", ex);
+                        reader = null;
+                    }
+
                 }
 
+                return reader;
             }
-
-            return reader;
         }
 
         public ITMReader GetITMReader(string itmFilename)
         {
-            itmFilename = itmFilename.ToUpperInvariant();
-            ITMReader reader;
-            if (!ITMReaderCache.TryGetValue(itmFilename, out reader))
+            lock (localizedReadersGate)
             {
-                if (itmFilename == "<ERROR>.ITM")
+                itmFilename = itmFilename.ToUpperInvariant();
+                ITMReader reader;
+                if (!ITMReaderCache.TryGetValue(itmFilename, out reader))
                 {
-                    return null;
-                }
-                try
-                {
-                    reader = new ITMReader(this, itmFilename);
-                    if (reader.Version == null)
+                    if (itmFilename == "<ERROR>.ITM")
                     {
-                        var key = ITMReaderCache.Keys.FirstOrDefault(x => x.EndsWith(itmFilename));
-                        reader = ITMReaderCache[key];
-                        Logger.Info($"ITMReader created: {itmFilename}");
+                        return null;
                     }
-                    else
+                    try
                     {
-                        ITMReaderCache[itmFilename] = reader;
+                        reader = new ITMReader(this, itmFilename);
+                        if (reader.Version == null)
+                        {
+                            var key = ITMReaderCache.Keys.FirstOrDefault(x => x.EndsWith(itmFilename));
+                            reader = ITMReaderCache[key];
+                            Logger.Info($"ITMReader created: {itmFilename}");
+                        }
+                        else
+                        {
+                            ITMReaderCache[itmFilename] = reader;
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Could not create an ITMReader: {itmFilename}", ex);
-                    reader = null;
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Could not create an ITMReader: {itmFilename}", ex);
+                        reader = null;
+                    }
+
                 }
 
+                return reader;
             }
-
-            return reader;
         }
 
         public BAMReader GetBAMReader(string bamFilename)
         {
-            if (bamFilename.Trim('\0') == "")
+            if (string.IsNullOrWhiteSpace(bamFilename?.Trim('\0')))
                 return null;
             bamFilename = bamFilename.ToUpperInvariant();
             BAMReader reader = null;
             try
             {
-                if (!BAMReaderCache.TryGetValue(bamFilename, out reader))
+                lock (BAMReaderCache)
                 {
-                    reader = new BAMReader(this, bamFilename);
-                    BAMReaderCache[bamFilename] = reader;
-                    Logger.Info($"BAMReader created: {bamFilename}");
+                    if (!BAMReaderCache.TryGetValue(bamFilename, out reader))
+                    {
+                        reader = new BAMReader(this, bamFilename);
+                        BAMReaderCache[bamFilename] = reader;
+                        Logger.Info($"BAMReader created: {bamFilename}");
+                    }
                 }
             } catch (Exception ex)
             {

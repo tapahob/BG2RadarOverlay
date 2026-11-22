@@ -21,6 +21,14 @@ namespace WPFFrontend
         private readonly MemoryMappedFile _map;
         private readonly MemoryMappedViewAccessor _view;
         private Frame _current;
+        internal static IntPtr VisibleCursor
+        {
+            get
+            {
+                var info = new CursorInfo { Size = Marshal.SizeOf<CursorInfo>() };
+                return GetCursorInfo(ref info) && (info.Flags & 1) != 0 ? info.Cursor : IntPtr.Zero;
+            }
+        }
         public BitmapSource Image => _current?.Image;
         public Cursor PointingCursor { get; private set; }
         public IntPtr PointingHandle => _frames.TryGetValue(0, out var hand) ? hand.Cursor : IntPtr.Zero;

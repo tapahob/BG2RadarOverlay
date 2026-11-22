@@ -1,18 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
+using System.Threading;
+using WindowStyles = WinApiBindings.WinAPIBindings.WindowStyles;
 using WinApiBindings;
 
 namespace BGOverlay
 {
+    public enum CombatTrajectory { Up, ArcRight, Parabola, ArcLeft, Diagonal, Wave, Fan }
+    public enum CombatEasing { CircOut, QuadOut, CubicOut, SineOut, CubicInOut, QuadIn, QuartOut, ExpoOut, BackOut, SpringOut, SmoothStep, Linear }
+
     public static class Configuration
     {
         public static bool UseShiftClick { get; set; }
         public static int EnemyListXOffset { get; set; }
         public static int RadarIconXOffset { get; set; }
         public static bool DebugMode { get; set; }
+        public static string GameExecutable { get; private set; }
         public static string GameFolder { get; set; }
         public static string Locale { get; set; }
         public static bool Borderless { get; set; }
@@ -59,7 +66,6 @@ namespace BGOverlay
         public static IntPtr HWndPtr { get; set; }
         public static bool BigBuffIcons { get; set; }
         public static bool CenterBuffIcons { get; set; }
-
         private static bool buffInkFilter = true;
         public static event EventHandler BuffInkFilterChanged;
 
@@ -75,9 +81,14 @@ namespace BGOverlay
                 BuffInkFilterChanged?.Invoke(null, EventArgs.Empty);
             }
         }
-
         public static bool AnimateEnemyListNumbers { get; set; } = true;
         public static bool AnimateCharacterCardNumbers { get; set; } = true;
+        public static bool ShowCastingSpell { get; set; } = true;
+        public static int CombatTextScale { get; set; } = 40;
+        public static int CombatTextSpeed { get; set; } = 100;
+        public static int CombatTextPush { get; set; } = 50;
+        public static CombatTrajectory CombatTextPath { get; set; } = CombatTrajectory.Up;
+        public static CombatEasing CombatTextEasing { get; set; } = CombatEasing.CircOut;
         public static string Font1 { get; set; }
         public static string Font2 { get; set; }
         public static string Font3 { get; set; }
@@ -116,9 +127,13 @@ namespace BGOverlay
         private static Dictionary<String, String> storedConfig = new Dictionary<string, string>();
         public static string Version => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
+        private static int gameProcessId;
+
         public static void Init(Process bgProcess)
         {            
-            GameFolder          = Path.GetDirectoryName(bgProcess.MainModule.FileName);
+            gameProcessId       = bgProcess.Id;
+            GameExecutable      = bgProcess.MainModule.FileName;
+            GameFolder          = Path.GetDirectoryName(GameExecutable);
             Borderless          = true;
             HidePartyMembers    = false;
             HideNeutrals        = false;
@@ -187,6 +202,12 @@ namespace BGOverlay
                 $"{nameof(BuffInkFilter)}={BuffInkFilter}",
                 $"AnimateEnemyListNumbers={AnimateEnemyListNumbers}",
                 $"AnimateCharacterCardNumbers={AnimateCharacterCardNumbers}",
+                $"ShowCastingSpell={ShowCastingSpell}",
+                $"CombatTextScale={CombatTextScale}",
+                $"CombatTextSpeed={CombatTextSpeed}",
+                $"CombatTextPush={CombatTextPush}",
+                $"CombatTextPath={CombatTextPath}",
+                $"CombatTextEasing={CombatTextEasing}",
                 $"Font1={Font1}",
                 $"Font2={Font2}",
                 $"Font3={Font3}",
@@ -245,6 +266,7 @@ namespace BGOverlay
             {
                 Logger.Debug("Reading existing config ...");
                 var config = File.ReadAllLines("config.cfg");
+                storedConfig.Clear();
                 foreach (var line in config)
                 {
                     var split = line.Split('=');
@@ -269,6 +291,12 @@ namespace BGOverlay
                 BuffInkFilter       = getProperty(nameof(BuffInkFilter), "true").Equals("true");
                 AnimateEnemyListNumbers = getProperty(nameof(AnimateEnemyListNumbers), "true").Equals("true");
                 AnimateCharacterCardNumbers = getProperty(nameof(AnimateCharacterCardNumbers), "true").Equals("true");
+                ShowCastingSpell = getProperty(nameof(ShowCastingSpell), "true").Equals("true");
+                CombatTextScale = ReadPercent(nameof(CombatTextScale), 40, 1, 150);
+                CombatTextSpeed = ReadPercent(nameof(CombatTextSpeed), 100, 1, 200);
+                CombatTextPush = ReadPercent(nameof(CombatTextPush), 50, 0, 300);
+                CombatTextPath = ReadChoice(nameof(CombatTextPath), CombatTrajectory.Up);
+                CombatTextEasing = ReadChoice(nameof(CombatTextEasing), CombatEasing.CircOut);
                 Font1               = getProperty("Font1", "Segoe Print");
                 Font2               = getProperty("Font2", "Ink Free");
                 Font3               = getProperty("Font3", "Bahnschrift Condensed");
@@ -301,6 +329,13 @@ namespace BGOverlay
             }            
         }
 
+        private static int ReadPercent(string key, int fallback, int min, int max) =>
+            int.TryParse(getProperty(key, ""), out int value) ? Math.Max(min, Math.Min(max, value)) : fallback;
+
+        private static T ReadChoice<T>(string key, T fallback) where T : struct =>
+            storedConfig.TryGetValue(key, out var saved) && Enum.TryParse(saved, true, out T value)
+                && Enum.IsDefined(typeof(T), value) ? value : fallback;
+
         private static string getProperty(string key, string def)
         {
             if (!storedConfig.TryGetValue(key, out var value))
@@ -308,24 +343,70 @@ namespace BGOverlay
             return value.Trim().ToLower();
         }
 
+        private static WindowStyles ReadWindowStyle(IntPtr hwnd) =>
+            (WindowStyles)unchecked((uint)WinAPIBindings.GetWindowLongPtr(hwnd, -16).ToInt64());
+
+        private static void PostGameKey(IntPtr hwnd, uint message, int key, uint keyData)
+        {
+            if (!WinAPIBindings.PostMessage(hwnd, message, new IntPtr(key), new IntPtr((long)keyData)))
+                throw new Win32Exception();
+        }
+
         public static void ForceBorderless()
         {
-            // With the in-game module the engine owns its window, including exclusive fullscreen.
-            if (GameFolder != null && (File.Exists(Path.Combine(GameFolder, "BG2Radar.asi"))
-                || File.Exists(Path.Combine(GameFolder, "scripts", "BG2Radar.asi"))))
-                return;
-            Logger.Debug("Making the window borderless ...");
             try
             {
-                var proc    = Process.GetProcessesByName(ProcessHacker.gameName)[0];
-                var hwnd    = proc.MainWindowHandle;
-                // Use whichever monitor the game window is currently on instead of always the
-                // primary one, so making it borderless doesn't drag it to a different screen.
-                var bounds  = Screen.FromHandle(hwnd).Bounds;
+                using (var game = Process.GetProcessById(gameProcessId))
+                {
+                    var hwnd = game.MainWindowHandle;
+                    if (hwnd == IntPtr.Zero) return;
 
-                WinAPIBindings.SetWindowLong32(hwnd, -16, (uint)WinAPIBindings.WindowStyles.WS_MAXIMIZE);
-                WinAPIBindings.ShowWindow(hwnd.ToInt32(), 5);
-                WinAPIBindings.SetWindowPos(hwnd, IntPtr.Zero, bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0x4000);
+                    var style = ReadWindowStyle(hwnd);
+                    if ((style & WindowStyles.WS_MINIMIZE) != 0)
+                    {
+                        WinAPIBindings.ShowWindow(hwnd, (int)WinAPIBindings.ShowWindowCommands.SW_RESTORE);
+                        style = ReadWindowStyle(hwnd);
+                    }
+
+                    // SDL gives the game a popup window while it owns the fullscreen display.
+                    // Let the engine leave that mode with its Alt+Enter shortcut before resizing.
+                    if ((style & WindowStyles.WS_POPUP) != 0)
+                    {
+                        const uint sysKeyDown = 0x104, sysKeyUp = 0x105;
+                        PostGameKey(hwnd, sysKeyDown, 0x12, 0x00380001); // Alt
+                        PostGameKey(hwnd, sysKeyDown, 0x0D, 0x201C0001); // Enter with Alt held
+                        PostGameKey(hwnd, sysKeyUp, 0x0D, 0xE01C0001);
+                        PostGameKey(hwnd, sysKeyUp, 0x12, 0xC0380001);
+
+                        var timeout = Stopwatch.StartNew();
+                        do
+                        {
+                            if (timeout.ElapsedMilliseconds >= 3000)
+                                throw new TimeoutException("Game did not switch to windowed mode.");
+                            Thread.Sleep(50);
+                            game.Refresh();
+                            hwnd = game.MainWindowHandle;
+                            style = ReadWindowStyle(hwnd);
+                        } while ((style & WindowStyles.WS_CAPTION) == 0);
+                    }
+
+                    if ((style & WindowStyles.WS_MAXIMIZE) != 0)
+                    {
+                        WinAPIBindings.ShowWindow(hwnd, (int)WinAPIBindings.ShowWindowCommands.SW_RESTORE);
+                        style = ReadWindowStyle(hwnd);
+                    }
+
+                    var bounds = Screen.FromHandle(hwnd).Bounds;
+                    // Preserve visibility and clipping (including the hosted options panel).
+                    // Leaving WS_POPUP clear also makes repeated clicks stay in windowed mode.
+                    var borderless = style & ~WindowStyles.WS_OVERLAPPEDWINDOW;
+                    if (borderless != style && WinAPIBindings.SetWindowLong32(hwnd, -16, (uint)borderless) == 0)
+                        throw new Win32Exception();
+                    const uint noZOrder = 0x0004, noActivate = 0x0010, frameChanged = 0x0020;
+                    if (!WinAPIBindings.SetWindowPos(hwnd, IntPtr.Zero, bounds.Left, bounds.Top,
+                        bounds.Width, bounds.Height, noZOrder | noActivate | frameChanged))
+                        throw new Win32Exception();
+                }
             } catch (Exception ex)
             {
                 Logger.Error("Could not make a window borderless!", ex);

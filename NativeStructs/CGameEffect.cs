@@ -14,6 +14,7 @@ namespace BGOverlay.NativeStructs
         public string Res2 { get; private set; }
         public string Res3 { get; private set; }
         public string SourceRes { get; }
+        private readonly uint sourceType;
         public string ScriptName { get; }
         public int Done { get; private set; }
         public uint DurationTemp { get; private set; }
@@ -36,6 +37,7 @@ namespace BGOverlay.NativeStructs
             this.Res           = Encoding.UTF8.GetString(WinAPIBindings.ReadBytes(addr + 0x28, 8));
             this.Res2          = WinAPIBindings.ReadString(addr + 0x68, 8);
             this.Res3          = WinAPIBindings.ReadString(addr + 0x70, 8);
+            this.sourceType    = WinAPIBindings.ReadUInt32(addr + 0x88);
             this.SourceRes     = WinAPIBindings.ReadString(addr + 0x8C, 8);
             this.ScriptName    = WinAPIBindings.ReadString(addr + 0xA0, 32);
             this.Done          = WinAPIBindings.ReadInt32(addr + 0x110);
@@ -52,24 +54,34 @@ namespace BGOverlay.NativeStructs
 
         public Tuple<string, Bitmap, uint> getSpellName(ResourceManager resourceManager, bool buffs = false)
         {
-            var res = buffs ? SourceRes : Res;
-            if (res != "<ERROR>")
+            var res = (buffs ? SourceRes : Res).TrimEnd('\0');
+            if (res.Length == 0 || res == "<ERROR>") return null;
+
+            string filename;
+            string name;
+            if (buffs && sourceType == 2) // EFF V2 item parent
             {
-                var splReader = resourceManager.GetSPLReader($"{res.Trim('\0')}.SPL".ToUpper());
-                if (splReader == null)
+                // A healing potion can leave a short animation or a delayed sound after the heal.
+                uint timing = DurationType & 0xff;
+                if ((timing != 0 && timing != 10) || Duration == 0 ||
+                    EffectId == Effect.Creature_RGB_color_fade || EffectId == Effect.Text_Display_String)
                     return null;
-                var spellName = splReader?.Name1;
-                if (splReader.Name1 == null || splReader.Name1 == "-1")
-                    return null;
-                if (splReader.Name1 != "-1" && splReader.IconBAM != null)
-                    this.Icon = resourceManager.GetBAMReader(splReader.IconBAM)?.Image;
-                if (Configuration.DebugMode)
-                {
-                    spellName += $" {res.Trim('\0')}.SPL";
-                }
-                return new Tuple<string, Bitmap, uint>(spellName, this.Icon, DurationType == 1 ? uint.MaxValue : Duration);
+                filename = res + ".ITM";
+                var item = resourceManager.GetPotionSource(filename);
+                if (item == null) return null;
+                name = item.IdentifiedName;
+                Icon = item.Icon;
             }
-            return null;
+            else
+            {
+                filename = buffs ? resourceManager.BuffSpellFilename(res) : res + ".SPL";
+                var spell = resourceManager.GetSPLReader(filename);
+                name = spell?.Name1;
+                if (string.IsNullOrWhiteSpace(name) || name == "-1") return null;
+                Icon = resourceManager.GetBAMReader(spell.IconBAM)?.Image;
+            }
+            if (Configuration.DebugMode) name += " " + filename;
+            return Tuple.Create(name, Icon, DurationType == 1 ? uint.MaxValue : Duration);
         }
 
         public override string ToString()

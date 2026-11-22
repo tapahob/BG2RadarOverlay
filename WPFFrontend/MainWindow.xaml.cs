@@ -77,6 +77,7 @@ namespace WPFFrontend
 
             _processHacker.ProcessDestroyed += ProcessHacker_ProcessDestroyed;
             _processHacker.ProcessHooked += ProcessHacker_ProcessHooked;
+            _processHacker.HealthLost += onHealthLost;
 
             EnemyTextEntries = new ObservableCollection<EnemyListRow>();
             BindingOperations.EnableCollectionSynchronization(EnemyTextEntries, _stocksLock);
@@ -85,6 +86,7 @@ namespace WPFFrontend
 
             this.Closed += (o, e) =>
             {
+                _processHacker.HealthLost -= onHealthLost;
                 stopGameFrames();
                 _mouseHook?.Uninstall();
                 Logger.flush();
@@ -98,6 +100,15 @@ namespace WPFFrontend
             // indicator above), then loading resources - so it has to run here too instead of
             // directly in the constructor, otherwise the window would never even get shown while
             // waiting for the game to launch.
+            Loaded += async (_, _) =>
+            {
+                await CheckSavedInstallations();
+                if (!Dispatcher.HasShutdownStarted) StartGameMonitor();
+            };
+        }
+
+        private void StartGameMonitor()
+        {
             Task.Factory.StartNew(() =>
             {
                 _processHacker.Init();
@@ -112,6 +123,8 @@ namespace WPFFrontend
                     updateRadarIconPosition();
 
                     _options = new();
+                    _options.InstallationList.ItemsSource = installations.Games;
+                    _options.NativeInstallationToggleRequested += game => RunInstallationAction(() => ToggleNativeInstallation(game));
                     _options.DebugModeChanged += _processHacker.InvalidateEntityCache;
                     _options.LocaleChanged    += _processHacker.InvalidateEntityCache;
 
@@ -436,6 +449,8 @@ namespace WPFFrontend
             _mouseHook.InstallAsync().GetAwaiter().GetResult();
             
             Logger.Debug("Mouse hooks installed");
+            string executable = Configuration.GameExecutable;
+            Dispatcher.InvokeAsync(() => RunInstallationAction(() => DetectInstallation(executable, pid)));
         }
 
         private void ProcessHacker_ProcessDestroyed(string processName, int pid)
@@ -449,6 +464,7 @@ namespace WPFFrontend
         // resources below so they stay doubles (App.xaml's defaults are too); Width can't bind
         // to a string DynamicResource.
         private static readonly string[] WidthResourceKeys = { "EnemyControlWidth", "OptionsControlWidth" };
+        private static ResourceDictionary localeResources;
 
         /// <summary>
         /// (Re)loads Configuration.Locale's string table and pushes it into Application.Resources.
@@ -457,30 +473,41 @@ namespace WPFFrontend
         /// EnemyControl and OptionsControl picks up the change immediately, the same way
         /// changing fonts already does.
         /// </summary>
-        public static void ApplyLocalization()
+        public static void ApplyLocalization(OptionsControl options = null)
         {
             Logger.Debug($"Loading locale strings for '{Configuration.Locale}' ..");
             RadarLocalization.Init(Configuration.Locale);
-            var app = System.Windows.Application.Current;
+            var resources = new ResourceDictionary();
             foreach (var entry in RadarLocalization.Strings)
             {
-                if (Array.IndexOf(WidthResourceKeys, entry.Key) >= 0)
-                    continue;
-                app.Resources[entry.Key] = entry.Value;
-            }
-
-            // Only override a given control's width when the locale actually specifies a valid
-            // number for it - otherwise that control keeps using App.xaml's default/fallback
-            // width (the control's previous fixed width).
-            foreach (var key in WidthResourceKeys)
-            {
-                if (RadarLocalization.Strings.TryGetValue(key, out var widthText)
-                    && double.TryParse(widthText, NumberStyles.Float, CultureInfo.InvariantCulture, out var width))
+                if (Array.IndexOf(WidthResourceKeys, entry.Key) < 0)
                 {
-                    app.Resources[key] = width;
+                    resources[entry.Key] = entry.Value;
+                }
+                else if (double.TryParse(entry.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var width)
+                    && double.IsFinite(width) && width > 0)
+                {
+                    resources[entry.Key] = width;
                 }
             }
+
+            updateLocaleResources(Application.Current.Resources, resources);
+            // The in-game Options HWND is outside Application.Windows. Its resource
+            // references are invalidated through the Options control's own dictionary.
+            if (options != null)
+                updateLocaleResources(options.Resources, resources);
+            localeResources = resources;
             Logger.Debug("Done!");
+        }
+
+        private static void updateLocaleResources(ResourceDictionary owner, ResourceDictionary resources)
+        {
+            var dictionaries = owner.MergedDictionaries;
+            int index = localeResources == null ? -1 : dictionaries.IndexOf(localeResources);
+            if (index < 0)
+                dictionaries.Add(resources);
+            else
+                dictionaries[index] = resources;
         }
 
         private void updateStyles()

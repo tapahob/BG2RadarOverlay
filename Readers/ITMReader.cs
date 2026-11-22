@@ -72,9 +72,12 @@ namespace BGOverlay
                     this.GeneralName = text?.Text;
                     var identifiedStrRef = reader.ReadInt32();
                     resourceManager.StringRefs.TryGetValue(identifiedStrRef, out text);
-                    this.IdentifiedName = text?.Text ?? GeneralName ?? "None";
+                    this.IdentifiedName = !string.IsNullOrWhiteSpace(text?.Text) ? text.Text
+                        : !string.IsNullOrWhiteSpace(GeneralName) ? GeneralName
+                        : itmFilename;
                     var trash = new string(reader.ReadChars(8));
                     this.Flags = reader.ReadInt32();
+                    this.ItemType = reader.ReadUInt16();
                     reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
 
                     // Icon
@@ -104,6 +107,7 @@ namespace BGOverlay
                         var abilityOffset = originOffset + offsetToAbilities + i * 56;
                         reader.BaseStream.Seek(abilityOffset, SeekOrigin.Begin);
                         var abilityType = reader.ReadByte();
+                        Abilities.Add(new WeaponAbility(reader, abilityOffset, abilityType, originOffset + offsetToFeatureBlocks));
                         if (abilityType != 1)
                             continue;
                         //reader.BaseStream.Seek(abilityOffset + 0x4, SeekOrigin.Begin);
@@ -134,6 +138,50 @@ namespace BGOverlay
         }
 
         public DamageType DamageType { get; private set; }
+        internal int ItemType { get; }
+        internal List<WeaponAbility> Abilities { get; } = new List<WeaponAbility>();
+
+        internal sealed class WeaponAbility
+        {
+            public readonly int Type, LauncherType, Dice, Sides, Bonus;
+            public readonly bool UsesStrength;
+            public readonly DamageType DamageType;
+
+            internal WeaponAbility(BinaryReader reader, int offset, int type, int effects)
+            {
+                Type = type;
+                reader.BaseStream.Position = offset + 0x10;
+                LauncherType = reader.ReadByte();
+                reader.BaseStream.Position = offset + 0x16;
+                Sides = reader.ReadByte();
+                reader.BaseStream.Position = offset + 0x18;
+                Dice = reader.ReadByte();
+                reader.BaseStream.Position = offset + 0x1A;
+                Bonus = reader.ReadInt16();
+                DamageType = (DamageType)reader.ReadUInt16();
+                int count = reader.ReadUInt16(), first = reader.ReadUInt16();
+                reader.BaseStream.Position = offset + 0x26;
+                UsesStrength = (reader.ReadByte() & 5) != 0;
+
+                // Some natural weapons put the base roll in an opcode 12 ability effect.
+                // Ordinary on-hit effects are additional, often conditional damage.
+                if (Dice != 0 || Sides != 0 || (type != 1 && type != 2)) return;
+                for (int i = 0; i < count; ++i)
+                {
+                    int effect = effects + (first + i) * 0x30;
+                    reader.BaseStream.Position = effect;
+                    int opcode = reader.ReadUInt16();
+                    if (opcode == 318 || opcode == 324) break;
+                    if (opcode != 12) continue;
+                    reader.BaseStream.Position = effect + 4;
+                    Bonus += reader.ReadInt32();
+                    reader.BaseStream.Position = effect + 0x1C;
+                    Dice = reader.ReadInt32();
+                    Sides = reader.ReadInt32();
+                    break;
+                }
+            }
+        }
 
         public string Signature { get; private set; }
         public string Version { get; private set; }

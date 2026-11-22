@@ -7,11 +7,8 @@
 Str_WaitingForGame=Waiting for game
 
 # EnemyControl - character panel
-# EnemyControlWidth is the panel's width in pixels, not a translated string. It's optional -
-# omit it (or leave it blank/invalid) to keep the control's default width. 450 below is that
-# default, spelled out here so translators have something to compare against and widen if
-# their text needs more room.
-EnemyControlWidth=480
+# EnemyControlWidth overrides the default card width for this locale.
+EnemyControlWidth=600
 Str_Level=Lv{0}
 Str_Race=Race: {0}
 Str_STR=STR: {0}
@@ -25,6 +22,7 @@ Str_EnemyListHP=HP: {0}
 Str_Attacks=Attacks: {0}
 Str_ArmorClass=Armor Class: {0}
 Str_THAC0=THAC0: {0}
+Str_DamageRange=Damage: {0}
 Str_Experience=Experience: {0}
 Str_Alignment=Alignment: {0}
 Alignment_NONE=None
@@ -518,7 +516,6 @@ Str_UseShiftClick=Use Shift Click
 Str_UseShiftClickTooltip=Use Shift Right-Click instead of Right Click
 Str_DebugMode=Debug Mode
 Str_Locale=Locale:
-Str_LocaleRestartNote=Applies fully after Radar restart
 Str_Save=Save
 
 # Race enum (Resources/CREReader.RACE) - shown in the "Race: ..." EnemyControl label.
@@ -864,3 +861,75 @@ Str_TwitchChannelInvalid=That doesn't look like a Twitch login. Use the twitch.t
 Str_TwitchNeedsEEex=EEex is not installed in the detected game folder. Twitch summons need it - install EEex (it has its own installer), then switch this on.
 Str_TwitchPackTags=Tags:
 Str_TwitchPackTagsHint=Separated by ";". A Channel Points reward can draw only from packs carrying the tags it names - so one channel can offer several rewards out of one pack list.
+
+# Games tab and native Radar installation dialogs
+# Use \n for line breaks in dialog details.
+Str_TabGames=Games
+Str_NativeInject=Inject
+Str_NativeRemove=Remove injector
+Str_InstallationClose=Close
+Str_InstallationOK=OK
+Str_InstallationCancel=Cancel
+Str_InstallationLater=Later
+Str_NativeSetup=Native Radar setup
+Str_NativeLinkPermission=Enable Windows Developer Mode or run Radar as administrator to create a symbolic link.
+Str_NativeUpdateLink=Update link
+Str_NativeUpdateAndRestart=Update and restart
+Str_NativeUpdateTitle=Update the Radar link for {0}?
+Str_NativeUpdateDetails={0}\n\nCurrent target: {1}\nRunning Radar: {2}
+Str_NativeMissingLink=(missing link)
+Str_NativeDetectedTitle=Found a new installation of {0}! Install native Radar?
+Str_NativeDetectedDetails={0}\n\nNative Radar:\n• Works in both fullscreen and windowed mode\n• Supports both the alternative and the original renderer\n• Looks better, meow! Give it a try!
+Str_NativeDetectedYes=Yesh, sure!
+Str_NativeDetectedNo=Shut the meow up! No!
+Str_NativeProgressDetected=Found a game installation: {0}
+Str_NativeProgressInjector=Install Radar Injector
+Str_NativeProgressAutostart=Set up Radar Overlay to start with the game from:
+Str_NativeProgressInstalling=Setting up Radar…
+Str_NativeProgressRestart=Please restart the game to activate Radar.
+Str_NativeProgressFailed=Radar setup could not finish.
+Str_NativeRemoveTitle=Remove native Radar from {0}?
+Str_NativeRemovedTitle=Native Radar removed
+Str_NativeRemovedDetails=Restart the game to switch to the desktop overlay.
+Str_NativeReadyTitle={0} is ready!
+Str_NativeReadyDetails=Native Radar will start with the game.
+Str_NativeRestartTitle=Restart {0} now?
+Str_NativeRestartDetails=Native Radar is installed in {0}. Save your game before restarting.
+Str_NativeRestartNow=Restart now
+Str_NativeCloseTimeout=The game is still running. Finish closing it and restart when ready.
+Str_NativeInvalidList=Invalid game installation list.
+Str_NativeInvalidEntry=Invalid game installation entry.
+Str_NativeLinkOccupied=A file already exists at {0}. Move it before installing the link.
+Str_NativeGameMissing=Could not find the game in {0}.
+Str_NativeLoaderConflict=A different winmm.dll is already installed in {0}. Please check its loader compatibility.
+
+
+Str_ShowCastingSpell=Show spell names above casters
+Str_CombatScale=Scale
+Str_CombatSpeed=Speed
+Str_CombatPush=Push strength
+Str_CombatPath=Trajectory
+Str_CombatEasing=Easing
+Str_CombatUp=Straight up
+Str_CombatArcRight=Right arc
+Str_CombatParabola=Parabola
+Str_CombatArcLeft=Left arc
+Str_CombatDiagonal=Diagonal
+Str_CombatWave=Rising wave
+Str_CombatFan=Alternating fan
+Str_CombatCircOut=Circular ease-out
+Str_CombatQuadOut=Quadratic ease-out
+Str_CombatCubicOut=Cubic ease-out
+Str_CombatSineOut=Sine ease-out
+Str_CombatCubicInOut=Cubic ease-in-out
+Str_CombatQuadIn=Quadratic ease-in
+Str_CombatQuartOut=Quartic ease-out
+Str_CombatExpoOut=Exponential ease-out
+Str_CombatBackOut=Overshoot
+Str_CombatSpringOut=Spring
+Str_CombatSmoothStep=Smooth start and stop
+Str_CombatLinear=Linear
+
+Str_EEexPatchDetectedTitle=New EEex installation detected
+Str_EEexPatchDetectedDetails=The compatibility patch is installed. Please restart InfinityLoader.
+Str_EEexPatchInstallStep=Installing the EEex compatibility patch

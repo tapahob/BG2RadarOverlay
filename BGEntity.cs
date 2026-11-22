@@ -24,6 +24,25 @@ namespace BGOverlay
         }
         private ResourceManager resourceManager;
 
+        // EE x64 CGameSprite::m_bInCasting and m_curSpell. CSpell inherits
+        // CResHelper, whose eight-byte cResRef follows its resource pointer.
+        public (string Name, Bitmap Icon)? ReadCastingSpell(IntPtr sprite)
+        {
+            if (sprite == IntPtr.Zero || WinAPIBindings.ReadInt32(sprite + 0x4998) == 0) return null;
+            var spell = WinAPIBindings.ReadPointer(sprite + 0x4AE0);
+            if (spell == IntPtr.Zero) return null;
+            var resref = WinAPIBindings.ReadString(spell + 8, 8);
+            if (string.IsNullOrWhiteSpace(resref) || resref.Any(c => c < 33 || c > 126)
+                || resref.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) >= 0) return null;
+
+            var resource = resourceManager.GetSPLReader(resref + ".SPL");
+            var name = DisplayName(resource?.Name1) ?? DisplayName(resource?.Name2) ?? resref;
+            return (name, resource?.CastingIcon);
+        }
+
+        private static string DisplayName(string value) =>
+            string.IsNullOrWhiteSpace(value) || value == "-1" || value == "<NO IDEA>" ? null : value;
+
         public int tag { get; set; }
         public List<CGameEffect> TimedEffects { get; private set; }
         public List<Tuple<string, Bitmap, uint>> SpellProtection { get; private set; }
@@ -64,10 +83,19 @@ namespace BGOverlay
         public CDerivedStats DerivedStats { get; private set; }
         public CDerivedStats DerivedStatsTemp { get; private set; }
         public int THAC0 { get; private set; }
+        public string DamageRange { get; private set; }
+        public (string Name, Bitmap Icon)? EquippedLauncher { get; private set; }
+        public ITMReader OffHandWeapon { get; private set; }
+        public string OffHandDamageRange { get; private set; }
+        public bool HasEquippedWeapon { get; private set; }
+
+        private ALIGNMENT alignment;
+        public string ShortAlignment => alignment == ALIGNMENT.NONE
+            ? Reader?.ShortAlignment ?? CREReader.FormatAlignment(ALIGNMENT.NONE)
+            : CREReader.FormatAlignment(alignment);
 
         private IntPtr timedEffectsPointer;
         private IntPtr equipedEffectsPointer;
-        private IntPtr curSpellPtr;
         private IntPtr equipmentPtr;
 
         public int isInvisible { get; private set; }
@@ -404,11 +432,7 @@ namespace BGOverlay
                         && !x.StartsWith("Colour");
                 }).Select(y => localizeEffect(y.EffectId)).Distinct().OrderBy(o => o).ToList();
                 if (inMemoryProtections.Any())
-                    result.Add(new SpellImmunityLine
-                    {
-                        Label  = RadarLocalization.Get("Str_EffectImmunities"),
-                        Spells = inMemoryProtections.Select(name => new SpellIconEntry { Name = name, Icon = null }).ToList()
-                    });
+                    result.Add(new EffectImmunityLine(RadarLocalization.Get("Str_EffectImmunities"), inMemoryProtections));
                 var moreSpellImmunities = DerivedStats.SpellImmunities;
                 return result;
             }
@@ -421,6 +445,7 @@ namespace BGOverlay
         private IntPtr cInfGamePtr;
 
         public uint GameTime { get; private set; }
+        public uint ReadGameTime() => gameTimeFor(cInfGamePtr);
         public string Attacks { get; private set; }
         public List<CGameEffect> EquipedEffects { get; private set; }
         public List<Tuple<string, Bitmap, uint>> SpellEquipEffects { get; private set; }
@@ -563,6 +588,7 @@ namespace BGOverlay
                 this.EnemyAlly      = window[OffEnemyAlly];
                 this.RACE           = (RACE)window[OffRace];
                 this.CLASS          = (CLASS)window[OffClass];
+                this.alignment      = (ALIGNMENT)window[OffAlignment];
                 // try to get kit
                 ushort mageSpecUpper = BitConverter.ToUInt16(window, OffKitUpper);
                 ushort mageSpec = BitConverter.ToUInt16(window, OffKitLower);
@@ -589,7 +615,6 @@ namespace BGOverlay
                 this.CurrentHP             = BitConverter.ToInt16(window, OffCurrentHP);
                 this.timedEffectsPointer   = IntPtr.Add(entityBase, 0x4A00);
                 this.equipedEffectsPointer = IntPtr.Add(entityBase, 0x49B0);
-                this.curSpellPtr           = entityIdPtr + 0x4AE0; //TODO: Current spell being cast? should be pretty cool
                 this.equipmentPtr          = IntPtr.Add(entityBase, 0xFC0);
                 this.isInvisible           = WinAPIBindings.ReadInt32(IntPtr.Add(entityBase, 0x4928));
                 this.Loaded                = true;
@@ -635,7 +660,6 @@ namespace BGOverlay
             this.Name1                 = template.Name1;
             this.timedEffectsPointer   = template.timedEffectsPointer;
             this.equipedEffectsPointer = template.equipedEffectsPointer;
-            this.curSpellPtr           = template.curSpellPtr;
             this.equipmentPtr          = template.equipmentPtr;
         }
 
@@ -683,6 +707,7 @@ namespace BGOverlay
                 copy.EnemyAlly       = window[OffEnemyAlly];
                 copy.RACE            = (RACE)window[OffRace];
                 copy.CLASS           = (CLASS)window[OffClass];
+                copy.alignment       = (ALIGNMENT)window[OffAlignment];
                 ushort mageSpecUpper = BitConverter.ToUInt16(window, OffKitUpper);
                 ushort mageSpec      = BitConverter.ToUInt16(window, OffKitLower);
                 copy.Kit             = (CREReader.KIT)((mageSpec << 16) | mageSpecUpper);
@@ -727,6 +752,7 @@ namespace BGOverlay
         private const int OffEnemyAlly   = 0x38;
         private const int OffRace        = 0x3A;
         private const int OffClass       = 0x3B;
+        private const int OffAlignment   = 0x47; // CGameObject::m_typeAI.m_Alignment
         private const int OffId          = 0x48;
         private const int OffCurrentHP   = 0x560 + 0x1C;
         private const int OffKitUpper    = 0x560 + 0x23C;
@@ -862,17 +888,11 @@ namespace BGOverlay
         public void LoadCREResource()
         {
             this.Reader = resourceManager.GetCREReader(CreResourceFilename.ToUpper());
-            
-            if (Reader == null || Reader.Class == CREReader.CLASS.ERROR)
-            {
-                if (resourceManager.CREReaderCache.ContainsKey(CreResourceFilename.ToUpper()))
-                    this.Reader = resourceManager.CREReaderCache[CreResourceFilename.ToUpper()];
-            }
         }
 
         private void updateTime()
         {
-            this.GameTime = gameTimeFor(cInfGamePtr);
+            this.GameTime = ReadGameTime();
         }
 
         public void LoadDerivedStats()
@@ -890,11 +910,20 @@ namespace BGOverlay
         }
         private void loadWeaponStats()
         {
+            const int offHandSlot = 9;
+            const int firstQuickWeaponSlot = 35;
+            const int shieldItemType = 12;
+            const int disablesOffHandWeapon = (1 << 1) | (1 << 7) | (1 << 13);
+            DamageRange = null;
+            EquippedLauncher = null;
+            OffHandWeapon = null;
+            OffHandDamageRange = null;
+            HasEquippedWeapon = false;
             var selectedWeapon = WinAPIBindings.ReadByte(equipmentPtr + 0x138);
             var lst            = new List<Tuple<CItem, ITMReader>>();
             //var itmReaders   = new List<ITMReader>();
             this.CritImmune    = false;
-            for (int i=0; i<40; ++i)
+            for (int i=0; i<39; ++i)
             {                
                 var currentItem = new CItem(equipmentPtr + 8 * i);
                 var currentPair = new Tuple<CItem, ITMReader>(currentItem, null);
@@ -903,7 +932,7 @@ namespace BGOverlay
                     continue;
                 var read = resourceManager.GetITMReader($"{currentItem.resRef}.ITM");
                 lst[i] = new Tuple<CItem, ITMReader>(currentItem, read);
-                if (i > 9)
+                if (i > 9 || read == null)
                     continue;
                 this.CritImmune = this.CritImmune
                     || (i == 6 && ((read.Flags & 0x2000000) == 0))
@@ -912,6 +941,7 @@ namespace BGOverlay
 
             this.Pockets = this.Reader?.Pockets ?? new List<PocketItemEntry>();
             
+            if (selectedWeapon >= lst.Count) return;
             var ITMRes = lst[selectedWeapon].Item1;
             var reader = lst[selectedWeapon].Item2;
             
@@ -922,17 +952,77 @@ namespace BGOverlay
                 .Select(x => new PocketItemEntry{ ITMReader = x.Key, Count = x.Count(), Icon = x.Key.Icon, Name = x.Key.IdentifiedName, FlagsText = "" }).ToList();
             this.Pockets = rtPockets;
             
-            this.CritImmune = this.CritImmune || ((reader.Flags & 0x2000000) != 0);
             if (reader != null)
             {
+                HasEquippedWeapon = true;
+                this.CritImmune |= (reader.Flags & 0x2000000) != 0;
+                int index = WinAPIBindings.ReadUInt16(equipmentPtr + 0x13A);
+                var ability = reader.Abilities.ElementAtOrDefault(index);
+                if (ability != null && (ability.Type == 1 || ability.Type == 2 || ability.Type == 4))
+                {
+                    // The selected slot for conventional ammunition is the projectile.
+                    // GetLauncher searches the four quick weapons for its matching launcher.
+                    int launcherType = ability.Type == 2 ? ability.LauncherType : 0;
+                    (int Bonus, bool UsesStrength)? launcher = null;
+                    if (launcherType >= 1 && launcherType <= 3)
+                    {
+                        int itemType = launcherType == 1 ? 15 : launcherType == 2 ? 27 : 18;
+                        for (int slot = firstQuickWeaponSlot; slot < lst.Count; ++slot)
+                        {
+                            var item = lst[slot].Item2;
+                            var header = item?.Abilities.FirstOrDefault();
+                            if (header == null || header.Type == 0)
+                            {
+                                var live = WeaponDamage.ReadLauncher(equipmentPtr + 8 * slot, itemType);
+                                if (live.HasValue)
+                                {
+                                    var info = live.Value;
+                                    var name = DisplayName(resourceManager.GetStrRefText(info.IdentifiedNameRef))
+                                        ?? DisplayName(resourceManager.GetStrRefText(info.GeneralNameRef))
+                                        ?? $"{lst[slot].Item1.resRef}.ITM";
+                                    var icon = info.IconResource == "<ERROR>"
+                                        ? null : resourceManager.GetBAMReader(info.IconResource)?.Image;
+                                    EquippedLauncher = (name, icon);
+                                    launcher = (info.Bonus, info.UsesStrength);
+                                }
+                            }
+                            else if (item.ItemType == itemType)
+                            {
+                                EquippedLauncher = (item.IdentifiedName, item.Icon);
+                                launcher = (header.Bonus, header.UsesStrength);
+                            }
+                            if (launcher.HasValue)
+                                break;
+                        }
+                    }
+                    if (launcherType == 0 || launcher != null)
+                    {
+                        var sprite = GetCurrentSpriteAddress();
+                        var game = WinAPIBindings.ReadPointer(cInfGamePtr);
+                        DamageRange = WeaponDamage.Read(sprite, game, ability, launcher, Id);
+
+                        // CheckCombatStats uses ability zero in SLOT_SHIELD for the off-hand attack.
+                        var offHand = lst[offHandSlot].Item2;
+                        if (ability.Type == 1 && (reader.Flags & disablesOffHandWeapon) == 0 &&
+                            offHand != null && offHand.ItemType != shieldItemType)
+                        {
+                            var offHandAbility = offHand.Abilities.FirstOrDefault();
+                            if (offHandAbility?.Type == 1)
+                            {
+                                OffHandWeapon = offHand;
+                                OffHandDamageRange = WeaponDamage.Read(sprite, game, offHandAbility, null, Id, offHand: true);
+                            }
+                        }
+                    }
+                }
                 if (this.Reader == null)
                     this.Reader = new CREReader();
                 this.Reader.Enchantment        = reader.Enchantment;
                 this.Reader.EquippedWeaponIcon = reader.Icon;
                 this.Reader.EquippedWeaponName = reader.IdentifiedName;
-                this.Reader.WeaponDamageType   = reader.DamageType.ToString().Replace("_"," "); 
+                this.Reader.WeaponDamageType   = ability?.DamageType;
                 
-                if (Configuration.DebugMode)
+                if (Configuration.DebugMode && !string.Equals(reader.IdentifiedName, $"{ITMRes.resRef}.ITM", StringComparison.OrdinalIgnoreCase))
                 {
                     this.Reader.EquippedWeaponName += $" [{ITMRes.resRef}.ITM]";
                 }
@@ -1026,8 +1116,10 @@ namespace BGOverlay
                 && x.SourceRes != "CDHLYSY2"
                 && x.SourceRes != "<ERROR>").ToList();
 
-            this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager, true)).Distinct()
-                .Where(x => x != null && x.Item1 != "-1" && x.Item1 != null && !x.Item1.StartsWith("Extra")).ToList();
+            this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager, true))
+                .Where(x => x != null && x.Item1 != null && !x.Item1.StartsWith("Extra"))
+                .GroupBy(x => x.Item1)
+                .Select(group => group.OrderByDescending(x => x.Item3).First()).ToList();
         }
 
         public override string ToString()

@@ -45,10 +45,7 @@ namespace WPFFrontend
         private readonly SpriteArt art;
         private readonly Dictionary<int, Layout> layoutsById = new();
         private readonly byte[] cellState = new byte[12];
-        // CInfinity::rViewPort through nCurrentY. nNewX/Y can already describe
-        // the next scroll position while the game is still drawing the current one.
-        private readonly byte[] camera = new byte[0xC8 - 0x78];
-        private readonly byte[] position = new byte[24];
+        private readonly ActorProjection projection = new();
         private readonly record struct Layer(string ResRef, int Sequence, int Frame);
         private readonly List<Layer> layers = new(), previous = new();
         private bool previousMirror;
@@ -59,21 +56,8 @@ namespace WPFFrontend
         internal Rect Locate(BGEntity entity, Size canvas)
         {
             if (entity == null || canvas.Width <= 0 || canvas.Height <= 0) return Rect.Empty;
-            var actor = entity.GetCurrentSpriteAddress();
-            if (actor == IntPtr.Zero || !ReadInto(actor + 0xC, position, position.Length)) return Rect.Empty;
-            var area = new IntPtr(BitConverter.ToInt64(position, 12));
-            if (area == IntPtr.Zero) return Rect.Empty;
-            var game = ReadPointer(area + 0x228);
-            if (game == IntPtr.Zero) return Rect.Empty;
-            int visible = ReadByte(game + 0x6590);
-            if (visible >= 12 || ReadPointer(game + 0x6598 + 8 * visible) != area ||
-                !ReadInto(area + 0x5C8 + 0x78, camera, camera.Length)) return Rect.Empty;
-            int x = BitConverter.ToInt32(position, 0) - BitConverter.ToInt32(camera, 0xC0 - 0x78);
-            int y = BitConverter.ToInt32(position, 4) - BitConverter.ToInt32(camera, 0xC4 - 0x78) - BitConverter.ToInt32(position, 8);
-            int width = BitConverter.ToInt32(camera, 8) - BitConverter.ToInt32(camera, 0);
-            int height = BitConverter.ToInt32(camera, 12) - BitConverter.ToInt32(camera, 4);
-            if (width <= 0 || height <= 0) return Rect.Empty;
-
+            if (!projection.TryLocate(entity, out var actor, out int x, out int y, out int width, out int height))
+                return Rect.Empty;
             var animation = ReadPointer(actor + 0x3C40);
             if (animation == IntPtr.Zero) return Rect.Empty;
             int id = ReadUInt16(animation + 8);

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -56,7 +56,13 @@
 
   <ItemGroup>
     <Resource Include="icons\not_found.png" />
+    <Resource Include="icons\damage\*.png" />
+    <Resource Include="icons\character\*.png" />
+    <Resource Include="artwork\character-frame\*.png" />
+    <Resource Include="artwork\character-dividers\*.png" />
+    <Resource Include="artwork\enemy-list-parchment.png" />
     <Resource Include="pexels-photo-235985.jpeg" />
+    <Resource Include="CombatText\Art\*.png;CombatText\Art\*.json" />
     <Resource Include="radar.png" />
   </ItemGroup>
 
@@ -74,7 +80,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="Exists('..\bin\NativeRadar\BG2Radar.asi')">
-    <Content Include="..\bin\NativeRadar\BG2Radar.asi;..\bin\NativeRadar\*.txt;..\bin\NativeRadar\*.md;..\bin\NativeRadar\winmm*.dll">
+    <Content Include="..\bin\NativeRadar\BG2Radar.asi;..\bin\NativeRadar\*.txt;..\bin\NativeRadar\*.md;..\EEexMod\M_RDRCRT.lua;..\bin\NativeRadar\winmm*.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>GameFiles\%(Filename)%(Extension)</Link>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>

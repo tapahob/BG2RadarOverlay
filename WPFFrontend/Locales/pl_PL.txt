@@ -7,7 +7,7 @@
 Str_WaitingForGame=Oczekiwanie na grę
 
 # EnemyControl - panel postaci
-EnemyControlWidth=520
+EnemyControlWidth=640
 Str_Level=Poz.{0}
 Str_Race=Rasa: {0}
 Str_STR=SIŁ: {0}
@@ -21,6 +21,7 @@ Str_EnemyListHP=PW: {0}
 Str_Attacks=Ataki: {0}
 Str_ArmorClass=Klasa Pancerza: {0}
 Str_THAC0=THAC0: {0}
+Str_DamageRange=Obrażenia: {0}
 Str_Experience=Doświadczenie: {0}
 Str_Alignment=Charakter: {0}
 Alignment_NONE=Brak
@@ -471,7 +472,6 @@ Str_UseShiftClick=Użyj Shift+klik
 Str_UseShiftClickTooltip=Użyj Shift + PPM zamiast PPM
 Str_DebugMode=Tryb debugowania
 Str_Locale=Język:
-Str_LocaleRestartNote=W pełni działa po ponownym uruchomieniu radaru
 Str_Save=Zapisz
 
 # Race enum (Resources/CREReader.RACE) - shown in the "Race: ..." EnemyControl label.
@@ -772,3 +772,50 @@ Class_SOD_TMP=Tymczasowy
 Class_SPECTRAL_TROLL=Widmowy troll
 Class_WIGHT=Wicht
 Class_NO_CLASS=Brak
+
+# Games tab and native Radar installation dialogs
+# Use \n for line breaks in dialog details.
+Str_TabGames=Gry
+Str_NativeInject=Zainstaluj
+Str_NativeRemove=Usuń moduł
+Str_InstallationClose=Zamknij
+Str_InstallationOK=OK
+Str_InstallationCancel=Anuluj
+Str_InstallationLater=Później
+Str_NativeSetup=Konfiguracja wbudowanego radaru
+Str_NativeLinkPermission=Aby utworzyć dowiązanie symboliczne, włącz tryb dewelopera systemu Windows lub uruchom Radar jako administrator.
+Str_NativeUpdateLink=Zaktualizuj dowiązanie
+Str_NativeUpdateAndRestart=Zaktualizuj i uruchom ponownie
+Str_NativeUpdateTitle=Zaktualizować dowiązanie do radaru dla gry {0}?
+Str_NativeUpdateDetails={0}\n\nBieżący cel dowiązania: {1}\nUruchomiony radar: {2}
+Str_NativeMissingLink=(brak dowiązania)
+Str_NativeDetectedTitle=Wykryto nową instalację gry {0}! Zainstalować wbudowany radar?
+Str_NativeDetectedDetails={0}\n\nWbudowany radar:\n• Działa w trybie pełnoekranowym i w oknie\n• Obsługuje zarówno alternatywny, jak i oryginalny mechanizm renderowania\n• Wygląda lepiej, miau! Wypróbuj!
+Str_NativeDetectedYes=Tak, miau!
+Str_NativeDetectedNo=Przestań miauczeć! Nie!
+Str_NativeRemoveTitle=Usunąć wbudowany radar z gry {0}?
+Str_NativeRemovedTitle=Wbudowany radar został usunięty
+Str_NativeRemovedDetails=Uruchom grę ponownie, aby przełączyć się na nakładkę pulpitu.
+Str_NativeReadyTitle=Wszystko gotowe dla gry {0}!
+Str_NativeReadyDetails=Wbudowany radar uruchomi się wraz z grą.
+Str_NativeRestartTitle=Uruchomić ponownie grę {0}?
+Str_NativeRestartDetails=Wbudowany radar zainstalowano w {0}. Zapisz stan gry przed ponownym uruchomieniem.
+Str_NativeRestartNow=Uruchom ponownie
+Str_NativeCloseTimeout=Gra nadal działa. Zamknij ją i uruchom ponownie w dogodnym momencie.
+Str_NativeInvalidList=Nieprawidłowa lista instalacji gier.
+Str_NativeInvalidEntry=Nieprawidłowy wpis na liście instalacji gier.
+Str_NativeLinkOccupied=Pod ścieżką {0} jest już plik. Przenieś go, zanim utworzysz dowiązanie.
+Str_NativeGameMissing=Nie znaleziono gry w folderze {0}.
+Str_NativeLoaderConflict=W folderze {0} zainstalowano już inny plik winmm.dll. Sprawdź zgodność programu ładującego.
+Str_ShowCastingSpell=Pokazuj nazwy zaklęć nad rzucającymi
+
+Str_NativeProgressDetected=Wykryto instalację gry {0}
+Str_NativeProgressInjector=Instalacja modułu wstrzykującego Radar
+Str_NativeProgressAutostart=Konfiguracja uruchamiania Radar Overlay wraz z grą z tej lokalizacji:
+Str_NativeProgressInstalling=Konfigurowanie radaru…
+Str_NativeProgressRestart=Uruchom grę ponownie, aby włączyć radar.
+Str_NativeProgressFailed=Nie udało się ukończyć konfiguracji radaru.
+
+Str_EEexPatchDetectedTitle=Wykryto nową instalację EEex
+Str_EEexPatchDetectedDetails=Zainstalowano poprawkę zgodności. Uruchom ponownie InfinityLoader.
+Str_EEexPatchInstallStep=Instalowanie poprawki zgodności z EEex

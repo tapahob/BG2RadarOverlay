@@ -1,16 +1,13 @@
 ﻿using BGOverlay.Resources;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace BGOverlay
 {
     public class TLKReader
     {
-        public TLKReader(ResourceManager resourceManager)
+        public TLKReader(string tlkFilePath)
         {
-            string locale = Configuration.Locale;
-            string tlkFilePath = $"{Configuration.GameFolder}/lang/{locale}/dialog.tlk";
-
             using (BinaryReader reader = new BinaryReader(File.OpenRead(tlkFilePath)))
             {
                 this.Signature          = new string(reader.ReadChars(4));
@@ -19,17 +16,20 @@ namespace BGOverlay
                 this.StrRefCount        = reader.ReadInt32();
                 this.OffsetToStringData = reader.ReadInt32();
 
-                reader.BaseStream.Seek(18, SeekOrigin.Begin);
+                if (Signature != "TLK " || Version != "V1  " || StrRefCount < 0
+                    || OffsetToStringData < 18 + StrRefCount * 26L
+                    || OffsetToStringData > reader.BaseStream.Length)
+                    throw new InvalidDataException($"Invalid TLK header: {tlkFilePath}");
+
+                StringRefs = new Dictionary<int, TLKEntry>(StrRefCount);
                 for (int i=0; i<StrRefCount; ++i)
-                {
-                    var entry = new TLKEntry(reader, OffsetToStringData);
-                    //entry.LoadText(reader);
-                    resourceManager.StringRefs[i] = entry;
-                }
-                resourceManager.StringRefs.Values.ToList().ForEach(x => x.LoadText(reader));
+                    StringRefs.Add(i, new TLKEntry(reader, OffsetToStringData));
+                foreach (var entry in StringRefs.Values)
+                    entry.LoadText(reader);
             }
         }
 
+        internal Dictionary<int, TLKEntry> StringRefs { get; }
         public string Signature { get; }
         public string Version { get; }
         public short LanguageId { get; }

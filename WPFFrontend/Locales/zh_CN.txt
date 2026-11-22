@@ -7,11 +7,8 @@
 Str_WaitingForGame=等待游戏
 
 # EnemyControl - character panel
-# EnemyControlWidth is the panel's width in pixels, not a translated string. It's optional -
-# omit it (or leave it blank/invalid) to keep the control's default width. 450 below is that
-# default, spelled out here so translators have something to compare against and widen if
-# their text needs more room.
-EnemyControlWidth=480
+# EnemyControlWidth overrides the default card width for this locale.
+EnemyControlWidth=600
 Str_Level=等级{0}
 Str_Race=种族：{0}
 Str_STR=力量：{0}
@@ -25,6 +22,7 @@ Str_EnemyListHP=生命值：{0}
 Str_Attacks=攻击次数：{0}
 Str_ArmorClass=防御等级：{0}
 Str_THAC0=零级命中值：{0}
+Str_DamageRange=伤害: {0}
 Str_Experience=经验值：{0}
 Str_Alignment=阵营：{0}
 Alignment_NONE=无
@@ -512,7 +510,6 @@ Str_UseShiftClick=使用上档键点击
 Str_UseShiftClickTooltip=使用上档键右键点击代替右键点击
 Str_DebugMode=调试模式
 Str_Locale=语言区域：
-Str_LocaleRestartNote=在雷达重启后完全生效
 Str_Save=保存
 
 # Race enum (Resources/CREReader.RACE) - shown in the "Race: ..." EnemyControl label.
@@ -813,3 +810,50 @@ Class_SOD_TMP=临时
 Class_SPECTRAL_TROLL=幽灵巨魔
 Class_WIGHT=尸妖
 Class_NO_CLASS=无
+
+# Games tab and native Radar installation dialogs
+# Use \n for line breaks in dialog details.
+Str_TabGames=游戏
+Str_NativeInject=安装
+Str_NativeRemove=移除模块
+Str_InstallationClose=关闭
+Str_InstallationOK=确定
+Str_InstallationCancel=取消
+Str_InstallationLater=稍后
+Str_NativeSetup=设置内置雷达
+Str_NativeLinkPermission=要创建符号链接，请启用 Windows 开发人员模式，或以管理员身份运行 Radar。
+Str_NativeUpdateLink=更新链接
+Str_NativeUpdateAndRestart=更新并重启
+Str_NativeUpdateTitle=要更新 {0} 的 Radar 链接吗？
+Str_NativeUpdateDetails={0}\n\n当前链接目标：{1}\n正在运行的 Radar：{2}
+Str_NativeMissingLink=（链接缺失）
+Str_NativeDetectedTitle=检测到新安装的 {0}！要安装内置雷达吗？
+Str_NativeDetectedDetails={0}\n\n内置雷达：\n• 支持全屏和窗口模式\n• 支持备用渲染器和原版渲染器\n• 看起来更漂亮喵！快试试吧！
+Str_NativeDetectedYes=好呀，喵！
+Str_NativeDetectedNo=别喵喵叫了！不要！
+Str_NativeRemoveTitle=要从 {0} 中移除内置雷达吗？
+Str_NativeRemovedTitle=已移除内置雷达
+Str_NativeRemovedDetails=重启游戏即可切换到桌面叠加层。
+Str_NativeReadyTitle={0} 已就绪！
+Str_NativeReadyDetails=内置雷达会随游戏一起启动。
+Str_NativeRestartTitle=现在重启 {0} 吗？
+Str_NativeRestartDetails=内置雷达已安装到 {0}。请先保存游戏进度再重启。
+Str_NativeRestartNow=立即重启
+Str_NativeCloseTimeout=游戏仍在运行。请关闭游戏，并在准备好后重新启动。
+Str_NativeInvalidList=游戏安装列表无效。
+Str_NativeInvalidEntry=游戏安装列表中有无效条目。
+Str_NativeLinkOccupied={0} 已存在文件。请先移走该文件，再创建链接。
+Str_NativeGameMissing=在 {0} 中找不到游戏。
+Str_NativeLoaderConflict={0} 中已安装另一个 winmm.dll。请检查加载器的兼容性。
+Str_ShowCastingSpell=在施法者头顶显示法术名称
+
+Str_NativeProgressDetected=检测到已安装的游戏：{0}
+Str_NativeProgressInjector=安装雷达注入器
+Str_NativeProgressAutostart=设置游戏启动时从以下位置运行 Radar Overlay：
+Str_NativeProgressInstalling=正在设置雷达…
+Str_NativeProgressRestart=请重新启动游戏以启用雷达。
+Str_NativeProgressFailed=未能完成雷达设置。
+
+Str_EEexPatchDetectedTitle=检测到新安装的 EEex
+Str_EEexPatchDetectedDetails=兼容性补丁已安装。请重新启动 InfinityLoader。
+Str_EEexPatchInstallStep=安装 EEex 兼容性补丁

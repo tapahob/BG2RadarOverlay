@@ -28,4 +28,18 @@ namespace BGOverlay
         public string Label { get; set; }
         public List<SpellIconEntry> Spells { get; set; }
     }
+
+    public class EffectImmunityLine
+    {
+        public EffectImmunityLine(string label, List<string> effects)
+        {
+            Label = label;
+            const int columns = 3;
+            for (int start = 0; start < effects.Count; start += columns)
+                Rows.Add(effects.GetRange(start, System.Math.Min(columns, effects.Count - start)));
+        }
+
+        public string Label { get; }
+        public List<List<string>> Rows { get; } = new List<List<string>>();
+    }
 }

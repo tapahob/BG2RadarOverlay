@@ -9,8 +9,37 @@
              Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="5" Grid.RowSpan="5"
              VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="9000"
     xmlns:theme="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2">
+    <UserControl.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <Grid>
+                                <Border Style="{StaticResource OptionsHover}"/>
+                                <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Frame" Property="Background" Value="#806B4A2B"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
     <UserControl.Background>
-        <ImageBrush ImageSource="/pexels-photo-235985.jpeg" Stretch="UniformToFill"/>
+        <!-- Keep the parchment at a fixed scale and origin while the selected tab changes the panel height. -->
+        <ImageBrush ImageSource="/pexels-photo-235985.jpeg" Stretch="UniformToFill"
+                    ViewportUnits="Absolute" Viewport="0,0,500,770" TileMode="FlipXY"/>
     </UserControl.Background>
     <Grid>
         <Grid.RowDefinitions>
@@ -39,7 +68,16 @@
              one interior cell, so it stays pinned to the corner with a constant 25px gap
              regardless of how wide OptionsControlWidth makes the (Star-sized) content columns
              for a given locale. -->
-        <Label x:Name="CloseBtn" Grid.Row="0" Grid.RowSpan="3" Grid.Column="3" Grid.ColumnSpan="2" Content="X" FontSize="16" HorizontalAlignment="Right" VerticalAlignment="Top" FontFamily="Segoe Print" Margin="0,15,25,0" MouseDown="Label_MouseDown"/>
+        <Label x:Name="CloseBtn" Grid.Row="0" Grid.RowSpan="3" Grid.Column="3" Grid.ColumnSpan="2" Content="X" FontSize="16" HorizontalAlignment="Right" VerticalAlignment="Top" FontFamily="Segoe Print" Margin="0,15,25,0" MouseDown="Label_MouseDown">
+            <Label.Template>
+                <ControlTemplate TargetType="Label">
+                    <Grid Background="Transparent">
+                        <Border Style="{StaticResource OptionsHover}"/>
+                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                    </Grid>
+                </ControlTemplate>
+            </Label.Template>
+        </Label>
         <Label Grid.Row="1" Grid.Column="1" FontSize="18" d:Content="Options" Content="{DynamicResource Str_Options}" FontFamily="Segoe Print" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30" Grid.RowSpan="2" Grid.ColumnSpan="3"/>
         <Label x:Name="Version" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="10" d:Content="Ver. 2.0.3.2" Content="{Binding Configuration.Version}" FontFamily="Segoe Print" HorizontalAlignment="Center" Margin="0,26,0,30" Grid.RowSpan="2" Width="80"/>
         <Border Grid.RowSpan="4" Grid.ColumnSpan="5" BorderThickness="5" BorderBrush="#FF151313"/>
@@ -56,7 +94,8 @@
                         <Setter.Value>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <Path Width="14" Height="14" Margin="0,0,5,0" Stretch="Uniform" VerticalAlignment="Center" Fill="#39281A"
+                                    <Path Width="14" Height="14" Margin="0,0,5,0" Stretch="Uniform" VerticalAlignment="Center"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}"
                                           Data="{Binding Tag, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
                                     <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
                                 </StackPanel>
@@ -67,6 +106,9 @@
             </TabControl.ItemContainerStyle>
             <TabItem Tag="{StaticResource GeneralGlyph}" d:Header="General" Header="{DynamicResource Str_TabGeneral}">
                 <Grid>
+                    <Grid.Resources>
+                        <ResourceDictionary Source="RadarChoiceTheme.xaml"/>
+                    </Grid.Resources>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="16"/>
@@ -100,7 +142,7 @@
                         <CheckBox x:Name="BigBuffIcons" VerticalContentAlignment="Center" d:Content="Big Buff icons" Content="{DynamicResource Str_BigBuffIcons}" FontFamily="Segoe Print" FontWeight="Bold"/>
                         <CheckBox x:Name="CenterBuffIcons" VerticalContentAlignment="Center" d:Content="Center buff icons" Content="{DynamicResource Str_CenterBuffIcons}" FontFamily="Segoe Print" FontWeight="Bold"/>
                         <CheckBox x:Name="BuffInkFilter" VerticalContentAlignment="Center" d:Content="Ink filter" Content="{DynamicResource Str_BuffInkFilter}"
-                                  ToolTip="{DynamicResource Str_BuffInkFilterTooltip}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                                  ToolTip="{DynamicResource Str_BuffInkFilterTooltip}" ToolTipOpening="OptionTooltip_Opening" FontFamily="Segoe Print" FontWeight="Bold"/>
                     </StackPanel>
                     <Border Grid.ColumnSpan="3" Grid.Row="1" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="2"/>
                     <StackPanel Grid.ColumnSpan="3" Grid.Row="2" Grid.Column="1" Margin="5,5,5,5">
@@ -130,22 +172,95 @@
                     <StackPanel Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" Margin="5,5,5,5">
                         <Label d:Content="Other" Content="{DynamicResource Str_Other}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Vertical">
-                            <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" d:Content="Use Shift Click" Content="{DynamicResource Str_UseShiftClick}" ToolTip="{DynamicResource Str_UseShiftClickTooltip}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                            <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" d:Content="Use Shift Click" Content="{DynamicResource Str_UseShiftClick}" ToolTip="{DynamicResource Str_UseShiftClickTooltip}" ToolTipOpening="OptionTooltip_Opening" FontFamily="Segoe Print" FontWeight="Bold"/>
                             <CheckBox x:Name="DebugMode" VerticalContentAlignment="Center" d:Content="Debug Mode" Content="{DynamicResource Str_DebugMode}" FontFamily="Segoe Print" FontWeight="Bold"/>
                             <StackPanel Orientation="Horizontal">
                                 <Label d:Content="Locale:" Content="{DynamicResource Str_Locale}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
-                                <ComboBox x:Name="Locale" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Margin="5, -5, 0, 0" d:SelectedItem="en_US" BorderThickness="1" BorderBrush="#FF151313" FontFamily="Segoe Print" FontWeight="Bold" Width="77">
+                                <ComboBox x:Name="Locale" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Margin="5, -5, 0, 0" d:SelectedItem="en_US" FontFamily="Segoe Print" FontWeight="Bold" Width="77">
                                     <d:ComboBoxItem Content="en_US" Height="23"/>
                                 </ComboBox>
-                                <!-- The radar's own UI text re-localizes live (MainWindow.ApplyLocalization),
-                                     but game-text-derived names (creatures/items, read from the game's own
-                                     lang/ folder) are cached at startup and only pick up a locale change on
-                                     the next restart - make that explicit instead of leaving it a surprise. -->
-                                <Label d:Content="Applies fully after Radar restart" Content="{DynamicResource Str_LocaleRestartNote}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0"/>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
                     <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="8" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Save" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Combat Text" Tag="M1,1 H15 V10 H7 L3,14 V10 H1 Z">
+                <Grid Margin="16" TextElement.FontFamily="{DynamicResource FontFamily1}" TextElement.FontWeight="Bold">
+                    <Grid.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.MergedDictionaries>
+                                <ResourceDictionary Source="TwitchOptionsTheme.xaml"/>
+                            </ResourceDictionary.MergedDictionaries>
+                            <ControlTemplate x:Key="CombatSliderStep" TargetType="RepeatButton">
+                                <Grid Background="Transparent">
+                                    <Border Height="4" Background="{TemplateBinding Background}"
+                                            BorderBrush="{StaticResource Rule}" BorderThickness="0,1"/>
+                                </Grid>
+                            </ControlTemplate>
+                            <Style TargetType="Slider">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Slider">
+                                            <Grid Height="20" Background="Transparent">
+                                                <Track x:Name="PART_Track">
+                                                    <Track.DecreaseRepeatButton>
+                                                        <RepeatButton Command="Slider.DecreaseLarge" Focusable="False"
+                                                                      Template="{StaticResource CombatSliderStep}" Background="{StaticResource Leather}"/>
+                                                    </Track.DecreaseRepeatButton>
+                                                    <Track.IncreaseRepeatButton>
+                                                        <RepeatButton Command="Slider.IncreaseLarge" Focusable="False"
+                                                                      Template="{StaticResource CombatSliderStep}" Background="{StaticResource Paper}"/>
+                                                    </Track.IncreaseRepeatButton>
+                                                    <Track.Thumb>
+                                                        <Thumb x:Name="Handle" Width="12" Height="16" Focusable="False"
+                                                               Background="{StaticResource Leather}" BorderBrush="{StaticResource Ink}">
+                                                            <Thumb.Template>
+                                                                <ControlTemplate TargetType="Thumb">
+                                                                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                                                            BorderThickness="1" CornerRadius="2">
+                                                                        <Border Width="2" Margin="0,3" Background="{StaticResource Gold}"/>
+                                                                    </Border>
+                                                                </ControlTemplate>
+                                                            </Thumb.Template>
+                                                        </Thumb>
+                                                    </Track.Thumb>
+                                                </Track>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Handle" Property="BorderBrush" Value="{StaticResource Gold}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                                    <Setter TargetName="Handle" Property="BorderBrush" Value="{StaticResource Gold}"/>
+                                                </Trigger>
+                                                <Trigger SourceName="Handle" Property="IsDragging" Value="True">
+                                                    <Setter TargetName="Handle" Property="Background" Value="{StaticResource Ink}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ResourceDictionary>
+                    </Grid.Resources>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="50"/></Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Label Grid.Row="0" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatScale}"/>
+                    <Slider x:Name="CombatScale" Grid.Row="0" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="1" Maximum="150" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatScale}"/>
+                    <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Value, ElementName=CombatScale, StringFormat={}{0:0}%}"/>
+                    <Label Grid.Row="1" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatSpeed}"/>
+                    <Slider x:Name="CombatSpeed" Grid.Row="1" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="1" Maximum="200" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatSpeed}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Value, ElementName=CombatSpeed, StringFormat={}{0:0}%}"/>
+                    <Label Grid.Row="2" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatPush}"/>
+                    <Slider x:Name="CombatPush" Grid.Row="2" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="0" Maximum="300" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatPush}"/>
+                    <TextBlock Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Value, ElementName=CombatPush, StringFormat={}{0:0}%}"/>
+                    <Label Grid.Row="3" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatPath}"/>
+                    <ComboBox x:Name="CombatPath" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" Margin="8,4,0,4" AutomationProperties.Name="{DynamicResource Str_CombatPath}"/>
+                    <Label Grid.Row="4" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatEasing}"/>
+                    <ComboBox x:Name="CombatEasingPicker" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" Margin="8,4,0,4" AutomationProperties.Name="{DynamicResource Str_CombatEasing}"/>
+                    <CheckBox x:Name="ShowCastingSpell" Grid.Row="5" Grid.ColumnSpan="3" Margin="0,8,0,0" Content="{DynamicResource Str_ShowCastingSpell}"/>
+                    <Button Grid.Row="6" Grid.ColumnSpan="3" Content="{DynamicResource Str_Save}" Click="Save_Click" Margin="0,12,0,0" Padding="4"/>
                 </Grid>
             </TabItem>
             <TabItem Tag="{StaticResource TwitchGlyph}" d:Header="Twitch Integration" Header="{DynamicResource Str_TabTwitchIntegration}">
@@ -399,6 +514,70 @@
                             d:Content="Reset measurements" Content="{DynamicResource Str_DiagReset}" FontFamily="Segoe Print" FontWeight="Bold" Click="DiagReset_Click"/>
                 </Grid>
             </TabItem>
+            <TabItem d:Header="Games" Header="{DynamicResource Str_TabGames}" Tag="M1,3 H7 L9,5 H15 V14 H1 Z">
+                <ScrollViewer MaxHeight="450" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="InstallationList" Margin="8">
+                        <ItemsControl.Resources>
+                            <ResourceDictionary>
+                                <ResourceDictionary.MergedDictionaries>
+                                    <ResourceDictionary Source="TwitchOptionsTheme.xaml"/>
+                                </ResourceDictionary.MergedDictionaries>
+                                <local:GameExecutableIconConverter x:Key="GameExecutableIcon"/>
+                            </ResourceDictionary>
+                        </ItemsControl.Resources>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Section}" Margin="0,0,0,5">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                BorderBrush="#99815C" BorderThickness="1" Background="#30583B22">
+                                            <Grid>
+                                                <Image x:Name="GameIcon" Margin="2" Source="{Binding Executable, Converter={StaticResource GameExecutableIcon}}"/>
+                                                <TextBlock Text="{Binding IconLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Foreground="Black" FontWeight="Bold" FontSize="10">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Source, ElementName=GameIcon}" Value="{x:Null}">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Grid>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="0,0,8,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                                            <TextBlock Text="{Binding Executable}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                                       Foreground="Black" FontFamily="Segoe UI" FontSize="10"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" VerticalAlignment="Center" Click="ToggleNativeInstallation_Click">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                    <Setter Property="Content" Value="{DynamicResource Str_NativeInject}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasNativeModule}" Value="True">
+                                                            <Setter Property="Content" Value="{DynamicResource Str_NativeRemove}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
+        <Canvas x:Name="GameTooltip" Grid.RowSpan="4" Grid.ColumnSpan="5" IsHitTestVisible="False"/>
     </Grid>
 </UserControl>
