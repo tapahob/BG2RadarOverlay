@@ -52,6 +52,18 @@ namespace WPFFrontend
             => throw new NotSupportedException();
     }
 
+    public class InkIconConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            var icon = values[0] as BitmapSource;
+            return icon != null && values[1] is true ? BuffControl.CreateInkIcon(icon) : icon;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
     /// <summary>
     /// Visibility.Collapsed for a null value, Visibility.Visible otherwise - used to hide an
     /// icon <see cref="System.Windows.Controls.Image"/> entirely (rather than rendering an

@@ -59,6 +59,23 @@ namespace BGOverlay
         public static IntPtr HWndPtr { get; set; }
         public static bool BigBuffIcons { get; set; }
         public static bool CenterBuffIcons { get; set; }
+
+        private static bool buffInkFilter = true;
+        public static event EventHandler BuffInkFilterChanged;
+
+        public static bool BuffInkFilter
+        {
+            get => buffInkFilter;
+            set
+            {
+                if (buffInkFilter == value)
+                    return;
+
+                buffInkFilter = value;
+                BuffInkFilterChanged?.Invoke(null, EventArgs.Empty);
+            }
+        }
+
         public static bool AnimateEnemyListNumbers { get; set; } = true;
         public static bool AnimateCharacterCardNumbers { get; set; } = true;
         public static string Font1 { get; set; }
@@ -111,6 +128,7 @@ namespace BGOverlay
             Locale              = "en_US";            
             BigBuffIcons        = true;
             CenterBuffIcons     = true;
+            BuffInkFilter       = true;
             AnimateEnemyListNumbers = true;
             AnimateCharacterCardNumbers = true;
             Font1               = "Segoe Print";
@@ -166,6 +184,7 @@ namespace BGOverlay
                 $"HideAllies={HideAllies}",
                 $"BigBuffIcons={BigBuffIcons}",
                 $"{nameof(CenterBuffIcons)}={CenterBuffIcons}",
+                $"{nameof(BuffInkFilter)}={BuffInkFilter}",
                 $"AnimateEnemyListNumbers={AnimateEnemyListNumbers}",
                 $"AnimateCharacterCardNumbers={AnimateCharacterCardNumbers}",
                 $"Font1={Font1}",
@@ -247,6 +266,7 @@ namespace BGOverlay
                 HideAllies          = getProperty("HideAllies", "false").Equals("true");
                 BigBuffIcons        = getProperty("BigBuffIcons", "false").Equals("true");
                 CenterBuffIcons     = getProperty(nameof(CenterBuffIcons), "true").Equals("true");
+                BuffInkFilter       = getProperty(nameof(BuffInkFilter), "true").Equals("true");
                 AnimateEnemyListNumbers = getProperty(nameof(AnimateEnemyListNumbers), "true").Equals("true");
                 AnimateCharacterCardNumbers = getProperty(nameof(AnimateCharacterCardNumbers), "true").Equals("true");
                 Font1               = getProperty("Font1", "Segoe Print");

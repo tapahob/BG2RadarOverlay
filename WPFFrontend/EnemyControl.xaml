@@ -13,6 +13,7 @@
     Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="3" VerticalAlignment="Center" MouseUp="UserControl_MouseUp" MouseLeave="UserControl_MouseLeave">
     <UserControl.Resources>
         <wpffrontend:BitmapToImageSourceConverter x:Key="BitmapToImageSourceConverter"/>
+        <wpffrontend:InkIconConverter x:Key="InkIconConverter"/>
         <wpffrontend:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <wpffrontend:PocketCountToSuffixConverter x:Key="PocketCountToSuffixConverter"/>
         <wpffrontend:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
@@ -151,9 +152,15 @@
                                 <DataTemplate DataType="{x:Type bg:SpellIconEntry}">
                                     <StackPanel Orientation="Horizontal" Margin="0,0,8,2">
                                         <!-- No icon in the resource -> no placeholder, just the name (Visibility Collapsed removes the slot instead of leaving blank space). -->
-                                        <Image Source="{Binding Icon, Converter={StaticResource BitmapToImageSourceConverter}}"
-                                               Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
-                                               Width="24" Height="24" Margin="0,0,3,0"/>
+                                        <Image Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
+                                               Width="24" Height="24" Margin="0,0,3,0">
+                                            <Image.Source>
+                                                <MultiBinding Converter="{StaticResource InkIconConverter}" Mode="OneWay">
+                                                    <Binding Path="Icon" Converter="{StaticResource BitmapToImageSourceConverter}"/>
+                                                    <Binding Path="(bg:Configuration.BuffInkFilter)"/>
+                                                </MultiBinding>
+                                            </Image.Source>
+                                        </Image>
                                         <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </DataTemplate>
