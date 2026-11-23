@@ -69,17 +69,33 @@ namespace WPFFrontend
             var pixels = new byte[stride * bitmap.PixelHeight];
             bitmap.CopyPixels(pixels, stride, 0);
 
-            // Match the preview's grayscale, 55% sepia, 53% brightness and 94% contrast.
-            // Work in straight BGRA so antialiased edges retain their original opacity.
-            static byte InkChannel(double luminance, double sepiaGain) =>
-                (byte)Math.Round(Math.Min(255, luminance * sepiaGain) * 0.53 * 0.94 + 255 * 0.03);
+            double Luminance(int i) =>
+                0.2126 * pixels[i + 2] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i];
+
+            // Sample the body of the icon, excluding transparent padding and faint edges.
+            // For entirely translucent artwork, use its most opaque pixels instead.
+            int maxAlpha = 0;
+            for (int i = 3; i < pixels.Length; i += 4)
+                maxAlpha = Math.Max(maxAlpha, (int)pixels[i]);
+            int sampleAlpha = Math.Min(128, maxAlpha);
+            var samples = new double[pixels.Length / 4];
+            int count = 0;
+            for (int i = 0; i < pixels.Length; i += 4)
+                if (pixels[i + 3] >= sampleAlpha)
+                    samples[count++] = Luminance(i);
+
+            Array.Sort(samples, 0, count);
+            double Percentile(double fraction) => samples[(int)Math.Round((count - 1) * fraction)];
+            double midtone = Percentile(0.55);
+            double highlightRange = Math.Max(12, Percentile(0.98) - midtone);
 
             for (int i = 0; i < pixels.Length; i += 4)
             {
-                double luminance = 0.2126 * pixels[i + 2] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i];
-                pixels[i]     = InkChannel(luminance, 0.45 + 0.55 * 0.937);
-                pixels[i + 1] = InkChannel(luminance, 0.45 + 0.55 * 1.203);
-                pixels[i + 2] = InkChannel(luminance, 0.45 + 0.55 * 1.351);
+                double luminance = Luminance(i);
+                double highlight = Math.Clamp((luminance - midtone) / highlightRange, 0, 1);
+                double baseTone = luminance / 255;
+                byte inkTone = (byte)Math.Round(6 * (baseTone * baseTone) + 130 * Math.Pow(highlight, 1.7));
+                pixels[i] = pixels[i + 1] = pixels[i + 2] = inkTone;
             }
 
             var ink = BitmapSource.Create(bitmap.PixelWidth, bitmap.PixelHeight, source.DpiX, source.DpiY,
