@@ -6,7 +6,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
@@ -21,7 +20,7 @@ namespace WPFFrontend
 
         private Dictionary<String, BuffControl> buffs = new Dictionary<string, BuffControl>();
 
-        private BitmapImage emptyBuffIcon = new BitmapImage(new Uri($"icons/not_found.png", UriKind.Relative));
+        private readonly BitmapImage emptyBuffIcon = new(new Uri("pack://application:,,,/icons/not_found.png"));
 
         public EnemyControl(BGEntity bgEntity, MainWindow mainWindow)
         {
@@ -203,71 +202,13 @@ namespace WPFFrontend
                 this.BGEntity = item;
                 if (item.Type != 49)
                     return;
-                this.BGEntity.LoadCREResource();
-                if (this.BGEntity.Reader != null)
-                {
-                    //this.BGEntity.CreResourceFilename = this.BGEntity.Reader.ShortName;
-                }
-                this.BGEntity.loadTimedEffects();
+                item.loadTimedEffects();
+                updateBuffs(item);
+                item.LoadCREResource();
                 this.BGEntity.LoadDerivedStats();
                 this.fetchWeaponEffects(item);
                 this.DataContext = this.BGEntity;
                 this.updateLocalizedLabels(item);
-
-                BuffStack.CenterRows = Configuration.CenterBuffIcons;
-                foreach (var buff in buffs)
-                {
-                    if ((buff.Value.BuffDurationAbsolute != 0 && buff.Value.BuffDurationAbsolute < this.BGEntity.GameTime)
-                            || !this.BGEntity.SpellProtection.Any(x => x.Item1 == buff.Key))
-                    {
-                        this.BuffStack.Children.Remove(buff.Value);
-                        buffs.Remove(buff.Key);
-                    }
-                }
-
-                if (this.BGEntity.SpellProtection.Count > 0)
-                {
-                    this.BGEntity.SpellProtection.ForEach(x =>
-                    {
-                        int rounds = ((int)x.Item3 - (int)this.BGEntity.GameTime) / 15 / 6;
-                        float durationFloat = (float)rounds / 10;
-
-                        bool isPresent = buffs.ContainsKey(x.Item1);
-                        if (isPresent)
-                        {
-                            buffs[x.Item1].Invalidate();
-                            buffs[x.Item1].BuffDurationAbsolute = x.Item3;
-                            buffs[x.Item1].BuffDuration = x.Item3 == uint.MaxValue ? float.MaxValue : durationFloat;
-                            buffs[x.Item1].UpdateTooltip(this.BGEntity.GameTime);
-                            return;
-                        }
-                        BitmapSource newIcon;
-                        if (x.Item2 != null)
-                        {
-                            newIcon = Imaging.CreateBitmapSourceFromHBitmap(
-                            x.Item2.GetHbitmap(),
-                            IntPtr.Zero,
-                            Int32Rect.Empty,
-                            BitmapSizeOptions.FromWidthAndHeight(x.Item2.Width, x.Item2.Height));
-                        }
-                        else
-                        {
-                            newIcon = emptyBuffIcon;
-                        }
-
-                        var buffControl = new BuffControl()
-                        {
-                            BuffName = x.Item1,
-                            BuffDuration = x.Item3 == uint.MaxValue ? float.MaxValue : durationFloat,
-                            Icon = newIcon,
-                            BuffDurationAbsolute = x.Item3
-                        };
-                        buffControl.UpdateTooltip(this.BGEntity.GameTime);
-                        BuffStack.Children.Add(buffControl);
-                        this.buffs.Add(x.Item1, buffControl);
-                    });
-                }
-                BuffStack.Visibility = BuffStack.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
                 protectionsPanel.Visibility = item.Protections.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
                 pocketsSection.Visibility = item.Pockets.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -276,6 +217,44 @@ namespace WPFFrontend
                 Logger.Error("Enemy Control: Update View error!", ex);
             }
             
+        }
+
+        private void updateBuffs(BGEntity item)
+        {
+            BuffStack.CenterRows = Configuration.CenterBuffIcons;
+            var active = item.SpellProtection
+                .Where(effect => effect.Item3 == 0 || effect.Item3 >= item.GameTime)
+                .ToDictionary(effect => effect.Item1);
+
+            foreach (var name in buffs.Keys.Where(name => !active.ContainsKey(name)).ToArray())
+            {
+                BuffStack.Children.Remove(buffs[name]);
+                buffs.Remove(name);
+            }
+
+            var converter = (BitmapToImageSourceConverter)Resources["BitmapToImageSourceConverter"];
+            foreach (var (name, bitmap, expires) in active.Values)
+            {
+                if (!buffs.TryGetValue(name, out var control))
+                {
+                    control = new BuffControl
+                    {
+                        BuffName = name,
+                        Icon = (BitmapSource)converter.Convert(bitmap, typeof(BitmapSource), null, null) ?? emptyBuffIcon
+                    };
+                    BuffStack.Children.Add(control);
+                    buffs.Add(name, control);
+                }
+                else
+                {
+                    control.Invalidate();
+                }
+                control.BuffDurationAbsolute = expires;
+                control.BuffDuration = expires is 0 or uint.MaxValue
+                    ? float.MaxValue : (expires - item.GameTime) / 90 / 10f;
+                control.UpdateTooltip(item.GameTime);
+            }
+            BuffStack.Visibility = buffs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void UserControl_MouseLeave(object sender, MouseEventArgs e)
