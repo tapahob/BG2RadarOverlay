@@ -20,6 +20,11 @@ public sealed class CombatTextLayer : FrameworkElement
 
     internal void Advance(long tick)
     {
+        if (!Configuration.ShowCombatText)
+        {
+            if (effects.Count > 0) Clear();
+            return;
+        }
         if (lastTick != 0) time += (tick - lastTick) * Configuration.CombatTextSpeed / 100000.0;
         lastTick = tick;
         effects.RemoveAll(effect => time - effect.Start >= FloatingText.Lifetime);
@@ -27,6 +32,7 @@ public sealed class CombatTextLayer : FrameworkElement
 
     internal void Add(CombatImpact impact)
     {
+        if (!Configuration.ShowCombatText) return;
         foreach (var effect in effects)
             if (effect.Target == impact.Actor) effect.Push(time);
         if (effects.Count == 128) effects.RemoveAt(0);

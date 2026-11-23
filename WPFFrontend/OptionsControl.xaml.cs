@@ -116,6 +116,7 @@ namespace WPFFrontend
             this.AnimateCharacterCardNumbers.Click += updateConfig;
             AddCombatChoices<CombatTrajectory>(CombatPath);
             AddCombatChoices<CombatEasing>(CombatEasingPicker);
+            ShowCombatText.Click += updateConfig;
             ShowCastingSpell.Click += updateConfig;
             CombatScale.ValueChanged += updateConfig;
             CombatSpeed.ValueChanged += updateConfig;
@@ -551,6 +552,7 @@ namespace WPFFrontend
             Configuration.BuffInkFilter       = this.BuffInkFilter.IsChecked == true;
             Configuration.AnimateEnemyListNumbers = this.AnimateEnemyListNumbers.IsChecked == true;
             Configuration.AnimateCharacterCardNumbers = this.AnimateCharacterCardNumbers.IsChecked == true;
+            Configuration.ShowCombatText = ShowCombatText.IsChecked == true;
             Configuration.ShowCastingSpell = ShowCastingSpell.IsChecked == true;
             Configuration.CombatTextScale = (int)CombatScale.Value;
             Configuration.CombatTextSpeed = (int)CombatSpeed.Value;
@@ -925,6 +927,7 @@ namespace WPFFrontend
                 this.BuffInkFilter.IsChecked        = Configuration.BuffInkFilter;
                 this.AnimateEnemyListNumbers.IsChecked = Configuration.AnimateEnemyListNumbers;
                 this.AnimateCharacterCardNumbers.IsChecked = Configuration.AnimateCharacterCardNumbers;
+                ShowCombatText.IsChecked = Configuration.ShowCombatText;
                 ShowCastingSpell.IsChecked = Configuration.ShowCastingSpell;
                 CombatScale.Value = Configuration.CombatTextScale;
                 CombatSpeed.Value = Configuration.CombatTextSpeed;

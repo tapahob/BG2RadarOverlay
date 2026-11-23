@@ -933,3 +933,8 @@ Str_CombatLinear=Linear
 Str_EEexPatchDetectedTitle=New EEex installation detected
 Str_EEexPatchDetectedDetails=The compatibility patch is installed. Please restart InfinityLoader.
 Str_EEexPatchInstallStep=Installing the EEex compatibility patch
+
+Str_TabCombatText=Combat text
+Str_ShowCombatText=Show floating combat text
+Str_PreviousRadarRunning=The previous BG Radar Overlay is still running.
+Str_RadarCloseTimeout=Timed out closing BG Radar Overlay (PID {0}).

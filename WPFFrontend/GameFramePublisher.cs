@@ -454,11 +454,11 @@ namespace WPFFrontend
 
         private void onHealthLost(int pid, BGEntity actor, int amount)
         {
-            if (_hasCombatEvents || Dispatcher.HasShutdownStarted) return;
+            if (!Configuration.ShowCombatText || _hasCombatEvents || Dispatcher.HasShutdownStarted) return;
             long detected = Environment.TickCount64;
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (_hasCombatEvents || pid != _framePid || Environment.TickCount64 - detected > 500) return;
+                if (!Configuration.ShowCombatText || _hasCombatEvents || pid != _framePid || Environment.TickCount64 - detected > 500) return;
                 if (!_combatProjection.TryLocate(actor, out _, out int x, out int y, out int width, out int height)) return;
                 var anchor = new Point((double)x / width, (double)(y - 55) / height);
                 if (anchor.X is >= 0 and <= 1 && anchor.Y is >= 0 and <= 1)

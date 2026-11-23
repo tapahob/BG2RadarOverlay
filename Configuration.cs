@@ -83,6 +83,7 @@ namespace BGOverlay
         }
         public static bool AnimateEnemyListNumbers { get; set; } = true;
         public static bool AnimateCharacterCardNumbers { get; set; } = true;
+        public static bool ShowCombatText { get; set; } = true;
         public static bool ShowCastingSpell { get; set; } = true;
         public static int CombatTextScale { get; set; } = 40;
         public static int CombatTextSpeed { get; set; } = 100;
@@ -202,6 +203,7 @@ namespace BGOverlay
                 $"{nameof(BuffInkFilter)}={BuffInkFilter}",
                 $"AnimateEnemyListNumbers={AnimateEnemyListNumbers}",
                 $"AnimateCharacterCardNumbers={AnimateCharacterCardNumbers}",
+                $"ShowCombatText={ShowCombatText}",
                 $"ShowCastingSpell={ShowCastingSpell}",
                 $"CombatTextScale={CombatTextScale}",
                 $"CombatTextSpeed={CombatTextSpeed}",
@@ -291,6 +293,7 @@ namespace BGOverlay
                 BuffInkFilter       = getProperty(nameof(BuffInkFilter), "true").Equals("true");
                 AnimateEnemyListNumbers = getProperty(nameof(AnimateEnemyListNumbers), "true").Equals("true");
                 AnimateCharacterCardNumbers = getProperty(nameof(AnimateCharacterCardNumbers), "true").Equals("true");
+                ShowCombatText = getProperty(nameof(ShowCombatText), "true").Equals("true");
                 ShowCastingSpell = getProperty(nameof(ShowCastingSpell), "true").Equals("true");
                 CombatTextScale = ReadPercent(nameof(CombatTextScale), 40, 1, 150);
                 CombatTextSpeed = ReadPercent(nameof(CombatTextSpeed), 100, 1, 200);

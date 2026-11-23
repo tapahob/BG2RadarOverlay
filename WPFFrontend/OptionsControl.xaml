@@ -185,7 +185,7 @@
                     <Button Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="8" x:Name="Save" BorderThickness="1" Background="Transparent" BorderBrush="#FF151313" d:Content="Save" Content="{DynamicResource Str_Save}" FontFamily="Segoe Print" FontWeight="Bold" Click="Save_Click" Margin="0,16,0,0" Grid.RowSpan="2"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Combat Text" Tag="M1,1 H15 V10 H7 L3,14 V10 H1 Z">
+            <TabItem Header="{DynamicResource Str_TabCombatText}" Tag="M1,1 H15 V10 H7 L3,14 V10 H1 Z">
                 <Grid Margin="16" TextElement.FontFamily="{DynamicResource FontFamily1}" TextElement.FontWeight="Bold">
                     <Grid.Resources>
                         <ResourceDictionary>
@@ -245,22 +245,23 @@
                         </ResourceDictionary>
                     </Grid.Resources>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="50"/></Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                    <Label Grid.Row="0" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatScale}"/>
-                    <Slider x:Name="CombatScale" Grid.Row="0" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="1" Maximum="150" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatScale}"/>
-                    <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Value, ElementName=CombatScale, StringFormat={}{0:0}%}"/>
-                    <Label Grid.Row="1" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatSpeed}"/>
-                    <Slider x:Name="CombatSpeed" Grid.Row="1" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="1" Maximum="200" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatSpeed}"/>
-                    <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Value, ElementName=CombatSpeed, StringFormat={}{0:0}%}"/>
-                    <Label Grid.Row="2" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatPush}"/>
-                    <Slider x:Name="CombatPush" Grid.Row="2" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="0" Maximum="300" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatPush}"/>
-                    <TextBlock Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Value, ElementName=CombatPush, StringFormat={}{0:0}%}"/>
-                    <Label Grid.Row="3" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatPath}"/>
-                    <ComboBox x:Name="CombatPath" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" Margin="8,4,0,4" AutomationProperties.Name="{DynamicResource Str_CombatPath}"/>
-                    <Label Grid.Row="4" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatEasing}"/>
-                    <ComboBox x:Name="CombatEasingPicker" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" Margin="8,4,0,4" AutomationProperties.Name="{DynamicResource Str_CombatEasing}"/>
-                    <CheckBox x:Name="ShowCastingSpell" Grid.Row="5" Grid.ColumnSpan="3" Margin="0,8,0,0" Content="{DynamicResource Str_ShowCastingSpell}"/>
-                    <Button Grid.Row="6" Grid.ColumnSpan="3" Content="{DynamicResource Str_Save}" Click="Save_Click" Margin="0,12,0,0" Padding="4"/>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <CheckBox x:Name="ShowCombatText" Grid.ColumnSpan="3" Margin="0,0,0,6" Content="{DynamicResource Str_ShowCombatText}"/>
+                    <Label Grid.Row="1" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatScale}"/>
+                    <Slider x:Name="CombatScale" Grid.Row="1" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="1" Maximum="150" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatScale}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Value, ElementName=CombatScale, StringFormat={}{0:0}%}"/>
+                    <Label Grid.Row="2" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatSpeed}"/>
+                    <Slider x:Name="CombatSpeed" Grid.Row="2" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="1" Maximum="200" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatSpeed}"/>
+                    <TextBlock Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Value, ElementName=CombatSpeed, StringFormat={}{0:0}%}"/>
+                    <Label Grid.Row="3" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatPush}"/>
+                    <Slider x:Name="CombatPush" Grid.Row="3" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="0" Maximum="300" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatPush}"/>
+                    <TextBlock Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Value, ElementName=CombatPush, StringFormat={}{0:0}%}"/>
+                    <Label Grid.Row="4" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatPath}"/>
+                    <ComboBox x:Name="CombatPath" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" Margin="8,4,0,4" AutomationProperties.Name="{DynamicResource Str_CombatPath}"/>
+                    <Label Grid.Row="5" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatEasing}"/>
+                    <ComboBox x:Name="CombatEasingPicker" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" Margin="8,4,0,4" AutomationProperties.Name="{DynamicResource Str_CombatEasing}"/>
+                    <CheckBox x:Name="ShowCastingSpell" Grid.Row="6" Grid.ColumnSpan="3" Margin="0,8,0,0" Content="{DynamicResource Str_ShowCastingSpell}"/>
+                    <Button Grid.Row="7" Grid.ColumnSpan="3" Content="{DynamicResource Str_Save}" Click="Save_Click" Margin="0,12,0,0" Padding="4"/>
                 </Grid>
             </TabItem>
             <TabItem Tag="{StaticResource TwitchGlyph}" d:Header="Twitch Integration" Header="{DynamicResource Str_TabTwitchIntegration}">

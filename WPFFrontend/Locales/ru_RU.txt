@@ -930,3 +930,8 @@ Str_CombatLinear=Равномерно
 Str_EEexPatchDetectedTitle=Обнаружена новая установка EEex
 Str_EEexPatchDetectedDetails=Патч совместимости установлен. Пожалуйста, перезапустите InfinityLoader.
 Str_EEexPatchInstallStep=Установка патча совместимости с EEex
+
+Str_TabCombatText=Боевой текст
+Str_ShowCombatText=Показывать всплывающий боевой текст
+Str_PreviousRadarRunning=Предыдущая копия BG Radar Overlay всё ещё работает.
+Str_RadarCloseTimeout=Не удалось вовремя закрыть BG Radar Overlay (процесс {0}).
