@@ -193,8 +193,23 @@ template<class Fn> bool queueHook(Byte* address, Fn replacement, Fn& original) {
 bool eeexPresent(const std::wstring& gameDirectory) {
     // EEex locates and patches some of the same entry points. Its DLL can still
     // be waiting to load when InitializeASI runs. Leave those bytes intact.
-    return GetModuleHandleW(L"EEex.dll") ||
-        GetFileAttributesW((gameDirectory + L"\\EEex.dll").c_str()) != INVALID_FILE_ATTRIBUTES;
+    if (GetModuleHandleW(L"EEex.dll") ||
+        GetFileAttributesW((gameDirectory + L"\\EEex.dll").c_str()) != INVALID_FILE_ATTRIBUTES) return true;
+
+    // Match the override marker used by the companion installer as well.
+    WIN32_FIND_DATAW entry{};
+    HANDLE search = FindFirstFileW((gameDirectory + L"\\override\\M*EEex*.lua").c_str(), &entry);
+    if (search == INVALID_HANDLE_VALUE) return false;
+    bool found = false;
+    do {
+        const wchar_t* extension = wcsrchr(entry.cFileName, L'.');
+        if (!(entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && extension && _wcsicmp(extension, L".lua") == 0) {
+            found = true;
+            break;
+        }
+    } while (FindNextFileW(search, &entry));
+    FindClose(search);
+    return found;
 }
 
 bool installCombatHooks(Byte* base, bool withEEex) {

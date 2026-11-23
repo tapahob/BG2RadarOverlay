@@ -76,13 +76,7 @@ namespace BGOverlay
 
             try
             {
-                if (File.Exists(Path.Combine(gameFolder, "EEex.dll")))
-                    return true;
-
-                var overrideFolder = Path.Combine(gameFolder, "override");
-                if (Directory.Exists(overrideFolder)
-                    && Directory.GetFiles(overrideFolder, "M*EEex*.lua").Length > 0)
-                    return true;
+                return HasEEexFiles(gameFolder);
             }
             catch (Exception ex)
             {
@@ -90,8 +84,17 @@ namespace BGOverlay
                 Logger.Error("Could not check whether EEex is installed", ex);
                 return true;
             }
+        }
 
-            return false;
+        public static bool HasEEexFiles(string gameFolder)
+        {
+            if (File.Exists(Path.Combine(gameFolder, "EEex.dll")))
+                return true;
+
+            var overrideFolder = Path.Combine(gameFolder, "override");
+            return Directory.Exists(overrideFolder)
+                && Array.Exists(Directory.GetFiles(overrideFolder, "M*EEex*.lua"),
+                    path => path.EndsWith(".lua", StringComparison.OrdinalIgnoreCase));
         }
 
         public static EEexModStatus GetStatus()

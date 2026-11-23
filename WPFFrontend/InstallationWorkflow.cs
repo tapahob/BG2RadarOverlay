@@ -67,7 +67,9 @@ public partial class MainWindow
         var saved = installations.Find(executable);
         if (saved != null)
         {
-            if (saved.LastKnownEEex != saved.HasEEex) RefreshSavedInstallation(saved);
+            var hasEEex = saved.HasEEex;
+            if (saved.LastKnownEEex != hasEEex || (hasEEex && !File.Exists(saved.CriticalScriptPath)))
+                RefreshSavedInstallation(saved);
             return Task.CompletedTask;
         }
         var game = GameInstallation.FromExecutable(executable);

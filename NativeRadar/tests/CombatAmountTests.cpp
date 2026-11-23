@@ -61,6 +61,16 @@ int wmain(int argc, wchar_t** argv) {
     std::ofstream(game / "EEex.dll").put(' ');
     require(eeexPresent(game.wstring()), "detect installed EEex before its DLL loads");
     fs::remove(game / "EEex.dll");
+    fs::create_directory(game / "override");
+    auto radarScript = game / "override" / "M_RDRCRT.lua";
+    std::ofstream(radarScript).put(' ');
+    require(!eeexPresent(game.wstring()), "Radar's own script does not indicate EEex");
+    auto eeexScript = game / "override" / "M___EEex.lua";
+    std::ofstream(eeexScript).put(' ');
+    require(eeexPresent(game.wstring()), "detect EEex by its override script alone");
+    fs::remove(eeexScript);
+    fs::remove(radarScript);
+    fs::remove(game / "override");
     fs::remove(game);
 
     Actor actor;

@@ -17,7 +17,8 @@ internal sealed record GameInstallation(string Name, string Executable, bool Nat
 {
     // Older installations.json entries have no EEex history.
     public bool? LastKnownEEex { get; init; }
-    internal bool HasEEex => File.Exists(Path.Combine(Folder, "EEex.dll"));
+    internal bool HasEEex => EEexModInstaller.HasEEexFiles(Folder);
+    internal string CriticalScriptPath => Path.Combine(Folder, "override", "M_RDRCRT.lua");
     [JsonIgnore]
     public string Folder => Path.GetDirectoryName(Executable);
     internal string GameExe => Path.GetFileName(Executable);
@@ -91,7 +92,6 @@ internal sealed class InstallationRegistry
 
 internal static class NativeInstallation
 {
-    private const string CriticalScript = "M_RDRCRT.lua";
     internal static bool SamePath(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
     internal static string RadarExe => new FileInfo(Environment.ProcessPath).ResolveLinkTarget(true)?.FullName ?? Environment.ProcessPath;
 
@@ -106,7 +106,7 @@ internal static class NativeInstallation
         CleanModuleBackups(game);
         foreach (var module in ModulePaths(game).Where(File.Exists))
             File.Delete(module);
-        var script = Path.Combine(game.Folder, "override", CriticalScript);
+        var script = game.CriticalScriptPath;
         if (File.Exists(script)) File.Delete(script);
 
         // winmm.dll is a shared ASI loader and may still be needed by other mods.
@@ -125,7 +125,7 @@ internal static class NativeInstallation
     {
         // For a pre-upgrade entry, an existing patch is the best evidence that
         // this installation already used EEex. A routine repair isn't a new install.
-        var previouslyHadEEex = game.LastKnownEEex ?? File.Exists(Path.Combine(game.Folder, "override", CriticalScript));
+        var previouslyHadEEex = game.LastKnownEEex ?? File.Exists(game.CriticalScriptPath);
         Install(game, RadarExe, null, installLoader: false, hasEEex: hasEEex);
         return hasEEex && !previouslyHadEEex;
     }
@@ -156,7 +156,7 @@ internal static class NativeInstallation
         if (installLoader) yield return Path.Combine(game.Folder, "winmm.dll");
         yield return ModulePaths(game).FirstOrDefault(File.Exists) ?? Path.Combine(game.Folder, "BG2Radar.asi");
         if (hasEEex)
-            yield return Path.Combine(game.Folder, "override", CriticalScript);
+            yield return game.CriticalScriptPath;
     }
 
     internal static void Install(GameInstallation game, string radarExe, Action injectorInstalled, bool hasEEex,
