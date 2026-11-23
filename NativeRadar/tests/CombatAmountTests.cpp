@@ -41,7 +41,7 @@ void checkGameImage(const wchar_t* path) {
     auto base = reinterpret_cast<Byte*>(image);
     require(MH_Initialize() == MH_OK, "initialize hooks");
     require(installCombatHooks(base, true), "install EEex-compatible damage hooks");
-    require(apply && displayDamage && hit && !copyEffect && !projectileAdd && !messageAdd,
+    require(weaponDamage && feedback && apply && displayDamage && hit && !copyEffect && !projectileAdd && !messageAdd,
         "compatible mode observes individual effects without installing critical tracking");
     require(MH_Uninitialize() == MH_OK, "restore game image");
     require(MH_Initialize() == MH_OK, "initialize vanilla hooks");
@@ -158,4 +158,40 @@ int wmain(int argc, wchar_t** argv) {
     require(events.cursor == 8 && events.slots[6].event.kind == Cold &&
         events.slots[7].event.kind == Critical && events.slots[7].event.damage == 9,
         "EEex critical mark belongs to the weapon effect and uses resolved damage");
+
+    feedback = [](void*, unsigned, int, int int2, int, unsigned, int, void*) {
+        require(int2 == 0, "forward the original feedback parameters");
+    };
+    weaponDamage = [](void* attacker, void* e, void*, int attack, int, void*, short, short, void* victim, int) {
+        if (attack == 1) combatFeedback(attacker, 1, 0, victim, 0, -1, 0, nullptr);
+        return e;
+    };
+    setField(actor.sprite, 0x48, 101);
+    for (bool eeex : {false, true}) {
+        useEEexCriticalMarks = eeex;
+        for (int crit : {0, 1}) {
+            Byte weaponEffect[sizeof(effect)]{};
+            setField(weaponEffect, 0x10, 12);
+            setField(weaponEffect, 0x1C, 35);
+            void* result = onWeaponDamage(&actor, weaponEffect, nullptr, 1, crit, nullptr, 0, 0, actor.sprite, 0);
+            require(result == weaponEffect && activeRoll == nullptr, "return original weapon effect and close roll");
+            Byte delivered[sizeof(effect)];
+            std::memcpy(delivered, weaponEffect, sizeof(delivered));
+            onApply(delivered, actor.sprite);
+            auto event = events.slots[(events.cursor - 1) % 128].event;
+            require(event.kind == (crit ? BackstabCritical : Backstab) && event.damage == 35 && event.actor == 101,
+                "copied backstab keeps its own critical state and resolved damage");
+            setField(weaponEffect, 0x6C, 77);
+            onWeaponDamage(&actor, weaponEffect, nullptr, 1, crit, nullptr, 0, 0, actor.sprite, 0);
+            require(field<int>(weaponEffect, 0x6C) == 77, "respect another mod's extended parameter");
+            setField(weaponEffect, 0x6C, 0);
+            onWeaponDamage(&actor, weaponEffect, nullptr, 0, crit, nullptr, 0, 0, actor.sprite, 0);
+            require(field<int>(weaponEffect, 0x6C) == 0, "no backstab carries over to the next weapon roll");
+        }
+    }
+    auto beforeBlock = events.cursor;
+    combatFeedback(&actor, 0x25, 0, actor.sprite, 0, -1, 0, nullptr);
+    auto block = events.slots[beforeBlock % 128].event;
+    require(events.cursor == beforeBlock + 1 && block.kind == WeaponIneffective && block.damage == 0 &&
+        block.actor == 101, "weapon immunity publishes one numberless event at the victim");
 }

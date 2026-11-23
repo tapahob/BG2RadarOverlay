@@ -8,9 +8,16 @@
 #include <mutex>
 #include <string>
 
+// The three call-site adapters leave the FeedBack entry intact: EEex locates
+// that function by its original prologue, even when it starts after this ASI.
+extern "C" {
+void backstabFeedbackSite(), meleeIneffectiveSite(), rangedIneffectiveSite();
+void *backstabResume, *meleeResume, *rangedResume;
+}
+
 namespace {
 using Byte = unsigned char;
-enum Kind { Normal, Miss, Critical, Fire, Cold, Acid, Lightning, Magic };
+enum Kind { Normal, Miss, Critical, Fire, Cold, Acid, Lightning, Magic, Backstab, BackstabCritical, WeaponIneffective };
 // A wrapping producer invalidates the slot before touching it. The reader checks its
 // sequence on both sides of the payload read and never holds a lock in the game.
 struct Event { uint64_t tick; int actor, kind, damage; float x, y; int reserved; };
@@ -61,6 +68,33 @@ Kind damageKind(uint32_t flags) {
     return Normal;
 }
 
+using WeaponDamage = void* (*)(void*, void*, void*, int, int, void*, short, short, void*, int);
+using Feedback = void (*)(void*, unsigned, int, int, int, unsigned, int, void*);
+WeaponDamage weaponDamage;
+Feedback feedback;
+
+struct WeaponRoll { void* attacker; void* target; bool backstab = false; };
+thread_local WeaponRoll* activeRoll;
+constexpr uint32_t BackstabMark = 0x52425354, BackstabCritMark = 0x52425343;
+
+// Observe the engine's successful multiplier branch while constructing this
+// one base damage effect. Nested rolls and on-hit riders remain independent.
+void* onWeaponDamage(void* attacker, void* weapon, void* launcher, int attack, int critical,
+        void* targetType, short facing, short myFacing, void* target, int lastSwing) {
+    WeaponRoll roll{attacker, target};
+    auto parent = activeRoll;
+    activeRoll = &roll;
+    void* effect = weaponDamage(attacker, weapon, launcher, attack, critical, targetType,
+        facing, myFacing, target, lastSwing);
+    activeRoll = parent;
+    if (roll.backstab && effect && field<int>(effect, 0x10) == 12 && field<int>(effect, 0x6C) == 0) {
+        // This unused base-weapon parameter travels with projectile/effect copies.
+        // The EEex critical listener also leaves an already claimed parameter intact.
+        uint32_t mark = critical ? BackstabCritMark : BackstabMark;
+        std::memcpy(static_cast<Byte*>(effect) + 0x6C, &mark, sizeof(mark));
+    }
+    return effect;
+}
 using Hit = Byte (*)(void*, void*, void*, int, int*, int);
 using Apply = int (*)(void*, void*);
 using DisplayDamage = void (*)(void*, void*, int);
@@ -109,6 +143,14 @@ bool criticalDamage(void* effect) {
     if (useEEexCriticalMarks) return field<uint32_t>(effect, 0x6C) == 0x52435254;
     return marked(effect, true);
 }
+Kind resolvedKind(void* effect) {
+    bool critical = criticalDamage(effect); // also retires any native roll mark
+    switch (field<uint32_t>(effect, 0x6C)) {
+        case BackstabMark: return Backstab;
+        case BackstabCritMark: return BackstabCritical;
+        default: return critical ? Critical : damageKind(field<uint32_t>(effect, 0x20) >> 16);
+    }
+}
 Byte onHit(void* actor, void* victim, void* item, int attack, int* crit, int left) {
     Byte landed = hit(actor, victim, item, attack, crit, left);
     criticalRoll = landed && crit && *crit;
@@ -133,7 +175,7 @@ struct DamageScope {
     void* effect;
     void* target;
     DamageScope* parent;
-    bool critical;
+    Kind kind;
     bool reported = false;
     int nestedLoss = 0;
 };
@@ -149,17 +191,15 @@ void onDisplayDamage(void* effect, void* target, int resisted) {
     // or apply other effects after this call, especially on a killing blow.
     int amount = field<int32_t>(effect, 0x1C);
     if (amount > 0) {
-        bool critical = scope ? scope->critical : criticalDamage(effect);
-        publish(target, critical ? Critical : damageKind(field<uint32_t>(effect, 0x20) >> 16), amount);
+        publish(target, scope ? scope->kind : resolvedKind(effect), amount);
     }
     displayDamage(effect, target, resisted);
 }
 
 int onApply(void* effect, void* target) {
-    DamageScope scope{effect, target, activeDamage, criticalDamage(effect)};
+    DamageScope scope{effect, target, activeDamage, resolvedKind(effect)};
     activeDamage = &scope;
     int before = field<int16_t>(target, 0x57C);
-    auto kind = scope.critical ? Critical : damageKind(field<uint32_t>(effect, 0x20) >> 16);
     int result = apply(effect, target);
     activeDamage = scope.parent;
     // Silent and set-HP effects can bypass DisplayDamageAmount. Only these
@@ -169,18 +209,18 @@ int onApply(void* effect, void* target) {
         if (parent->target == target) { parent->nestedLoss += lost; break; }
     }
     lost -= scope.nestedLoss;
-    if (!scope.reported && before > 0 && lost > 0) publish(target, kind, lost);
+    if (!scope.reported && before > 0 && lost > 0) publish(target, scope.kind, lost);
     return result;
 }
 
-struct Build { int hit, apply, displayDamage, projectile, message, copy, swing; };
+struct Build { int hit, apply, displayDamage, projectile, message, copy, swing, weaponDamage, feedback; };
 // EEex function_names.db for the x64 Enhanced Editions. Check both the function
 // entries and the two weapon-effect call sites before enabling a build.
 constexpr Build builds[] = {
-    {0x39DA50,0x1ACF40,0x1E2FB0,0x22A010,0x204C60,0x155EF0,0x3B7FD0}, // BG / BG2 2.6.6
-    {0x39DA90,0x1ACFD0,0x1E3040,0x22A0A0,0x204CF0,0x155F80,0x3B8010}, // IWD 2.6.6
-    {0x39E090,0x1AD150,0x1E31C0,0x22A270,0x204EC0,0x156100,0x3B8610}, // BG / BG2 2.7.3
-    {0x39E0C0,0x1AD1D0,0x1E3240,0x22A2F0,0x204F40,0x156180,0x3B8640}  // IWD 2.7.3
+    {0x39DA50,0x1ACF40,0x1E2FB0,0x22A010,0x204C60,0x155EF0,0x3B7FD0,0x38FBF0,0x398530}, // BG / BG2 2.6.6
+    {0x39DA90,0x1ACFD0,0x1E3040,0x22A0A0,0x204CF0,0x155F80,0x3B8010,0x38FC30,0x398570}, // IWD 2.6.6
+    {0x39E090,0x1AD150,0x1E31C0,0x22A270,0x204EC0,0x156100,0x3B8610,0x390230,0x398B70}, // BG / BG2 2.7.3
+    {0x39E0C0,0x1AD1D0,0x1E3240,0x22A2F0,0x204F40,0x156180,0x3B8640,0x390260,0x398BA0}  // IWD 2.7.3
 };
 bool calls(Byte* after, Byte* fn) {
     return after[-5] == 0xE8 && after + field<int32_t>(after - 4, 0) == fn;
@@ -217,7 +257,7 @@ bool installCombatHooks(Byte* base, bool withEEex) {
     auto dos = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
     auto nt = reinterpret_cast<IMAGE_NT_HEADERS64*>(base + dos->e_lfanew);
     for (auto& b : builds) {
-        if (nt->OptionalHeader.SizeOfCode < DWORD(b.swing + 0xD02)) continue;
+        if (nt->OptionalHeader.SizeOfCode < DWORD(b.swing + 0x1401)) continue;
         auto ranged = base + b.swing + 0x8E8, melee = base + b.swing + 0xD01;
         if (std::memcmp(base + b.apply, "\x40\x55\x53\x41\x54\x41\x56\x48", 8) ||
             std::memcmp(base + b.displayDamage, "\x40\x55\x56\x41\x55\x41\x56\x41", 8)) continue;
@@ -238,10 +278,39 @@ bool installCombatHooks(Byte* base, bool withEEex) {
                 !queueHook(base + b.projectile, onProjectileAdd, projectileAdd) ||
                 !queueHook(base + b.message, onMessageAdd, messageAdd)) return false;
         }
+        auto damage = base + b.weaponDamage;
+        auto notify = base + b.feedback;
+        auto backstab = damage + 0xD64;
+        auto rangedBlock = base + b.swing + 0x819;
+        auto meleeBlock = base + b.swing + 0x13FC;
+        if (calls(backstab + 5, notify) && calls(rangedBlock + 5, notify) && calls(meleeBlock + 5, notify) &&
+            !std::memcmp(damage, "\x40\x55\x53\x56\x57\x41\x54", 7)) {
+            feedback = reinterpret_cast<Feedback>(notify);
+            backstabResume = backstab + 5;
+            rangedResume = rangedBlock + 5;
+            meleeResume = meleeBlock + 5;
+            auto observe = [](Byte* site, void (*adapter)()) {
+                return MH_CreateHook(site, reinterpret_cast<void*>(adapter), nullptr) == MH_OK &&
+                    MH_QueueEnableHook(site) == MH_OK;
+            };
+            if (!queueHook(damage, onWeaponDamage, weaponDamage) ||
+                !observe(backstab, backstabFeedbackSite) || !observe(rangedBlock, rangedIneffectiveSite) ||
+                !observe(meleeBlock, meleeIneffectiveSite)) return false;
+        }
         return MH_ApplyQueued() == MH_OK;
     }
     return false;
 }
+}
+
+// R15 holds the victim at these three sites. The normal fourth argument is
+// zero there; the adapter passes the victim in its place and we restore zero.
+extern "C" void combatFeedback(void* attacker, unsigned id, int int1, void* victim,
+        int int3, unsigned ref1, int int4, void* stringIn) {
+    if (id == 1 && activeRoll && activeRoll->attacker == attacker && activeRoll->target == victim)
+        activeRoll->backstab = true;
+    if (id == 0x25) publish(victim, WeaponIneffective, 0);
+    feedback(attacker, id, int1, 0, int3, ref1, int4, stringIn);
 }
 
 void startCombatEvents(const std::wstring& gameDirectory) {

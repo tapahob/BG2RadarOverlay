@@ -9,7 +9,7 @@ using BGOverlay;
 namespace WPFFrontend.CombatText;
 
 // Order is shared with NativeRadar/CombatEvents.cpp.
-internal enum DamageKind { Normal, Miss, Critical, Fire, Cold, Acid, Lightning, Magic }
+internal enum DamageKind { Normal, Miss, Critical, Fire, Cold, Acid, Lightning, Magic, Backstab, BackstabCritical, WeaponIneffective }
 
 internal static class FloatingText
 {
@@ -27,7 +27,10 @@ internal static class FloatingText
         new(32, "#86C5FF", "#DDF8FF", new(15, 612, 328, 337), 96),
         new(28, "#7EE000", "#D7FF57", new(378, 608, 287, 337), 85),
         new(38, "#FFF4B0", "#E7D6FF", new(701, 590, 378, 372), 109),
-        new(42, "#B56BFF", "#F2C6FF", new(1086, 587, 346, 361), 100)
+        new(42, "#B56BFF", "#F2C6FF", new(1086, 587, 346, 361), 100),
+        new(42, "#A447CF", "#FFE2F7", new(0, 0, 708, 340), 214),
+        new(44, "#FF650F", "#FFE485", new(0, 0, 924, 412), 252),
+        new(28, "#AF7954", "#FFF1D2", new(0, 0, 2000, 667), 264)
     };
 
     internal static BitmapSource LoadFrame(string path)
@@ -133,9 +136,11 @@ internal static class FloatingText
             double t = Math.Clamp(age / Lifetime, 0, 1);
             if (t <= 0 || t >= 1) return;
             var offset = OffsetAt(age);
-            double fade = Math.Min(1, t / .08) * Math.Clamp((1 - t) / .47, 0, 1);
+            double fadeOut = kind is DamageKind.Backstab or DamageKind.BackstabCritical or DamageKind.WeaponIneffective ? .27 : .47;
+            double fade = Math.Min(1, t / .08) * Math.Clamp((1 - t) / fadeOut, 0, 1);
             double growth = kind is DamageKind.Normal or DamageKind.Miss ? .12 : .15;
-            double scale = UserScale * (1 + growth * Ease(t, Configuration.CombatTextEasing));
+            double sizeFactor = kind is DamageKind.BackstabCritical or DamageKind.WeaponIneffective ? 1.15 : 1;
+            double scale = sizeFactor * UserScale * (1 + growth * Ease(t, Configuration.CombatTextEasing));
             dc.PushOpacity(fade);
             dc.PushTransform(new TranslateTransform(viewport.X + Anchor.X * viewport.Width + offset.X,
                 viewport.Y + Anchor.Y * viewport.Height + offset.Y));
@@ -149,7 +154,7 @@ internal static class FloatingText
 
         void DrawParticles(DrawingContext dc, double t)
         {
-            if (kind is DamageKind.Normal or DamageKind.Miss) return;
+            if (kind is DamageKind.Normal or DamageKind.Miss or DamageKind.Backstab or DamageKind.WeaponIneffective) return;
             for (int i = 0; i < particles.Length; i++)
             {
                 var (angle, phase, size) = particles[i];
@@ -158,6 +163,7 @@ internal static class FloatingText
                 double drift = t * (16 + 16 * phase);
                 switch (kind)
                 {
+                    case DamageKind.BackstabCritical:
                     case DamageKind.Critical:
                         double burst = Math.Sin(Math.PI * Math.Min(1, t / .52));
                         dc.DrawLine(new Pen(i % 3 == 0 ? light : ink, burst * 1.6),

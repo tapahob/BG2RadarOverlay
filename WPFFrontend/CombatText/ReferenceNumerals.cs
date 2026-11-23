@@ -20,6 +20,26 @@ internal static class ReferenceNumerals
     static readonly Lazy<Dictionary<DamageKind, Row>> Rows = new(LoadRows);
     static readonly Lazy<BitmapSource> Miss = new(() => FloatingText.LoadFrame("Miss.png"));
 
+    static readonly Lazy<BitmapSource> Skeleton = new(() => FloatingText.LoadFrame("WeaponIneffectiveSkeleton.png"));
+
+    sealed record BackstabArt(BitmapSource Backdrop, BitmapSource Sample, Point NumberCenter);
+    static readonly Lazy<BackstabArt> Backstab = new(() => LoadBackstab("Backstab", new Point(388, 227)));
+    static readonly Lazy<BackstabArt> BackstabCritical = new(() => LoadBackstab("BackstabCritical", new Point(459, 235)));
+
+    static BackstabArt LoadBackstab(string name, Point center) => new(
+        FloatingText.LoadFrame(name + ".png"), FloatingText.LoadFrame(name + "Sample.png"), center);
+
+    static Point DrawBackstab(DrawingContext dc, DamageKind kind, bool sample)
+    {
+        var art = (kind == DamageKind.Backstab ? Backstab : BackstabCritical).Value;
+        var image = sample ? art.Sample : art.Backdrop;
+        double width = FloatingText.Styles[(int)kind].Width;
+        double height = width * image.PixelHeight / image.PixelWidth;
+        dc.DrawImage(image, new Rect(-width / 2, -height / 2, width, height));
+        double scale = width / image.PixelWidth;
+        return new Point(art.NumberCenter.X * scale - width / 2, art.NumberCenter.Y * scale - height / 2);
+    }
+
     static BitmapSource Crop(BitmapSource sheet, Int32Rect bounds)
     {
         var crop = new CroppedBitmap(sheet, bounds);
@@ -30,15 +50,17 @@ internal static class ReferenceNumerals
     static Dictionary<DamageKind, Row> LoadRows()
     {
         var sheet = FloatingText.LoadFrame("ReferenceDigits.png");
+        var backstabDigits = FloatingText.LoadFrame("BackstabDigits.png");
         var backdrops = FloatingText.LoadFrame("ReferenceBackdrops.png");
         using var stream = Application.GetResourceStream(new Uri("pack://application:,,,/BG Radar Overlay;component/CombatText/Art/ReferenceDigits.json")).Stream;
         var layouts = JsonSerializer.Deserialize<Dictionary<DamageKind, Metrics>>(stream)!;
         return layouts.ToDictionary(pair => pair.Key, pair =>
         {
             var layout = pair.Value;
-            var glyphs = layout.Widths.Select((width, index) => Crop(sheet, new Int32Rect(
+            bool backstab = pair.Key is DamageKind.Backstab or DamageKind.BackstabCritical;
+            var glyphs = layout.Widths.Select((width, index) => Crop(backstab ? backstabDigits : sheet, new Int32Rect(
                 index * CellWidth, layout.Row * CellHeight, width + 2 * Padding, CellHeight))).ToArray();
-            var backdrop = pair.Key == DamageKind.Normal ? null :
+            var backdrop = backstab || pair.Key == DamageKind.Normal ? null :
                 Crop(backdrops, FloatingText.Styles[(int)pair.Key].Crop);
             return new Row(layout, glyphs, backdrop);
         });
@@ -50,9 +72,23 @@ internal static class ReferenceNumerals
         double scale = style.Width / style.Crop.Width;
         double height = style.Crop.Height * scale;
         var bounds = new Rect(-style.Width / 2, -height / 2, style.Width, height);
-        if (kind == DamageKind.Miss)
+        if (kind is DamageKind.Miss or DamageKind.WeaponIneffective)
         {
-            dc.DrawImage(Miss.Value, bounds);
+            var image = kind == DamageKind.Miss ? Miss : Skeleton;
+            dc.DrawImage(image.Value, bounds);
+            return;
+        }
+
+        if (kind is DamageKind.Backstab or DamageKind.BackstabCritical)
+        {
+            bool sample = Math.Abs((long)damage) == (kind == DamageKind.Backstab ? 28 : 67);
+            var center = DrawBackstab(dc, kind, sample);
+            if (!sample)
+            {
+                // The two rows have 124 and 128 pixels of ink height in atlas coordinates.
+                double glyphScale = scale * (kind == DamageKind.Backstab ? 107.0 / 124 : 120.0 / 128);
+                DrawDigits(dc, Rows.Value[kind], damage, glyphScale, center.X, center.Y - 85 * glyphScale);
+            }
             return;
         }
 
@@ -60,6 +96,11 @@ internal static class ReferenceNumerals
         if (row.Backdrop != null)
             dc.DrawImage(row.Backdrop, bounds);
 
+        DrawDigits(dc, row, damage, scale, bounds.X + row.Layout.Center * scale, bounds.Y + row.Layout.Top * scale);
+    }
+
+    static void DrawDigits(DrawingContext dc, Row row, int damage, double scale, double center, double top)
+    {
         var layout = row.Layout;
         string digits = Math.Abs((long)damage).ToString(CultureInfo.InvariantCulture);
         int minusGap = layout.AfterMinus[digits[0] - '0' + 1];
@@ -67,11 +108,11 @@ internal static class ReferenceNumerals
         foreach (char digit in digits) width += layout.Widths[digit - '0' + 1];
 
         // Center the ink, not the transparent margins of the sprites.
-        double x = layout.Center - width / 2;
+        double x = -width / 2;
         void DrawGlyph(int index)
         {
             var glyph = row.Glyphs[index];
-            dc.DrawImage(glyph, new Rect(bounds.X + (x - Padding) * scale, bounds.Y + layout.Top * scale,
+            dc.DrawImage(glyph, new Rect(center + (x - Padding) * scale, top,
                 glyph.PixelWidth * scale, glyph.PixelHeight * scale));
         }
         DrawGlyph(0);

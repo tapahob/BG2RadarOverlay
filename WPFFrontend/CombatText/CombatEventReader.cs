@@ -44,7 +44,8 @@ internal sealed class CombatEventReader : IDisposable
             var anchor = new Point(view.ReadSingle(offset + 28), view.ReadSingle(offset + 32));
             Thread.MemoryBarrier();
             if (view.ReadInt64(offset) == sequence && tick >= now - 500 &&
-                (uint)kind <= (uint)DamageKind.Magic && (amount > 0 || kind == (int)DamageKind.Miss) &&
+                (uint)kind <= (uint)DamageKind.WeaponIneffective &&
+                (amount > 0 || (DamageKind)kind is DamageKind.Miss or DamageKind.WeaponIneffective) &&
                 anchor.X is >= 0 and <= 1 && anchor.Y is >= 0 and <= 1)
                 receive(new CombatImpact(actor, (DamageKind)kind, amount, anchor));
         }
