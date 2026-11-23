@@ -11,7 +11,7 @@ FetchContent_MakeAvailable(minhook)
 add_library(BG2Radar MODULE Radar.cpp CombatEvents.cpp)
 target_compile_features(BG2Radar PRIVATE cxx_std_17)
 target_compile_definitions(BG2Radar PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
-target_link_libraries(BG2Radar PRIVATE minhook opengl32 gdi32 user32 d3d11 dcomp)
+target_link_libraries(BG2Radar PRIVATE minhook opengl32 gdi32 user32 d3d11 dcomp shell32 ole32)
 set_target_properties(BG2Radar PROPERTIES PREFIX "" SUFFIX ".asi")
 
 option(BUILD_TESTING "Build native radar tests" OFF)

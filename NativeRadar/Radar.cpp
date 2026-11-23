@@ -1,4 +1,6 @@
 #include <windows.h>
+#include <objbase.h>
+#include <shellapi.h>
 #include <GL/gl.h>
 #include <d3d9.h>
 #include <wrl/client.h>
@@ -398,6 +400,28 @@ IDirect3D9* WINAPI createRadar9(UINT sdk) {
         attach((*reinterpret_cast<void***>(result))[16], createRadarDevice, createGameDevice);
     return result;
 }
+struct CompanionLaunch {
+    std::wstring exe;
+    std::wstring arguments;
+    std::wstring directory;
+};
+
+DWORD WINAPI launchCompanionWithConsent(void* context) {
+    std::unique_ptr<CompanionLaunch> launch(static_cast<CompanionLaunch*>(context));
+    if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE))) return 0;
+    SHELLEXECUTEINFOW info{};
+    info.cbSize = sizeof(info);
+    info.fMask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI;
+    info.lpVerb = L"open"; // The executable's manifest requests elevation.
+    info.lpFile = launch->exe.c_str();
+    info.lpParameters = launch->arguments.c_str();
+    info.lpDirectory = launch->directory.c_str();
+    info.nShow = SW_SHOWNOACTIVATE;
+    ShellExecuteExW(&info);
+    CoUninitialize();
+    return 0;
+}
+
 void startCompanion(const std::wstring& gameDirectory) {
     // The installer records the absolute apphost path even on volumes without symlinks.
     std::wstring directory = gameDirectory + L"\\BGRadar";
@@ -439,7 +463,8 @@ void startCompanion(const std::wstring& gameDirectory) {
         else exe = resolved;
     }
     directory = exe.substr(0, exe.find_last_of(L'\\'));
-    std::wstring command = L"\"" + exe + L"\" --game-pid " + std::to_wstring(GetCurrentProcessId());
+    std::wstring arguments = L"--game-pid " + std::to_wstring(GetCurrentProcessId());
+    std::wstring command = L"\"" + exe + L"\" " + arguments;
     STARTUPINFOW startup{};
     startup.cb = sizeof(startup);
     startup.dwFlags = STARTF_USESHOWWINDOW;
@@ -449,6 +474,14 @@ void startCompanion(const std::wstring& gameDirectory) {
                        directory.c_str(), &startup, &child)) {
         CloseHandle(child.hThread);
         CloseHandle(child.hProcess);
+    } else if (GetLastError() == ERROR_ELEVATION_REQUIRED &&
+               _wcsicmp(std::filesystem::path(exe).extension().c_str(), L".exe") == 0) {
+        // Waiting for consent must not hold up the game's ASI initialization.
+        auto* launch = new (std::nothrow) CompanionLaunch{std::move(exe), std::move(arguments), std::move(directory)};
+        if (!launch) return;
+        HANDLE worker = CreateThread(nullptr, 0, launchCompanionWithConsent, launch, 0, nullptr);
+        if (worker) CloseHandle(worker);
+        else delete launch;
     }
 }
 
