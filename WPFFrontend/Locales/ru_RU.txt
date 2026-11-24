@@ -70,6 +70,7 @@ Str_Proficiency=Владение:
 Str_OnMeleeHit=При ударе в ближнем бою: {0}
 Str_OnRangedHit=При ударе дальним оружием: {0}
 Str_ImmuneToSpellsList=Иммунитет к заклинаниям:
+Str_Feats=Фиты
 Str_EffectImmunities=Иммунитет к эффектам:
 Str_ACBonus=Бонус КБ +{0}
 Str_ACvsCrushing=КБ против дробящего +{0}

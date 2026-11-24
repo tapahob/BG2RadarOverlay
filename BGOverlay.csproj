@@ -82,6 +82,7 @@
     <Compile Include="Configuration.cs" />
     <Compile Include="Diagnostics\CycleProfiler.cs" />
     <Compile Include="EEexModInstaller.cs" />
+    <Compile Include="GameMailbox.cs" />
     <Compile Include="GameSpawnBridge.cs" />
     <Compile Include="TwitchIntegration\SpawnPack.cs" />
     <Compile Include="GlobalMouseHook.cs" />

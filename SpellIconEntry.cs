@@ -12,6 +12,8 @@ namespace BGOverlay
     {
         public string Name { get; set; }
         public Bitmap Icon { get; set; }
+        public bool IsFeat { get; set; }
+        public string Description { get; set; }
         // Set by the list builder once the final (sorted) order is known, so the UI can print
         // a trailing comma after every entry except the last one.
         public bool IsLast { get; set; }

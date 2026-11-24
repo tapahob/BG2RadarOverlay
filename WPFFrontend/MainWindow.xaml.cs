@@ -451,7 +451,11 @@ namespace WPFFrontend
 
             Logger.Debug("Initializing mouse hook");
 
-            Dispatcher.Invoke(() => startGameFrames(pid, _processHacker.Proc.MainWindowHandle));
+            Dispatcher.Invoke(() =>
+            {
+                featCards = FeatCardReader.ForGame(Configuration.GameFolder);
+                startGameFrames(pid, _processHacker.Proc.MainWindowHandle);
+            });
             _mouseHook.GameButtonFilter = handleGameButton;
             _mouseHook.AddHandler(MouseMessageCode.RightButtonDown, MouseHook_MouseEvent);
             _mouseHook.InstallAsync().GetAwaiter().GetResult();
@@ -531,6 +535,10 @@ namespace WPFFrontend
             app.Resources["FontSize3Small"] = Convert.ToDouble(Configuration.FontSize3Small);
             Logger.Debug("Done!");
         }
+
+        private FeatCardReader featCards;
+        internal List<SpellIconEntry> ReadFeats(BGEntity item) =>
+            featCards?.Read(item, _currentEnemyControls.Values.Select(card => card.BGEntity.Id));
 
         private void updateControls(BGEntity item)
         {

@@ -1,0 +1,10 @@
+menu
+{
+    name "BGRadarFeats"
+    ignoreesc
+    label
+    {
+        area 0 0 1 1
+        enabled "BGRadarFeatTick()"
+    }
+}

@@ -333,15 +333,11 @@ namespace WPFFrontend
                     && !isGameOptionsInput(mouse.X, mouse.Y))
                 {
                     var cardPointer = MainCanvas.TranslatePoint(localPointer, hoveredCard);
-                    var element = hoveredCard.InputHitTest(cardPointer) as Visual;
-                    while (element != null && element != hoveredCard && element is not BuffControl)
-                        element = VisualTreeHelper.GetParent(element) as Visual;
-                    if (element is BuffControl buff)
+                    string content = hoveredCard.TooltipAt(cardPointer);
+                    if (!string.IsNullOrWhiteSpace(content))
                     {
                         cardTooltip = new DrawingGroup();
                         using var tooltip = cardTooltip.Open();
-                        string content = BuffControl.TooltipText(buff.BuffName, buff.BuffDurationAbsolute,
-                            hoveredCard.BGEntity.ReadGameTime());
                         MiniBuffLayer.DrawTooltip(tooltip, viewport, localPointer, content, dpi.PixelsPerDip, abovePointer: true);
                     }
                 }

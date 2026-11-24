@@ -265,8 +265,8 @@ namespace BGOverlay.Readers
                             xdata[cnt] = data[(y * frameEntries[i].Width) + x].Blue;
                             xdata[cnt + 1] = data[(y * frameEntries[i].Width) + x].Green;
                             xdata[cnt + 2] = data[(y * frameEntries[i].Width) + x].Red;
-                            bool transparentCursorPixel = FileName == "CURSORS.BAM" && pixels[cnt / 4] == rleColourIndex;
-                            xdata[cnt + 3] = transparentCursorPixel ? (byte)0 : alpha == 0 ? (byte)255 : alpha;
+                            bool transparentPixel = (IsFeatAtlas || FileName == "CURSORS.BAM") && pixels[cnt / 4] == rleColourIndex;
+                            xdata[cnt + 3] = transparentPixel ? (byte)0 : alpha == 0 ? (byte)255 : alpha;
                             cnt += 4;
                         }
                     }
@@ -275,7 +275,7 @@ namespace BGOverlay.Readers
                     var bits = img.LockBits(new Rectangle(0, 0, img.Width, img.Height), ImageLockMode.WriteOnly, img.PixelFormat);
                     try { Marshal.Copy(xdata, 0, bits.Scan0, xdata.Length); }
                     finally { img.UnlockBits(bits); }
-                    if (FileName != "CURSORS.BAM") img.MakeTransparent();
+                    if (!IsFeatAtlas && FileName != "CURSORS.BAM") img.MakeTransparent();
                     frames.Add(img);
                 }
 
@@ -290,6 +290,8 @@ namespace BGOverlay.Readers
                         var frame = frames[frameIndex];
                         var bitmap = new Bitmap(frame);
                         result.Add(bitmap);
+                        if (IsFeatAtlas && frameIndexCount == 0)
+                            FeatIcons[cycleIndex] = bitmap;
                         if (FileName == "CURSORS.BAM" && frameIndexCount == 0 &&
                             (cycleIndex == 0 || cycleIndex == 1 || cycleIndex == 44 || cycleIndex == 45))
                         {
@@ -334,7 +336,7 @@ namespace BGOverlay.Readers
             var images = handleBam(originalOffset, reader);
             this.Image = images[0];
             foreach (var image in images.Skip(1))
-                if (!CursorFrames.Values.Any(cursor => ReferenceEquals(cursor.Image, image))) image?.Dispose();
+                if (!FeatIcons.ContainsValue(image) && !CursorFrames.Values.Any(cursor => ReferenceEquals(cursor.Image, image))) image?.Dispose();
         }
 
         private void loadResources(int originalOffset, BinaryReader reader)
@@ -370,6 +372,8 @@ namespace BGOverlay.Readers
         public int OffsetFrameFrameLookupTable { get; private set; }
         public uint[] BAMPalette { get; private set; }
         public Dictionary<int, (Bitmap Image, Point Hotspot)> CursorFrames { get; } = new Dictionary<int, (Bitmap, Point)>();
+        private bool IsFeatAtlas => FileName == "MOFGLYPH.BAM" || FileName == "MOFEPICO.BAM";
+        public Dictionary<int, Bitmap> FeatIcons { get; } = new Dictionary<int, Bitmap>();
         public Bitmap Image { get; private set; }
         public string FileName { get; }
     }

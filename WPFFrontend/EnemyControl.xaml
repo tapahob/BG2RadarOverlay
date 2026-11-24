@@ -48,6 +48,22 @@
                 </Rectangle>
             </Grid>
         </DataTemplate>
+        <DataTemplate x:Key="IconAndName">
+            <DockPanel Margin="0,0,8,0" Background="Transparent">
+                <!-- No icon in the resource -> no placeholder, just the name (Visibility Collapsed removes the slot instead of leaving blank space). -->
+                <Image Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
+                       Width="24" Height="24" Margin="0,0,3,0">
+                    <Image.Source>
+                        <MultiBinding Converter="{StaticResource InkIconConverter}" Mode="OneWay">
+                            <Binding/>
+                            <Binding Path="(bg:Configuration.BuffInkFilter)"/>
+                        </MultiBinding>
+                    </Image.Source>
+                </Image>
+                <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black"
+                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+            </DockPanel>
+        </DataTemplate>
     </UserControl.Resources>
     <i:Interaction.Behaviors>
         <i:MouseDragElementBehavior/>
@@ -217,7 +233,32 @@
             </Grid>
             <ContentPresenter Content="{StaticResource Ink4}" ContentTemplate="{StaticResource InkDivider}"
                               Visibility="{Binding Visibility, ElementName=protectionsPanel}"/>
-            <Border x:Name="protectionsPanel" Padding="5,0" Visibility="Collapsed">
+            <StackPanel x:Name="protectionsPanel" Margin="5,0" Visibility="Collapsed">
+                <StackPanel x:Name="featPanel" Visibility="Collapsed">
+                    <TextBlock Text="{DynamicResource Str_Feats}" FontFamily="{DynamicResource FontFamily1}" FontSize="13"
+                               FontWeight="Bold" Foreground="Black" TextAlignment="Center"/>
+                    <ItemsControl x:Name="featRows" Margin="0,2,0,0">
+                        <ItemsControl.Resources>
+                            <Style TargetType="ToolTip">
+                                <Setter Property="ContentTemplate">
+                                    <Setter.Value><DataTemplate><TextBlock Text="{Binding}" MaxWidth="360" TextWrapping="Wrap"/></DataTemplate></Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ItemsControl.Resources>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ItemsControl ItemsSource="{Binding}" ItemTemplate="{StaticResource IconAndName}" Margin="0,0,0,1">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" Columns="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemContainerStyle>
+                                        <Style TargetType="ContentPresenter">
+                                            <Setter Property="ToolTip" Value="{Binding Description}"/>
+                                        </Style>
+                                    </ItemsControl.ItemContainerStyle>
+                                </ItemsControl>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
                 <ListView BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" IsHitTestVisible="False"
                           HorizontalContentAlignment="Stretch" ItemsSource="{Binding Protections}" Background="{x:Null}" Foreground="{x:Null}">
                     <ListView.Resources>
@@ -240,32 +281,16 @@
                                      and centers within that, not within its own tight bounding box. -->
                                 <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource FontFamily1}" FontSize="13" FontWeight="Bold" Foreground="Black"
                                            TextWrapping="Wrap" HorizontalAlignment="Stretch" TextAlignment="Center"/>
-                                <!-- 2 columns to save space, by analogy with the Pockets section - no
-                                     trailing commas needed once spells aren't run together in a wrapped
-                                     single-line list. -->
-                                <ItemsControl ItemsSource="{Binding Spells}" Margin="0,2,0,0">
+                                <!-- Shared by spell immunities, feats and proficiencies. -->
+                                <ItemsControl ItemTemplate="{StaticResource IconAndName}" ItemsSource="{Binding Spells}" Margin="0,2,0,0">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <UniformGrid Columns="3"/>
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="{x:Type bg:SpellIconEntry}">
-                                            <DockPanel Margin="0,0,8,2">
-                                                <!-- No icon in the resource -> no placeholder, just the name (Visibility Collapsed removes the slot instead of leaving blank space). -->
-                                                <Image Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
-                                                       Width="24" Height="24" Margin="0,0,3,0">
-                                                    <Image.Source>
-                                                        <MultiBinding Converter="{StaticResource InkIconConverter}" Mode="OneWay">
-                                                            <Binding Path="Icon" Converter="{StaticResource BitmapToImageSourceConverter}"/>
-                                                            <Binding Path="(bg:Configuration.BuffInkFilter)"/>
-                                                        </MultiBinding>
-                                                    </Image.Source>
-                                                </Image>
-                                                <TextBlock Text="{Binding Name}" Style="{StaticResource Protections}" Foreground="Black" TextWrapping="Wrap"/>
-                                            </DockPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
+                                    <ItemsControl.ItemContainerStyle>
+                                        <Style TargetType="ContentPresenter"><Setter Property="Margin" Value="0,0,0,2"/></Style>
+                                    </ItemsControl.ItemContainerStyle>
                                 </ItemsControl>
                             </StackPanel>
                         </DataTemplate>
@@ -296,13 +321,14 @@
                         </DataTemplate>
                     </ListView.Resources>
                 </ListView>
-            </Border>
+            </StackPanel>
             <ContentPresenter Content="{StaticResource Ink5}" ContentTemplate="{StaticResource InkDivider}"
                               Visibility="{Binding Visibility, ElementName=WeaponPanel}"/>
             <Border x:Name="WeaponPanel" Padding="6" Visibility="Collapsed"
                     TextElement.FontFamily="{DynamicResource FontFamily2}" TextElement.FontSize="{DynamicResource FontSize2}" TextElement.FontWeight="Bold">
                 <Border.Resources>
                     <BooleanToVisibilityConverter x:Key="DamageIconVisibility"/>
+                    <BitmapImage x:Key="AttackIcon" UriSource="/icons/character/attacks.png"/>
                     <Style x:Key="WeaponRowIcon" TargetType="Image">
                         <Setter Property="Width" Value="32"/>
                         <Setter Property="Height" Value="32"/>
@@ -334,11 +360,12 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <Image x:Name="WeaponIcon" Style="{StaticResource WeaponRowIcon}" Source="{Binding Converter={StaticResource BitmapToImageSourceConverter}}"/>
+                    <Image x:Name="WeaponIcon" Style="{StaticResource WeaponRowIcon}"
+                           Source="{Binding Converter={StaticResource BitmapToImageSourceConverter}, TargetNullValue={StaticResource AttackIcon}}"/>
                     <TextBlock x:Name="WeaponDescription" Grid.Column="1" Margin="4,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
                     <ContentPresenter x:Name="Damage" Grid.Column="2" ContentTemplate="{StaticResource WeaponDamageTemplate}"/>
                     <Image x:Name="SecondaryWeaponIcon" Grid.Row="1" Style="{StaticResource WeaponRowIcon}"
-                           Source="{Binding Converter={StaticResource BitmapToImageSourceConverter}}"
+                           Source="{Binding Converter={StaticResource BitmapToImageSourceConverter}, TargetNullValue={StaticResource AttackIcon}}"
                            Visibility="{Binding Visibility, ElementName=SecondaryWeaponDescription}"/>
                     <TextBlock x:Name="SecondaryWeaponDescription" Grid.Row="1" Grid.Column="1" Margin="4,0" VerticalAlignment="Center"
                                TextWrapping="Wrap" Visibility="Collapsed"/>

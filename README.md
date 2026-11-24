@@ -1,6 +1,13 @@
 # BG2RadarOverlay
 An overlay program for Baldurs Gate 1-2 EE and Icewind Dale:EE showing nearest enemies, their resistances, buffs and its durations in realtime.
 
+Character cards automatically show a **Feats** section when the 3.5 Edition Feat System
+(component 600 of [Skills and Abilities](https://gitlab.com/morpheus562/Skills-and-Abilities))
+is active in EEex. It lists the character's known feats with their ranks and in-game icons.
+Radar's installer includes the EEex integration. For a manual installation, copy
+`M_RDRFT.lua` and `RDRFEATS.menu` from `GameFiles/override` to the game's `override`
+folder before starting InfinityLoader.
+
 ## Twitch integration
 
 Viewers can spend Bits or Channel Points to summon creatures into your game. It needs a small relay

@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Data;
@@ -77,10 +78,40 @@ namespace WPFFrontend
 
     public class InkIconConverter : IMultiValueConverter
     {
+        private static readonly ConditionalWeakTable<System.Drawing.Bitmap, BitmapSource> featIcons = new();
+        private static readonly BitmapToImageSourceConverter bitmapConverter = new();
+
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            var icon = values[0] as BitmapSource;
-            return icon != null && values[1] is true ? BuffControl.CreateInkIcon(icon) : icon;
+            if (values[0] is not BGOverlay.SpellIconEntry entry || entry.Icon == null) return null;
+            if (entry.IsFeat) return featIcons.GetValue(entry.Icon, CreateFeatInk);
+            var icon = (BitmapSource)bitmapConverter.Convert(entry.Icon, targetType, parameter, culture);
+            return values[1] is true ? BuffControl.CreateInkIcon(icon) : icon;
+        }
+
+        internal static BitmapSource CreateFeatInk(System.Drawing.Bitmap icon)
+        {
+            // Both feat atlases use a five-pixel bevel on a 56-pixel tile.
+            int inset = Math.Min(icon.Width, icon.Height) * 5 / 56;
+            int width = icon.Width - 2 * inset, height = icon.Height - 2 * inset;
+            int stride = width * 4;
+            var pixels = new byte[height * stride];
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                var color = icon.GetPixel(x + inset, y + inset);
+                double luminance = .2126 * color.R + .7152 * color.G + .0722 * color.B;
+                // Dark navy is paper. Preserve soft stroke edges as partial ink coverage.
+                double coverage = Math.Clamp((luminance - 26) / (220 - 26), 0, 1);
+                int i = y * stride + x * 4;
+                pixels[i] = 8;
+                pixels[i + 1] = 15;
+                pixels[i + 2] = 28;
+                pixels[i + 3] = (byte)Math.Round(color.A * Math.Pow(coverage, .8));
+            }
+            var image = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, stride);
+            image.Freeze();
+            return image;
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

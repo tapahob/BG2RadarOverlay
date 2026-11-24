@@ -471,5 +471,6 @@ namespace BGOverlay.Resources
         Make_unselectable                                            = 365,
         Spell_Apply_Spell_On_Move                                    = 366,
         Minimum_base_stats                                           = 367,
+        EEex_Invoke_Lua                                              = 402,
     }
 }

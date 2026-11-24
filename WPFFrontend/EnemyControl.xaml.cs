@@ -105,6 +105,22 @@ namespace WPFFrontend
 
         public BGEntity BGEntity { get; private set; }
 
+        private List<SpellIconEntry> displayedFeats;
+
+        internal string TooltipAt(Point pointer)
+        {
+            var element = InputHitTest(pointer) as System.Windows.Media.Visual;
+            while (element != null && element != this)
+            {
+                if (element is BuffControl buff)
+                    return BuffControl.TooltipText(buff.BuffName, buff.BuffDurationAbsolute, BGEntity.ReadGameTime());
+                if (element is FrameworkElement { DataContext: SpellIconEntry { IsFeat: true } feat })
+                    return feat.Description;
+                element = System.Windows.Media.VisualTreeHelper.GetParent(element) as System.Windows.Media.Visual;
+            }
+            return null;
+        }
+
         public void Label_MouseDown(object sender, MouseButtonEventArgs e)
         {
             var ofs                 = this.RenderTransform.Value.OffsetY;
@@ -205,12 +221,20 @@ namespace WPFFrontend
                 item.loadTimedEffects();
                 updateBuffs(item);
                 item.LoadCREResource();
+                item.Feats = mainWindow.ReadFeats(item);
                 this.BGEntity.LoadDerivedStats();
                 this.fetchWeaponEffects(item);
                 this.DataContext = this.BGEntity;
                 this.updateLocalizedLabels(item);
 
-                protectionsPanel.Visibility = item.Protections.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                if (displayedFeats != item.Feats)
+                {
+                    displayedFeats = item.Feats;
+                    featRows.ItemsSource = displayedFeats?.Chunk(3).ToArray();
+                    featPanel.Visibility = displayedFeats?.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                }
+                protectionsPanel.Visibility = item.Protections.Count > 0 || featPanel.Visibility == Visibility.Visible
+                    ? Visibility.Visible : Visibility.Collapsed;
                 pocketsSection.Visibility = item.Pockets.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             } catch (Exception ex)
             {

@@ -235,7 +235,8 @@ namespace BGOverlay
                 {
                     if ($"{item.EffectName}".StartsWith("Graphics")
                         || $"{item.EffectName}".StartsWith("Text")
-                        || item.EffectName == Effect.Spell_Effect_NPCBump)
+                        || item.EffectName == Effect.Spell_Effect_NPCBump
+                        || item.EffectName == Effect.EEex_Invoke_Lua)
                     {
                         continue;
                     }
@@ -443,6 +444,7 @@ namespace BGOverlay
         public CLASS CLASS { get; private set; }
 
         private IntPtr cInfGamePtr;
+        public List<SpellIconEntry> Feats { get; set; }
 
         public uint GameTime { get; private set; }
         public uint ReadGameTime() => gameTimeFor(cInfGamePtr);

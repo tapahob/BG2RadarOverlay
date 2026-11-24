@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Text;
 using WinApiBindings;
 
@@ -25,11 +24,9 @@ namespace BGOverlay
         // The magic is a pair of numbers, not a string, because an ASCII magic self-matched:
         // the literal lived in M_BG2RDR.lua, Lua interned it null-terminated, and this scan
         // "found" that string constant in the heap and wrote a request into Lua's string table.
-        // These byte runs appear nowhere in the mod's loaded source. OffsetSelf is the
+        // These byte runs appear nowhere in the mod's loaded source. The self-address is the
         // belt-and-braces half - a false match would have to also contain its own address.
-        private static readonly byte[] Magic = magicBytes(0x9E3779B9, 0x7F4A7C15);
-        private const int OffsetVersion = 0x08;
-        private const int OffsetSelf    = 0x0C;
+        private static readonly GameMailbox Channel = new GameMailbox(0x9E3779B9, 0x7F4A7C15, LayoutVersion);
         private const int OffsetFlag    = 0x10;
         private const int OffsetResRef  = 0x14;
         private const int OffsetAmount  = 0x24;
@@ -87,16 +84,6 @@ namespace BGOverlay
         {
             get { lock (gate) { return pending.Count; } }
         }
-
-        private static byte[] magicBytes(uint first, uint second)
-        {
-            var bytes = new byte[8];
-            Buffer.BlockCopy(BitConverter.GetBytes(first), 0, bytes, 0, 4);
-            Buffer.BlockCopy(BitConverter.GetBytes(second), 0, bytes, 4, 4);
-            return bytes;
-        }
-
-        private const int ScanChunkBytes = 1 << 20;
 
         private readonly object gate = new object();
         private readonly Queue<QueuedSpawn> pending = new Queue<QueuedSpawn>();
@@ -326,7 +313,7 @@ namespace BGOverlay
                 if (!ensureMailbox())
                 {
                     // A mailbox stamped with a different layout version reads exactly like no
-                    // mailbox at all - magicMatches rejects it - so an out-of-date mod has to be
+                    // mailbox at all - the header check rejects it - so an out-of-date mod has to be
                     // named here, or the only symptom is summons quietly doing nothing.
                     error = "Could not find the in-game bridge. Click \"Install game files\" above (the mod may be missing or out of date), check EEex is installed, and load a game.";
                     return false;
@@ -411,105 +398,12 @@ namespace BGOverlay
         /// </summary>
         private bool ensureMailbox()
         {
-            if (mailbox != IntPtr.Zero && magicMatches(mailbox))
+            if (mailbox != IntPtr.Zero && Channel.Matches(mailbox))
                 return true;
 
-            mailbox = findMailbox();
+            mailbox = Channel.Find();
             return mailbox != IntPtr.Zero;
         }
 
-        private static bool magicMatches(IntPtr address)
-        {
-            var header = WinAPIBindings.ReadBytes(address, Magic.Length);
-            for (int i = 0; i < Magic.Length; i++)
-            {
-                if (header[i] != Magic[i])
-                    return false;
-            }
-
-            if (WinAPIBindings.ReadUInt32(address + OffsetVersion) != LayoutVersion)
-                return false;
-
-            // The Lua side stamps the low 32 bits of the buffer's own address here, so a
-            // coincidental byte match somewhere else in the heap still gets rejected.
-            var expectedSelf = (uint)((long)address & 0xFFFFFFFF);
-            return WinAPIBindings.ReadUInt32(address + OffsetSelf) == expectedSelf;
-        }
-
-        /// <summary>
-        /// Walks the game's committed private read/write regions looking for the magic. Probing
-        /// from out here is safe - ReadProcessMemory just fails on anything unmapped - which is
-        /// exactly why the handshake runs in this direction instead of having the Lua side hunt
-        /// for a buffer we allocated.
-        /// </summary>
-        private static IntPtr findMailbox()
-        {
-            var hProc = Configuration.hProc;
-            var mbiSize = (IntPtr)Marshal.SizeOf(typeof(WinAPIBindings.MEMORY_BASIC_INFORMATION));
-            var address = IntPtr.Zero;
-
-            while (WinAPIBindings.VirtualQueryEx(hProc, address, out var mbi, mbiSize) != IntPtr.Zero)
-            {
-                var regionSize = (long)mbi.RegionSize;
-                if (regionSize <= 0)
-                    break;
-
-                var isCandidate = mbi.State == WinAPIBindings.MEM_COMMIT
-                               && mbi.Type == WinAPIBindings.MEM_PRIVATE
-                               && mbi.Protect == WinAPIBindings.PAGE_READWRITE;
-
-                if (isCandidate)
-                {
-                    var found = scanRegion((long)mbi.BaseAddress, regionSize);
-                    if (found != IntPtr.Zero)
-                        return found;
-                }
-
-                var next = (long)mbi.BaseAddress + regionSize;
-                if (next <= (long)address)
-                    break;
-                address = (IntPtr)next;
-            }
-
-            return IntPtr.Zero;
-        }
-
-        private static IntPtr scanRegion(long baseAddress, long size)
-        {
-            var overlap = Magic.Length - 1;
-            long offset = 0;
-
-            while (offset < size)
-            {
-                var toRead = (int)Math.Min(ScanChunkBytes, size - offset);
-                var buffer = WinAPIBindings.ReadBytes((IntPtr)(baseAddress + offset), toRead);
-
-                for (int i = 0; i + Magic.Length <= toRead; i++)
-                {
-                    var match = true;
-                    for (int j = 0; j < Magic.Length; j++)
-                    {
-                        if (buffer[i + j] != Magic[j])
-                        {
-                            match = false;
-                            break;
-                        }
-                    }
-
-                    if (match)
-                    {
-                        var candidate = (IntPtr)(baseAddress + offset + i);
-                        if (magicMatches(candidate))
-                            return candidate;
-                    }
-                }
-
-                // Overlap so a mailbox straddling a chunk boundary isn't missed.
-                var advance = toRead - overlap;
-                offset += advance > 0 ? advance : toRead;
-            }
-
-            return IntPtr.Zero;
-        }
     }
 }

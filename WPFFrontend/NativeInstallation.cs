@@ -92,6 +92,7 @@ internal sealed class InstallationRegistry
 
 internal static class NativeInstallation
 {
+    internal static readonly string[] FeatFiles = { @"override\M_RDRFT.lua", @"override\RDRFEATS.menu" };
     internal static bool SamePath(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
     internal static string RadarExe => new FileInfo(Environment.ProcessPath).ResolveLinkTarget(true)?.FullName ?? Environment.ProcessPath;
 
@@ -108,6 +109,8 @@ internal static class NativeInstallation
             File.Delete(module);
         var script = game.CriticalScriptPath;
         if (File.Exists(script)) File.Delete(script);
+        foreach (var file in FeatFiles.Select(name => Path.Combine(game.Folder, name)).Where(File.Exists))
+            File.Delete(file);
 
         // winmm.dll is a shared ASI loader and may still be needed by other mods.
         if (new FileInfo(game.Link).LinkTarget != null)
@@ -151,12 +154,16 @@ internal static class NativeInstallation
         finally { File.Delete(temp); }
     }
 
-    private static IEnumerable<string> PayloadTargets(GameInstallation game, bool installLoader, bool hasEEex)
+    private static IEnumerable<(string Source, string Target)> PayloadTargets(GameInstallation game, bool installLoader, bool hasEEex)
     {
-        if (installLoader) yield return Path.Combine(game.Folder, "winmm.dll");
-        yield return ModulePaths(game).FirstOrDefault(File.Exists) ?? Path.Combine(game.Folder, "BG2Radar.asi");
+        if (installLoader) yield return ("winmm.dll", Path.Combine(game.Folder, "winmm.dll"));
+        yield return ("BG2Radar.asi", ModulePaths(game).FirstOrDefault(File.Exists) ?? Path.Combine(game.Folder, "BG2Radar.asi"));
         if (hasEEex)
-            yield return game.CriticalScriptPath;
+        {
+            yield return ("M_RDRCRT.lua", game.CriticalScriptPath);
+            foreach (var file in FeatFiles)
+                yield return (file, Path.Combine(game.Folder, file));
+        }
     }
 
     internal static void Install(GameInstallation game, string radarExe, Action injectorInstalled, bool hasEEex,
@@ -170,9 +177,8 @@ internal static class NativeInstallation
         var committed = 0;
         try
         {
-            foreach (var target in PayloadTargets(game, installLoader, hasEEex))
+            foreach (var (name, target) in PayloadTargets(game, installLoader, hasEEex))
             {
-                var name = Path.GetFileName(target);
                 var payload = Path.Combine(source, name);
                 if (File.Exists(target))
                 {

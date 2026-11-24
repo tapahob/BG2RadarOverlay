@@ -82,8 +82,7 @@ namespace BGOverlay
 
                     // Icon
                     reader.BaseStream.Seek(originOffset + 0x03a, SeekOrigin.Begin);
-                    var iconBAM = new String(reader.ReadChars(8)).Trim('\0');
-                    this.Icon = this.Icon ?? resourceManager.GetBAMReader(iconBAM)?.Image;
+                    this.Icon = resourceManager.GetBAMReader(ReadResRef(reader))?.Image;
 
                     // Abilities
                     reader.BaseStream.Seek(originOffset + 0x60, SeekOrigin.Begin);
@@ -110,9 +109,12 @@ namespace BGOverlay
                         Abilities.Add(new WeaponAbility(reader, abilityOffset, abilityType, originOffset + offsetToFeatureBlocks));
                         if (abilityType != 1)
                             continue;
-                        //reader.BaseStream.Seek(abilityOffset + 0x4, SeekOrigin.Begin);
-                        //var iconBAM = new String(reader.ReadChars(8)).Trim('\0');
-                        //this.Icon = this.Icon ?? resourceManager.GetBAMReader(iconBAM)?.Image;
+                        // FIST.ITM has no inventory icon. Its melee ability names the fist BAM.
+                        if (Icon == null)
+                        {
+                            reader.BaseStream.Position = abilityOffset + 4;
+                            Icon = resourceManager.GetBAMReader(ReadResRef(reader))?.Image;
+                        }
                         reader.BaseStream.Seek(abilityOffset + 0x1E, SeekOrigin.Begin);
                         var abilityEffectsCount = reader.ReadInt16();
                         var abilityEffectsIndex = reader.ReadInt16();
@@ -135,6 +137,13 @@ namespace BGOverlay
             {
                 Logger.Error($"ITMReader error: {itmFilename}", ex);
             }
+        }
+
+        private static string ReadResRef(BinaryReader reader)
+        {
+            var bytes = reader.ReadBytes(8);
+            int end = Array.IndexOf(bytes, (byte)0);
+            return System.Text.Encoding.ASCII.GetString(bytes, 0, end < 0 ? bytes.Length : end);
         }
 
         public DamageType DamageType { get; private set; }
