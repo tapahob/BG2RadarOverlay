@@ -135,7 +135,7 @@
                         <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
                     </Style>
                     <Style TargetType="wpffrontend:RollingLabel" BasedOn="{StaticResource RollingLabelDefault}">
-                        <Setter Property="Margin" Value="0,2,4,3"/>
+                        <Setter Property="Margin" Value="-16,2,4,3"/>
                         <Setter Property="VerticalAlignment" Value="Center"/>
                         <Setter Property="TextWrapping" Value="Wrap"/>
                     </Style>
