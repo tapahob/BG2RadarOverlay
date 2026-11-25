@@ -72,6 +72,7 @@
   <ItemGroup>
     <Compile Include="BGEntity.cs" />
     <Compile Include="WeaponDamage.cs" />
+    <Compile Include="Readers\WeaponHitEffects.cs" />
     <Compile Include="Localization.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="NativeStructs\CItem.cs" />

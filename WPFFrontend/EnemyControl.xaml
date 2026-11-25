@@ -48,6 +48,45 @@
                 </Rectangle>
             </Grid>
         </DataTemplate>
+        <!-- Reuse the actual divider strokes for the vertical ink track and thumb. -->
+        <ControlTemplate x:Key="InkScrollButton" TargetType="RepeatButton">
+            <Border Background="Transparent"/>
+        </ControlTemplate>
+        <Style x:Key="CardScrollBar" TargetType="ScrollBar">
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Image Source="{StaticResource Ink2}" Stretch="Fill" Opacity="0.38" Height="4">
+                                <Image.LayoutTransform><RotateTransform Angle="90"/></Image.LayoutTransform>
+                            </Image>
+                            <Track x:Name="PART_Track" IsDirectionReversed="True" Orientation="Vertical">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Template="{StaticResource InkScrollButton}"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Grid Background="Transparent">
+                                                    <Image Source="{StaticResource Ink5}" Stretch="Fill" Height="12">
+                                                        <Image.LayoutTransform><RotateTransform Angle="90"/></Image.LayoutTransform>
+                                                    </Image>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Template="{StaticResource InkScrollButton}"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <DataTemplate x:Key="IconAndName">
             <DockPanel Margin="0,0,8,0" Background="Transparent">
                 <!-- No icon in the resource -> no placeholder, just the name (Visibility Collapsed removes the slot instead of leaving blank space). -->
@@ -69,7 +108,7 @@
         <i:MouseDragElementBehavior/>
     </i:Interaction.Behaviors>
     <Viewbox StretchDirection="DownOnly">
-    <Grid Width="{DynamicResource EnemyControlWidth}">
+    <Grid x:Name="CardContent" Width="{DynamicResource EnemyControlWidth}" MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Canvas}}">
         <!-- The paper ends underneath the outer ink stroke of the frame. -->
         <Border Margin="3,4.5,3,2" CornerRadius="5">
             <Border.Background>
@@ -102,8 +141,8 @@
             <Image Grid.Row="2" Grid.Column="1" Source="/artwork/character-frame/bottom.png"/>
             <Image Grid.Row="2" Grid.Column="2" Source="/artwork/character-frame/bottom_right.png"/>
         </Grid>
-        <StackPanel Margin="10">
-            <Grid>
+        <DockPanel Margin="10">
+            <Grid DockPanel.Dock="Top">
                 <Label x:Name="Level" d:Content="41" HorizontalAlignment="Left" VerticalAlignment="Top"/>
                 <StackPanel Margin="56,2">
                     <Label x:Name="EnemyName" Style="{StaticResource Bold}" d:Content="Дуэргар" HorizontalAlignment="Center" ClipToBounds="True" Content="{Binding Name2}"/>
@@ -115,6 +154,20 @@
                        HorizontalAlignment="Right" VerticalAlignment="Top"
                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MouseDown="Label_MouseDown"/>
             </Grid>
+            <ScrollViewer x:Name="CardScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          Focusable="False" CanContentScroll="False">
+                <ScrollViewer.Template>
+                    <ControlTemplate TargetType="ScrollViewer">
+                        <DockPanel>
+                            <ScrollBar x:Name="PART_VerticalScrollBar" DockPanel.Dock="Right" Style="{StaticResource CardScrollBar}"
+                                       Maximum="{TemplateBinding ScrollableHeight}" ViewportSize="{TemplateBinding ViewportHeight}"
+                                       Value="{Binding VerticalOffset, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+                                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+                            <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" Content="{TemplateBinding Content}"/>
+                        </DockPanel>
+                    </ControlTemplate>
+                </ScrollViewer.Template>
+            <StackPanel>
             <ContentPresenter Content="{StaticResource Ink1}" ContentTemplate="{StaticResource InkDivider}"
                               Visibility="{Binding Visibility, ElementName=BuffStack}"/>
             <wpffrontend:CenteredWrapPanel x:Name="BuffStack" Margin="5,0" Visibility="Collapsed">
@@ -371,7 +424,10 @@
                                TextWrapping="Wrap" Visibility="Collapsed"/>
                     <ContentPresenter x:Name="SecondaryWeaponDamage" Grid.Row="1" Grid.Column="2" Visibility="Collapsed"
                                       ContentTemplate="{StaticResource WeaponDamageTemplate}"/>
-                    <TextBlock x:Name="WeaponEffects" Grid.Row="2" Grid.ColumnSpan="3" TextWrapping="Wrap"/>
+                    <StackPanel x:Name="HitSection" Grid.Row="2" Grid.ColumnSpan="3" Margin="4,2,4,0" Visibility="Collapsed">
+                        <TextBlock x:Name="HitHeading" Foreground="Black" FontWeight="Bold" FontSize="{Binding FontSize, ElementName=WeaponEffects}"/>
+                        <TextBlock x:Name="WeaponEffects" TextWrapping="Wrap" FontWeight="Bold" Margin="8,0,0,0"/>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -416,7 +472,9 @@
                     </ListView>
                 </StackPanel>
             </Border>
-        </StackPanel>
+            </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
     </Grid>
     </Viewbox>
 </UserControl>

@@ -68,23 +68,60 @@ namespace WPFFrontend
                 return;
             }
 
-            var lines = reader.OnHitEffectsStrings;
+            var weaponTitle = reader.WeaponTitle;
             var launcher = bgEntity.EquippedLauncher;
             WeaponIcon.DataContext = launcher.HasValue ? launcher.Value.Icon : reader.EquippedWeaponIcon;
-            WeaponDescription.Text = launcher?.Name ?? lines[0];
-            WeaponEffects.Text = string.Join("\n", lines.Skip(1));
-            WeaponEffects.Visibility = lines.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            WeaponDescription.Text = launcher?.Name ?? weaponTitle;
+            var effects = new List<string>();
+            void Add(string description, string source = null)
+            {
+                if (!string.IsNullOrWhiteSpace(description))
+                    effects.Add(source == null ? description : source + " — " + description);
+            }
+            Add(bgEntity.LauncherHitDescription, launcher?.Name);
+            Add(bgEntity.MainHitDescription, launcher.HasValue ? reader.EquippedWeaponName : null);
+            Add(bgEntity.OffHandHitDescription, bgEntity.OffHandWeapon?.IdentifiedName);
+            WeaponEffects.Text = string.Join("\n", effects);
+            WeaponEffects.FontSize = Math.Max(1, WeaponDescription.FontSize * 0.84);
+            HitHeading.Text = RadarLocalization.Get("Hit_Heading");
+            var notes = bgEntity.HitEffectNotes;
+            HitSection.ToolTip = string.IsNullOrEmpty(notes) ? null : notes;
+            HitSection.Visibility = effects.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             Damage.Content = new WeaponDamageDisplay(reader.WeaponDamageType, bgEntity.DamageRange);
 
             var offHand = bgEntity.OffHandWeapon;
             SecondaryWeaponDescription.Visibility = launcher.HasValue || offHand != null ? Visibility.Visible : Visibility.Collapsed;
             SecondaryWeaponIcon.DataContext = launcher.HasValue ? reader.EquippedWeaponIcon : offHand?.Icon;
-            SecondaryWeaponDescription.Text = launcher.HasValue ? lines[0] : offHand?.IdentifiedName;
+            SecondaryWeaponDescription.Text = launcher.HasValue ? weaponTitle : offHand?.IdentifiedName;
             SecondaryWeaponDamage.Visibility = offHand != null ? Visibility.Visible : Visibility.Collapsed;
             SecondaryWeaponDamage.Content = offHand != null
                 ? new WeaponDamageDisplay(offHand.DamageType, bgEntity.OffHandDamageRange)
                 : null;
             WeaponPanel.Visibility = Visibility.Visible;
+        }
+
+        internal void ScrollWheel(int delta)
+        {
+            int lines = SystemParameters.WheelScrollLines;
+            double step = lines < 0 ? CardScroll.ViewportHeight : lines * WeaponDescription.FontSize;
+            CardScroll.ScrollToVerticalOffset(CardScroll.VerticalOffset - delta / 120.0 * step);
+        }
+
+        protected override void OnPreviewMouseWheel(MouseWheelEventArgs e)
+        {
+            if (CardScroll.ScrollableHeight > 0)
+            {
+                ScrollWheel(e.Delta);
+                e.Handled = true;
+            }
+            base.OnPreviewMouseWheel(e);
+        }
+
+        internal System.Windows.Controls.Primitives.Track ScrollTrack()
+        {
+            if (CardScroll.ComputedVerticalScrollBarVisibility != Visibility.Visible) return null;
+            var bar = CardScroll.Template.FindName("PART_VerticalScrollBar", CardScroll) as System.Windows.Controls.Primitives.ScrollBar;
+            return bar?.Template?.FindName("PART_Track", bar) as System.Windows.Controls.Primitives.Track;
         }
 
         private sealed class WeaponDamageDisplay(DamageType? type, string range)
@@ -112,6 +149,7 @@ namespace WPFFrontend
             var element = InputHitTest(pointer) as System.Windows.Media.Visual;
             while (element != null && element != this)
             {
+                if (element == HitSection) return HitSection.ToolTip as string;
                 if (element is BuffControl buff)
                     return BuffControl.TooltipText(buff.BuffName, buff.BuffDurationAbsolute, BGEntity.ReadGameTime());
                 if (element is FrameworkElement { DataContext: SpellIconEntry { IsFeat: true } feat })

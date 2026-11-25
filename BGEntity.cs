@@ -85,6 +85,12 @@ namespace BGOverlay
         public int THAC0 { get; private set; }
         public string DamageRange { get; private set; }
         public (string Name, Bitmap Icon)? EquippedLauncher { get; private set; }
+        private ITMReader.WeaponAbility mainAttack, launcherAttack;
+        public string MainHitDescription => mainAttack?.HitDescription?.Value.Text;
+        public string LauncherHitDescription => launcherAttack?.HitDescription?.Value.Text;
+        public string OffHandHitDescription => OffHandWeapon?.Abilities.FirstOrDefault()?.HitDescription?.Value.Text;
+        public string HitEffectNotes => string.Join("\n", new[] { mainAttack, launcherAttack, OffHandWeapon?.Abilities.FirstOrDefault() }
+            .Select(a => a?.HitDescription?.Value.Notes).Where(s => !string.IsNullOrEmpty(s)));
         public ITMReader OffHandWeapon { get; private set; }
         public string OffHandDamageRange { get; private set; }
         public bool HasEquippedWeapon { get; private set; }
@@ -918,6 +924,7 @@ namespace BGOverlay
             const int disablesOffHandWeapon = (1 << 1) | (1 << 7) | (1 << 13);
             DamageRange = null;
             EquippedLauncher = null;
+            mainAttack = launcherAttack = null;
             OffHandWeapon = null;
             OffHandDamageRange = null;
             HasEquippedWeapon = false;
@@ -960,6 +967,7 @@ namespace BGOverlay
                 this.CritImmune |= (reader.Flags & 0x2000000) != 0;
                 int index = WinAPIBindings.ReadUInt16(equipmentPtr + 0x13A);
                 var ability = reader.Abilities.ElementAtOrDefault(index);
+                mainAttack = ability;
                 if (ability != null && (ability.Type == 1 || ability.Type == 2 || ability.Type == 4))
                 {
                     // The selected slot for conventional ammunition is the projectile.
@@ -990,6 +998,7 @@ namespace BGOverlay
                             }
                             else if (item.ItemType == itemType)
                             {
+                                launcherAttack = header;
                                 EquippedLauncher = (item.IdentifiedName, item.Icon);
                                 launcher = (header.Bonus, header.UsesStrength);
                             }
@@ -1029,7 +1038,7 @@ namespace BGOverlay
                     this.Reader.EquippedWeaponName += $" [{ITMRes.resRef}.ITM]";
                 }
                 this.Reader.ItemEffects.Clear();
-                reader.Effects.FindAll(itemEffect => !ITMReader.ExcludedItemEffectOpcodes.Contains(itemEffect.OpCode))
+                reader.Effects.FindAll(itemEffect => !ITMReader.ExcludedItemEffects.Contains(itemEffect.OpCode))
                     .ForEach(itemEffect => Reader.ItemEffects.Add(itemEffect));
             }
         }

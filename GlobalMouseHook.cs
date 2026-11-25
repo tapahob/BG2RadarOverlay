@@ -31,15 +31,17 @@ namespace BGOverlay.Input
         public int MessageCode { get; }
         public int X { get; }
         public int Y { get; }
+        public int WheelDelta { get; }
         public bool Shift { get; }
         public bool Control { get; }
         public bool Alt { get; }
 
-        internal MouseMessageEventArgs(int messageCode, int x, int y, bool shift, bool control, bool alt)
+        internal MouseMessageEventArgs(int messageCode, int x, int y, bool shift, bool control, bool alt, int wheelDelta = 0)
         {
             MessageCode = messageCode;
             X = x;
             Y = y;
+            WheelDelta = wheelDelta;
             Shift = shift;
             Control = control;
             Alt = alt;
@@ -165,7 +167,8 @@ namespace BGOverlay.Input
                         hookStruct.pt.Y,
                         (GetKeyState(VK_SHIFT) & 0x8000) != 0,
                         (GetKeyState(VK_CONTROL) & 0x8000) != 0,
-                        (GetKeyState(VK_MENU) & 0x8000) != 0);
+                        (GetKeyState(VK_MENU) & 0x8000) != 0,
+                        wheel ? unchecked((short)(hookStruct.mouseData >> 16)) : 0);
                     if ((down || wheel || ownedUp) && GameButtonFilter?.Invoke(args) == true)
                     {
                         if (down) _radarButtons |= mask;

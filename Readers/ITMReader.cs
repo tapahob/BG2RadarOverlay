@@ -106,7 +106,15 @@ namespace BGOverlay
                         var abilityOffset = originOffset + offsetToAbilities + i * 56;
                         reader.BaseStream.Seek(abilityOffset, SeekOrigin.Begin);
                         var abilityType = reader.ReadByte();
-                        Abilities.Add(new WeaponAbility(reader, abilityOffset, abilityType, originOffset + offsetToFeatureBlocks));
+                        var ability = new WeaponAbility(reader, abilityOffset, abilityType, originOffset + offsetToFeatureBlocks);
+                        Abilities.Add(ability);
+                        if (abilityType == 1 || abilityType == 2 || abilityType == 4)
+                        {
+                            int index = i;
+                            string resref = Path.GetFileNameWithoutExtension(string.IsNullOrEmpty(biffArchivePath) ? filename : itmFilename);
+                            ability.HitDescription = new Lazy<WeaponHitEffects.Summary>(() =>
+                                WeaponHitEffects.Describe(resourceManager, resref, index, ability.BaseDamageEffect));
+                        }
                         if (abilityType != 1)
                             continue;
                         // FIST.ITM has no inventory icon. Its melee ability names the fist BAM.
@@ -154,6 +162,8 @@ namespace BGOverlay
         {
             public readonly int Type, LauncherType, Dice, Sides, Bonus;
             public readonly bool UsesStrength;
+            internal Lazy<WeaponHitEffects.Summary> HitDescription;
+            internal int BaseDamageEffect = -1;
             public readonly DamageType DamageType;
 
             internal WeaponAbility(BinaryReader reader, int offset, int type, int effects)
@@ -181,8 +191,18 @@ namespace BGOverlay
                     reader.BaseStream.Position = effect;
                     int opcode = reader.ReadUInt16();
                     if (opcode == 318 || opcode == 324) break;
-                    if (opcode != 12) continue;
+                    if (opcode != 12 || reader.ReadByte() != 2) continue;
+                    // Only fold an immediate, unconditional damage roll into the displayed range.
+                    reader.BaseStream.Position = effect + 8;
+                    if ((reader.ReadInt32() & 0xffff) != 0 || reader.ReadByte() > 1) continue;
+                    reader.BaseStream.Position = effect + 0x12;
+                    if (reader.ReadByte() < 99 || reader.ReadByte() != 0) continue;
+                    reader.BaseStream.Position = effect + 0x24;
+                    if ((reader.ReadInt32() & 31) != 0) continue;
+                    reader.BaseStream.Position = effect + 0x2c;
+                    if ((reader.ReadInt32() & ~32) != 0) continue;
                     reader.BaseStream.Position = effect + 4;
+                    BaseDamageEffect = first + i;
                     Bonus += reader.ReadInt32();
                     reader.BaseStream.Position = effect + 0x1C;
                     Dice = reader.ReadInt32();
@@ -200,6 +220,8 @@ namespace BGOverlay
         public List<ItemEffectEntry> Effects { get; }
         public int Enchantment { get; }
         public Bitmap Icon { get; }
+
+        internal static readonly HashSet<Effect> ExcludedItemEffects = new HashSet<Effect>(ExcludedItemEffectOpcodes);
 
         public static List<Effect> ExcludedItemEffectOpcodes => new[] {new List<Effect> {
             Effect.Creature_RGB_color_fade,

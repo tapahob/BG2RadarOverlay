@@ -263,14 +263,16 @@ namespace BGOverlay
             }
         }
 
+        public string WeaponTitle => $"Weapon: \"{EquippedWeaponName}\"" +
+            (EquippedWeaponName.Contains($"+{Enchantment}") ? "" : $" (Strikes as +{Enchantment})");
+
         public List<string> OnHitEffectsStrings 
         { 
             get
             {
                 return new List<string>
                 {                    
-                    $"Weapon: \"{EquippedWeaponName}\"" +
-                    (EquippedWeaponName.Contains($"+{Enchantment}") ? "" : $" (Strikes as +{Enchantment})")
+                    WeaponTitle
                 }.Concat(ItemEffects.Select(x => x.ToString())).ToList();
             }  
         }

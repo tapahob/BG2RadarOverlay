@@ -63,7 +63,8 @@ namespace WPFFrontend
             public double PanelStartX, PanelBaseLeft;
         }
 
-        private sealed record GameTarget(Rect Bounds, Action Click, Action RightClick, FrameworkElement DragElement, EnemyListRow Row = null);
+        private sealed record GameTarget(Rect Bounds, Action Click, Action RightClick, FrameworkElement DragElement, EnemyListRow Row = null,
+            Action<double, double> ScrollTrack = null);
 
         [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out ClientRect rect);
         [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out ClientRect rect);
@@ -279,14 +280,14 @@ namespace WPFFrontend
                     if (_windowLayer == null && e.IsVisible && e.ActualWidth > 0 && e.ActualHeight > 0)
                         layers.Add((e, areaOf(e)));
                 }
-                void addTarget(Rect rect, Action click, Action rightClick, FrameworkElement dragElement, EnemyListRow row = null)
+                void addTarget(Rect rect, Action click, Action rightClick, FrameworkElement dragElement, EnemyListRow row = null, Action<double, double> scrollTrack = null)
                 {
                     rect.Intersect(viewport);
                     if (rect.IsEmpty) return;
                     var screen = new Rect(bounds.X + rect.X * bounds.Width / viewport.Width,
                         bounds.Y + rect.Y * bounds.Height / viewport.Height,
                         rect.Width * bounds.Width / viewport.Width, rect.Height * bounds.Height / viewport.Height);
-                    targets.Add(new GameTarget(screen, click, rightClick, dragElement, row));
+                    targets.Add(new GameTarget(screen, click, rightClick, dragElement, row, scrollTrack));
                 }
 
                 addLayer(ListView);
@@ -311,6 +312,23 @@ namespace WPFFrontend
                     if (!card.IsVisible) continue;
                     var rect = areaOf(card);
                     addTarget(rect, null, () => card.Label_MouseDown(null, null), card);
+                    var track = card.ScrollTrack();
+                    if (track?.Thumb != null && track.ActualHeight > track.Thumb.ActualHeight)
+                    {
+                        var thumb = areaOf(track.Thumb);
+                        double screenScale = bounds.Height / viewport.Height;
+                        double thumbTop = bounds.Y + thumb.Top * screenScale;
+                        double thumbHeight = thumb.Height * screenScale;
+                        double travel = areaOf(track).Height * screenScale - thumbHeight;
+                        double offset = card.CardScroll.VerticalOffset;
+                        double maximum = card.CardScroll.ScrollableHeight;
+                        double page = card.CardScroll.ViewportHeight;
+                        addTarget(areaOf(track), null, () => card.Label_MouseDown(null, null), card, scrollTrack: (start, current) =>
+                        {
+                            double jump = start < thumbTop ? -page : start > thumbTop + thumbHeight ? page : 0;
+                            card.CardScroll.ScrollToVerticalOffset(offset + jump + (current - start) * maximum / travel);
+                        });
+                    }
                     addTarget(areaOf(card.CloseTarget), () => card.Label_MouseDown(null, null),
                         () => card.Label_MouseDown(null, null), null);
                 }
@@ -530,6 +548,11 @@ namespace WPFFrontend
 
         private void updateGameDrag(GamePress press, Point position)
         {
+            if (press.Target.ScrollTrack != null)
+            {
+                press.Target.ScrollTrack(press.Origin.Y, position.Y);
+                return;
+            }
             var element = press.Target.DragElement;
             if (element == null || !element.IsDescendantOf(MainCanvas)) return;
             var dpi = VisualTreeHelper.GetDpi(this);
@@ -668,6 +691,11 @@ namespace WPFFrontend
             bool left = code == MouseMessageCode.LeftButtonDown || code == MouseMessageCode.LeftButtonUp;
             var point = new Point(e.X, e.Y);
             var hit = _gameTargets.LastOrDefault(t => t.Bounds.Contains(point));
+            if (code == MouseMessageCode.MouseWheel && hit?.DragElement is EnemyControl scrollCard)
+            {
+                Dispatcher.BeginInvoke(new Action(() => scrollCard.ScrollWheel(e.WheelDelta)));
+                return true;
+            }
             if (!left && code != MouseMessageCode.RightButtonDown && code != MouseMessageCode.RightButtonUp)
                 return hit != null || Volatile.Read(ref _gamePress) != null;
             if (code == MouseMessageCode.LeftButtonDown || code == MouseMessageCode.RightButtonDown)
