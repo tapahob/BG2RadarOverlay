@@ -38,7 +38,6 @@ Hit_BothWeapons=Entrambe le armi
 Hit_Breaks=L’arma si rompe
 Hit_BeforeChapter=Prima del capitolo {0}
 Hit_ChapterFrom=Dal capitolo {0}
-Hit_Conditional=Condizione speciale
 Hit_Only=Solo contro {0}
 Hit_Seconds={0:0.##} s
 Hit_After=Dopo {0} s

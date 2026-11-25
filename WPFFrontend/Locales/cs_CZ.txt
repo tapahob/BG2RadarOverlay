@@ -38,7 +38,6 @@ Hit_BothWeapons=Obě zbraně
 Hit_Breaks=Zbraň se zlomí
 Hit_BeforeChapter=Před kapitolou {0}
 Hit_ChapterFrom=Od kapitoly {0}
-Hit_Conditional=Zvláštní podmínka
 Hit_Only=Pouze proti {0}
 Hit_Seconds={0:0.##} s
 Hit_After=Po {0} s

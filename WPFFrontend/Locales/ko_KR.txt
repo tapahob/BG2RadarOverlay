@@ -38,7 +38,6 @@ Hit_BothWeapons=양쪽 무기
 Hit_Breaks=무기가 부서짐
 Hit_BeforeChapter={0}장 이전
 Hit_ChapterFrom={0}장부터
-Hit_Conditional=특수 조건
 Hit_Only=대상 제한: {0}
 Hit_Seconds={0:0.##}초
 Hit_After={0}초 후

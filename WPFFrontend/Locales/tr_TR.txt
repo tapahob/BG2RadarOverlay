@@ -38,7 +38,6 @@ Hit_BothWeapons=Her iki silah
 Hit_Breaks=Silah kırılır
 Hit_BeforeChapter={0}. bölümden önce
 Hit_ChapterFrom={0}. bölümden itibaren
-Hit_Conditional=Özel koşul
 Hit_Only=Yalnızca şu hedeflere karşı: {0}
 Hit_Seconds={0:0.##} sn
 Hit_After={0} sn sonra

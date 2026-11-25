@@ -37,7 +37,6 @@ Hit_BothWeapons=Both weapons
 Hit_Breaks=Weapon breaks
 Hit_BeforeChapter=Before chapter {0}
 Hit_ChapterFrom=Chapter {0} or later
-Hit_Conditional=Special condition
 Hit_Only=Only against {0}
 Hit_Seconds={0:0.##} s
 Hit_After=After {0} s

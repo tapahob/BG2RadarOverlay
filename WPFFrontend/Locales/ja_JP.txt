@@ -38,7 +38,6 @@ Hit_BothWeapons=両方の武器
 Hit_Breaks=武器が壊れる
 Hit_BeforeChapter=第{0}章より前
 Hit_ChapterFrom=第{0}章以降
-Hit_Conditional=特殊条件
 Hit_Only=対象は{0}のみ
 Hit_Seconds={0:0.##}秒
 Hit_After={0}秒後

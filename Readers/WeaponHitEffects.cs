@@ -31,6 +31,8 @@ namespace BGOverlay
             name.All(c => c >= ' ' && "\\/:*?\"<>|".IndexOf(c) < 0);
         private static string Join(params string[] fields) =>
             string.Join(" · ", fields.Where(x => !string.IsNullOrWhiteSpace(x)));
+        private static string OnlyAgainst(string target) =>
+            target == null ? null : L("Only", target);
         private static string Signed(int n) => n.ToString("+0;-0;0");
 
         public static Summary Describe(ResourceManager resources, string name, int ability, int skip)
@@ -51,7 +53,6 @@ namespace BGOverlay
             long start = (long)Int(b, 0x6a) + first * 48L;
             if (!Fits(b, start, count * 48L)) return lines;
             var chapterLimits = new Dictionary<int, int>();
-            var conditionalTargets = new HashSet<int>();
             var actions = new List<string>();
             string lastDetails = null, lastRoll = null, family = null;
             void Flush()
@@ -76,7 +77,6 @@ namespace BGOverlay
                     }
                     else
                     {
-                        conditionalTargets.Add(e.Target);
                         notes.Add(name + " · SPLPROT.2DA [" + e.P2 + "] · " + e.P1);
                     }
                     continue;
@@ -88,7 +88,6 @@ namespace BGOverlay
                 if (consumed == 0 && HiddenOnHit(e.Op)) continue;
                 string details = Details(e);
                 if (chapterLimits.TryGetValue(e.Target, out int limit)) details = Join(details, L("BeforeChapter", limit));
-                if (conditionalTargets.Contains(e.Target)) details = Join(details, L("Conditional"));
                 if (IsNested(e.Op))
                 {
                     string nested = Nested(e, details);
@@ -193,7 +192,8 @@ namespace BGOverlay
         private static string Details(Entry e, bool wrapper = false)
         {
             var details = new List<string>();
-            if (!wrapper && e.Target != 2) details.Add(e.Target >= 1 && e.Target <= 9 ? L("Target" + e.Target) : L("Conditional"));
+            if (!wrapper && e.Target >= 1 && e.Target <= 9 && e.Target != 2)
+                details.Add(L("Target" + e.Target));
             if (e.Chance < 100) details.Add(e.Chance + "%");
             if (!wrapper && e.Duration > 0)
             {
@@ -230,7 +230,7 @@ namespace BGOverlay
                     int kind = (int)((uint)e.P2 >> 16);
                     string type;
                     if (!RadarLocalization.TryGet("Hit_Damage" + kind, out type)) type = L("Damage");
-                    if ((e.P2 & 0xffff) != 0) return Join(type, L("Conditional"));
+                    if ((e.P2 & 0xffff) != 0) return type;
                     string roll = e.Dice > 0 && e.Sides > 0 ? e.Dice + "d" + e.Sides : "";
                     string amount = roll.Length == 0 ? e.P1.ToString() : roll + (e.P1 == 0 ? "" : Signed(e.P1));
                     return Join(type + " " + amount, (e.Special & 9) != 0 ? L("Drain") : null,
@@ -286,8 +286,8 @@ namespace BGOverlay
                 case 173:
                     return title + " " + L("PercentagePoints", Signed(e.P1));
                 case 55: case 109: case 175: case 185:
-                    return e.P1 == 0 ? title : Join(title, L("Only", Ids(e.P2, e.P1)));
-                case 318: case 324: return Join(title, e.Resource, L("Only", Protection(e.P2, e.P1)));
+                    return e.P1 == 0 ? title : Join(title, OnlyAgainst(Ids(e.P2, e.P1)));
+                case 318: case 324: return Join(title, e.Resource, OnlyAgainst(Protection(e.P2, e.P1)));
                 default: return title;
             }
         }
@@ -309,8 +309,8 @@ namespace BGOverlay
         {
             bool external = e.Op == 177;
             string file = e.Resource + (external ? ".EFF" : ".SPL");
-            string only = external && e.P1 != 0 ? L("Only", Ids(e.P2, e.P1)) :
-                e.Op == 326 ? L("Only", Protection(e.P2, e.P1)) : null;
+            string only = external && e.P1 != 0 ? OnlyAgainst(Ids(e.P2, e.P1)) :
+                e.Op == 326 ? OnlyAgainst(Protection(e.P2, e.P1)) : null;
             string unresolved() => Join(Action(e), ValidRef(e.Resource) ? file : null, only, details);
             if (!ValidRef(e.Resource) || active.Count >= 8 || !active.Add(file))
                 return unresolved();
@@ -335,7 +335,7 @@ namespace BGOverlay
                     {
                         if (unnamed) return unresolved();
                         notes.Add(file);
-                        return Join(name, only, L("Conditional"), details);
+                        return Join(name, only, details);
                     }
                     var children = Ability(b, e.Resource, 0, 40,
                         onWielder: active.Count == 1 && e.Op == 146 && e.Target == 1);
@@ -373,10 +373,10 @@ namespace BGOverlay
         private string Ids(int file, int value)
         {
             string[] files = { "EA", "GENERAL", "RACE", "CLASS", "SPECIFIC", "GENDER", "ALIGN", "KIT" };
-            if (file < 2 || file > 9) return L("Conditional");
+            if (file < 2 || file > 9) return null;
             string table = files[file - 2];
             var row = Table(table + ".IDS").FirstOrDefault(r => r.Length >= 2 && Number(r[0], out var n) && n == value);
-            if (row == null) return L("Conditional");
+            if (row == null) return null;
             string symbol = row[1];
             if (RadarLocalization.TryGet("Hit_" + symbol, out var localized) ||
                 RadarLocalization.TryGet((file == 4 ? "Race_" : file == 5 ? "Class_" : "Alignment_") + symbol, out localized))
@@ -399,11 +399,17 @@ namespace BGOverlay
         private string Protection(int index, int parameter, int depth = 0)
         {
             var table = Table("SPLPROT.2DA");
-            if (index < 0 || index >= table.Length - 3 || depth > 8) return L("Conditional");
+            if (index < 0 || index >= table.Length - 3 || depth > 8) return null;
             var row = table[index + 3];
             if (row.Length < 4 || !Number(row[1], out int stat) || !Number(row[2], out int value) || !Number(row[3], out int rel))
-                return L("Conditional");
-            if (stat == 0x103) return L("Or", Protection(value, parameter, depth + 1), Protection(rel, parameter, depth + 1));
+                return null;
+            if (stat == 0x103)
+            {
+                string left = Protection(value, parameter, depth + 1);
+                string right = Protection(rel, parameter, depth + 1);
+                // A single branch would make "Only against" too restrictive.
+                return left == null || right == null ? null : L("Or", left, right);
+            }
             if (value == -1) value = parameter;
             if (stat == 0x116 && rel == 4) return L("ChapterFrom", value);
             if (rel == 1 && stat >= 0x10a && stat <= 0x10f) return Ids(stat - 0x10a + 2, value);
@@ -417,7 +423,7 @@ namespace BGOverlay
                 if (entry != null) return entry[1].Replace('_', ' ').ToLowerInvariant() + " " + operators[rel] + " " + value;
             }
             notes.Add("SPLPROT.2DA · " + index);
-            return L("Conditional");
+            return null;
         }
     }
 }

@@ -38,7 +38,6 @@ Hit_BothWeapons=Mindkét fegyver
 Hit_Breaks=A fegyver eltörik
 Hit_BeforeChapter=A(z) {0}. fejezet előtt
 Hit_ChapterFrom=A(z) {0}. fejezettől
-Hit_Conditional=Különleges feltétel
 Hit_Only=Csak ez ellen: {0}
 Hit_Seconds={0:0.##} mp
 Hit_After={0} mp múlva

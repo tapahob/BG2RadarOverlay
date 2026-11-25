@@ -36,7 +36,6 @@ Hit_BothWeapons=Оба оружия
 Hit_Breaks=Оружие ломается
 Hit_BeforeChapter=До главы {0}
 Hit_ChapterFrom=Начиная с главы {0}
-Hit_Conditional=Особое условие
 Hit_Only=Только для целей: {0}
 Hit_Seconds={0:0.##} с
 Hit_After=Через {0} с
