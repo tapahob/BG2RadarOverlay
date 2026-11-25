@@ -736,8 +736,7 @@ namespace WPFFrontend
                 }
                 else
                 {
-                    _currentEnemyControls[bgEntity.tag].Label_MouseDown(null, null);
-                    _currentEnemyControls.Remove(bgEntity.tag, out enemyControl);
+                    enemyControl.Label_MouseDown(null, null);
                 }
             } catch (Exception ex)
             {

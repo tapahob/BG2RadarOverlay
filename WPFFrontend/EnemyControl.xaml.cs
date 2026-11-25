@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
@@ -168,21 +169,30 @@ namespace WPFFrontend
 
         public void Label_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            var ofs                 = this.RenderTransform.Value.OffsetY;
-            ThicknessAnimation anim = new ThicknessAnimation();
-            anim.From               = this.Margin;
-            var newMargin           = this.Margin;
-            newMargin.Top           = -this.ActualHeight - ofs;
-            anim.To                 = newMargin;
-            anim.EasingFunction     = new BackEase() { Amplitude = .5, EasingMode = EasingMode.EaseIn };
-            anim.Duration           = TimeSpan.FromSeconds(.45);
-            anim.Completed         += (o, e) =>
+            if (!IsHitTestVisible || Parent is not Canvas canvas) return;
+            IsHitTestVisible = false;
+            mainWindow.deleteEnemyControlByTag(BGEntity.tag);
+
+            // Keep the dragged position and move the already laid-out card off the canvas.
+            var area = TransformToAncestor(canvas).TransformBounds(new Rect(RenderSize));
+            var ease = new BackEase { Amplitude = .5, EasingMode = EasingMode.EaseIn };
+            var duration = TimeSpan.FromSeconds(.45);
+            if (mainWindow.TryAnimateCardExit(this, area, ease, duration))
             {
-                mainWindow.deleteEnemyControlByTag(BGEntity.tag);
-                (this.Parent as Canvas)?.Children.Remove(this);
-            };
-            anim.FillBehavior = FillBehavior.HoldEnd;
-            this.BeginAnimation(System.Windows.Controls.UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
+                canvas.Children.Remove(this);
+            }
+            else
+            {
+                CacheMode = new BitmapCache();
+                var slide = new TranslateTransform();
+                var transforms = new TransformGroup();
+                transforms.Children.Add(RenderTransform);
+                transforms.Children.Add(slide);
+                RenderTransform = transforms;
+                var animation = new DoubleAnimation(0, -Math.Max(0, area.Bottom), duration) { EasingFunction = ease };
+                animation.Completed += (_, _) => canvas.Children.Remove(this);
+                slide.BeginAnimation(TranslateTransform.YProperty, animation);
+            }
             WinApiBindings.WinAPIBindings.SetForegroundWindow(Configuration.HWndPtr);
             WinApiBindings.WinAPIBindings.SetFocus(Configuration.HWndPtr);
         }

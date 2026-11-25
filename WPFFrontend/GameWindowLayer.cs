@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using WinApiBindings;
 
 namespace WPFFrontend;
@@ -23,6 +24,7 @@ internal sealed class GameWindowLayer : IDisposable
     private Rect optionsArea = Rect.Empty;
     private FrameworkElement optionsContent;
     private bool hasAdornments;
+    private CardExitComposition exits;
     public IntPtr Parent { get; }
     public bool IsPopup { get; }
     public bool IsDisposed => source.IsDisposed;
@@ -111,5 +113,31 @@ internal sealed class GameWindowLayer : IDisposable
         if (tooltip != null) dc.DrawDrawing(tooltip);
     }
 
-    public void Dispose() => source.Dispose();
+    public bool TryAnimateExit(FrameworkElement card, Rect area, BackEase ease, TimeSpan duration)
+    {
+        if (IsDisposed || area.IsEmpty || area.Bottom <= 0 || canvasSize.Width <= 0 || canvasSize.Height <= 0)
+            return false;
+        area.Scale(pixels.Width / canvasSize.Width, pixels.Height / canvasSize.Height);
+        if (area.Width < 1 || area.Height < 1) return false;
+        try
+        {
+            exits ??= new CardExitComposition(source.Handle);
+            exits.Start(card, area, ease, duration);
+            return true;
+        }
+        catch (Exception e) when (e is SharpGen.Runtime.SharpGenException or DllNotFoundException
+            or EntryPointNotFoundException or NotSupportedException or OverflowException)
+        {
+            BGOverlay.Logger.Error("Could not animate the closing card with DirectComposition", e);
+            exits?.Dispose();
+            exits = null;
+            return false;
+        }
+    }
+
+    public void Dispose()
+    {
+        exits?.Dispose();
+        source.Dispose();
+    }
 }

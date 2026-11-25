@@ -51,6 +51,7 @@ namespace BGOverlay
             long start = (long)Int(b, 0x6a) + first * 48L;
             if (!Fits(b, start, count * 48L)) return lines;
             var chapterLimits = new Dictionary<int, int>();
+            var conditionalTargets = new HashSet<int>();
             var actions = new List<string>();
             string lastDetails = null, lastRoll = null, family = null;
             void Flush()
@@ -73,6 +74,11 @@ namespace BGOverlay
                         if (!chapterLimits.TryGetValue(e.Target, out int previous) || chapter < previous)
                             chapterLimits[e.Target] = chapter;
                     }
+                    else
+                    {
+                        conditionalTargets.Add(e.Target);
+                        notes.Add(name + " · SPLPROT.2DA [" + e.P2 + "] · " + e.P1);
+                    }
                     continue;
                 }
                 int block = (int)start + i * 48;
@@ -82,6 +88,7 @@ namespace BGOverlay
                 if (consumed == 0 && HiddenOnHit(e.Op)) continue;
                 string details = Details(e);
                 if (chapterLimits.TryGetValue(e.Target, out int limit)) details = Join(details, L("BeforeChapter", limit));
+                if (conditionalTargets.Contains(e.Target)) details = Join(details, L("Conditional"));
                 if (IsNested(e.Op))
                 {
                     string nested = Nested(e, details);
@@ -190,7 +197,9 @@ namespace BGOverlay
             if (e.Chance < 100) details.Add(e.Chance + "%");
             if (!wrapper && e.Duration > 0)
             {
-                if (e.Timing == 0 || e.Timing == 10)
+                if (e.Op == 67 && e.Timing == 0 && e.Duration % 6 == 0)
+                    details.Add(L("Rounds", e.Duration / 6));
+                else if (e.Timing == 0 || e.Timing == 10)
                     details.Add(L("Seconds", e.Timing == 10 ? e.Duration / 15.0 : e.Duration));
                 else if (e.Timing >= 3 && e.Timing <= 5) details.Add(L("After", e.Duration));
             }
@@ -209,9 +218,14 @@ namespace BGOverlay
         private string Action(Entry e)
         {
             if (!RadarLocalization.TryGet("Effect_" + (Effect)e.Op, out string title) && e.Op != 12)
-                return "";
+            {
+                notes.Add("Opcode " + e.Op + " · P1=" + e.P1 + " · P2=" + e.P2);
+                return L("UnknownEffect", e.Op);
+            }
             switch (e.Op)
             {
+                case (int)Effect.Stat_AC_vs_Damage_Type_Modifier:
+                    return RadarLocalization.FormatArmorClassModifier(e.P2, e.P1) ?? title;
                 case 12:
                     int kind = (int)((uint)e.P2 >> 16);
                     string type;
@@ -226,6 +240,29 @@ namespace BGOverlay
                     if ((e.P2 & 0xffff) == 0 && e.Dice == 0) return L("HitPoints", Signed(e.P1));
                     return title;
                 case 216: return title + " " + e.P1;
+                case 235:
+                    switch (e.P2)
+                    {
+                        case 0: case 1: return L("PushFromPoint");
+                        case 2: return L("PushFromSource");
+                        case 3: return L("PullToPoint");
+                        case 4: return L("PullToSource");
+                        default: return title;
+                    }
+                case 60:
+                    if (e.P2 < 0 || e.P2 > 5) return title;
+                    string[] failures = { "ArcaneFailure", "DivineFailure", "InnateFailure" };
+                    return L(failures[e.P2 % 3]) + " " + L("PercentagePoints", Signed(e.P1));
+                case 67:
+                    if (!ValidRef(e.Resource)) return title;
+                    var creature = resources.ReadResource(e.Resource + ".CRE");
+                    string creatureName = null;
+                    if (Fits(creature, 0, 16) && Encoding.ASCII.GetString(creature, 0, 4) == "CRE ")
+                    {
+                        creatureName = BGEntity.DisplayName(resources.GetStrRefText(Int(creature, 8)))
+                            ?? BGEntity.DisplayName(resources.GetStrRefText(Int(creature, 12)));
+                    }
+                    return Join(title, creatureName ?? e.Resource);
                 case 25: case 78:
                     long frequency = Math.Max(1, e.Frequency);
                     if (e.P2 == 2) return Join(title, frequency == 1 ? L("PerSecond", e.P1) : L("Periodic", e.P1, frequency));
@@ -238,13 +275,30 @@ namespace BGOverlay
                     }
                     return title;
                 case 6: case 10: case 15: case 19: case 44: case 49: case 54:
-                    if (e.P2 == 0) return title + " " + Signed(e.P1);
-                    if (e.P2 == 1) return title + " = " + e.P1;
-                    if (e.P2 == 2) return title + " × " + e.P1 + "%";
-                    return title;
+                    return StatModifier(e, title);
+                case 33: case 34: case 35: case 36: case 37: case 325:
+                    return e.P2 == 3 ? title + " " + Signed(e.P1) : StatModifier(e, title);
+                case 27: case 28: case 29: case 30: case 31:
+                case 84: case 85: case 86: case 87: case 88: case 89:
+                    return StatModifier(e, title, percentStat: true);
+                case 166:
+                    return e.P2 == 0 || e.P2 == 1 ? StatModifier(e, title, percentStat: true) : title;
+                case 173:
+                    return title + " " + L("PercentagePoints", Signed(e.P1));
                 case 55: case 109: case 175: case 185:
                     return e.P1 == 0 ? title : Join(title, L("Only", Ids(e.P2, e.P1)));
                 case 318: case 324: return Join(title, e.Resource, L("Only", Protection(e.P2, e.P1)));
+                default: return title;
+            }
+        }
+
+        private static string StatModifier(Entry e, string title, bool percentStat = false)
+        {
+            switch (e.P2)
+            {
+                case 0: return title + " " + (percentStat ? L("PercentagePoints", Signed(e.P1)) : Signed(e.P1));
+                case 1: return title + " = " + e.P1 + (percentStat ? "%" : "");
+                case 2: return title + " × " + e.P1 + "%";
                 default: return title;
             }
         }
@@ -257,8 +311,9 @@ namespace BGOverlay
             string file = e.Resource + (external ? ".EFF" : ".SPL");
             string only = external && e.P1 != 0 ? L("Only", Ids(e.P2, e.P1)) :
                 e.Op == 326 ? L("Only", Protection(e.P2, e.P1)) : null;
+            string unresolved() => Join(Action(e), ValidRef(e.Resource) ? file : null, only, details);
             if (!ValidRef(e.Resource) || active.Count >= 8 || !active.Add(file))
-                return "";
+                return unresolved();
             try
             {
                 var b = resources.ReadResource(file);
@@ -278,7 +333,7 @@ namespace BGOverlay
                     // A level-dependent spell cannot be flattened without its effective casting level.
                     if (Word(b,0x68) != 1 || Word(b,0x70) != 0)
                     {
-                        if (unnamed) return "";
+                        if (unnamed) return unresolved();
                         notes.Add(file);
                         return Join(name, only, L("Conditional"), details);
                     }
@@ -292,7 +347,7 @@ namespace BGOverlay
                     // A condition shared by several outcomes is one roll for the whole group.
                     return heading + "\n    " + child.Replace("\n", "\n    ");
                 }
-                return "";
+                return unresolved();
             }
             finally { active.Remove(file); }
         }

@@ -30,6 +30,22 @@ namespace BGOverlay
             return Strings.TryGetValue(key, out var value) ? value : key;
         }
 
+        internal static string FormatArmorClassModifier(int type, int amount)
+        {
+            // Existing translations include a literal plus before the placeholder.
+            string Bonus(string key) => string.Format(Get(key).Replace("+{0}", "{0:+0;-0;0}"), amount);
+            if (type == 0) return Bonus("Str_ACBonus");
+            if (type == 16) return string.Format(Get("Str_SetACTo"), amount);
+            if ((type & ~15) != 0) return null;
+
+            var bonuses = new List<string>();
+            if ((type & 1) != 0) bonuses.Add(Bonus("Str_ACvsCrushing"));
+            if ((type & 2) != 0) bonuses.Add(Bonus("Str_ACvsMissile"));
+            if ((type & 4) != 0) bonuses.Add(Bonus("Str_ACvsPiercing"));
+            if ((type & 8) != 0) bonuses.Add(Bonus("Str_ACvsSlashing"));
+            return string.Join(", ", bonuses);
+        }
+
         /// <summary>
         /// Like <see cref="Get"/>, but reports whether the key was actually found instead of
         /// silently falling back to the key itself - for callers (e.g. Effect/Proficiency enum

@@ -194,6 +194,9 @@ namespace WPFFrontend
                 publishGameFrame(sender, args);
         }
 
+        internal bool TryAnimateCardExit(EnemyControl card, Rect area, System.Windows.Media.Animation.BackEase ease, TimeSpan duration) =>
+            _windowLayer?.TryAnimateExit(card, area, ease, duration) == true;
+
         private void closeWindowLayer()
         {
             if (_windowLayer == null) return;
@@ -369,7 +372,7 @@ namespace WPFFrontend
                 foreach (var card in MainCanvas.Children.OfType<EnemyControl>())
                 {
                     addLayer(card);
-                    if (!card.IsVisible) continue;
+                    if (!card.IsVisible || !card.IsHitTestVisible) continue;
                     var rect = areaOf(card);
                     addTarget(rect, null, () => card.Label_MouseDown(null, null), card);
                     var track = card.ScrollTrack();
