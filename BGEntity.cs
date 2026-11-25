@@ -296,32 +296,10 @@ namespace BGOverlay
                     }
                     if (item.EffectName == Effect.Stat_AC_vs_Damage_Type_Modifier)
                     {
-                        var amount = item.Param1;
-                        var type = item.Param2;
-
-                        if (amount == 0)
-                            continue;
-
-                        switch (type)
+                        if (item.Param1 != 0)
                         {
-                            case 0:
-                                result.Add(string.Format(RadarLocalization.Get("Str_ACBonus"), amount));
-                                break;
-                            case 1:
-                                result.Add(string.Format(RadarLocalization.Get("Str_ACvsCrushing"), amount));
-                                break;
-                            case 2:
-                                result.Add(string.Format(RadarLocalization.Get("Str_ACvsMissile"), amount));
-                                break;
-                            case 4:
-                                result.Add(string.Format(RadarLocalization.Get("Str_ACvsPiercing"), amount));
-                                break;
-                            case 8:
-                                result.Add(string.Format(RadarLocalization.Get("Str_ACvsSlashing"), amount));
-                                break;
-                            case 16:
-                                result.Add(string.Format(RadarLocalization.Get("Str_SetACTo"), amount));
-                                break;
+                            var modifier = RadarLocalization.FormatArmorClassModifier(item.Param2, item.Param1);
+                            if (modifier != null) result.Add(modifier);
                         }
                         continue;
                     }
