@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Threading;
 using WindowStyles = WinApiBindings.WinAPIBindings.WindowStyles;
@@ -349,32 +351,80 @@ namespace BGOverlay
         private static WindowStyles ReadWindowStyle(IntPtr hwnd) =>
             (WindowStyles)unchecked((uint)WinAPIBindings.GetWindowLongPtr(hwnd, -16).ToInt64());
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WindowRect { public int Left, Top, Right, Bottom; }
+
+        [DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr hwnd, out WindowRect rect);
+
         private static void PostGameKey(IntPtr hwnd, uint message, int key, uint keyData)
         {
             if (!WinAPIBindings.PostMessage(hwnd, message, new IntPtr(key), new IntPtr((long)keyData)))
                 throw new Win32Exception();
         }
 
-        public static void ForceBorderless()
+        // Both events are reset for an exclusive D3D9 device. SDL's window style
+        // alone cannot distinguish it from a borderless window on this backend.
+        private static (bool Exclusive, long Present)? ReadPresentation(int pid, IntPtr hwnd)
         {
+            string name = $@"Local\BG2Radar.Frame.1.{pid}";
+            if (!EventWaitHandle.TryOpenExisting(name + ".FullscreenLayer", out var fullscreen)) return null;
+            using (fullscreen)
+            {
+                if (!EventWaitHandle.TryOpenExisting(name + ".WindowLayer", out var windowed)) return null;
+                using (windowed)
+                using (var map = MemoryMappedFile.OpenExisting(name, MemoryMappedFileRights.Read))
+                using (var frame = map.CreateViewAccessor(0, 56, MemoryMappedFileAccess.Read))
+                {
+                    long present = frame.ReadInt64(0);
+                    if (present == 0 || frame.ReadInt64(48) != hwnd.ToInt64()) return null;
+                    return (!fullscreen.WaitOne(0) && !windowed.WaitOne(0), present);
+                }
+            }
+        }
+
+        public static void ForceBorderless() => ForceBorderless(HWndPtr);
+
+        internal static void ForceBorderless(IntPtr hwnd) => ApplyBorderless(gameProcessId, hwnd, null);
+
+        public static void RecoverBorderless(int pid, IntPtr hwnd, long stalledPresent) =>
+            ApplyBorderless(pid, hwnd, stalledPresent);
+
+        private static readonly object borderlessChange = new object();
+
+        private static void ApplyBorderless(int pid, IntPtr hwnd, long? stalledPresent)
+        {
+            if (!Monitor.TryEnter(borderlessChange)) return;
             try
             {
-                using (var game = Process.GetProcessById(gameProcessId))
+                using (var game = Process.GetProcessById(pid))
                 {
-                    var hwnd = game.MainWindowHandle;
+                    WinAPIBindings.GetWindowThreadProcessId(hwnd, out var owner);
+                    bool recovering = stalledPresent.HasValue;
+                    if (recovering && (!Borderless || gameProcessId != pid || owner != pid
+                        || WinAPIBindings.GetForegroundWindow() != hwnd)) return;
+                    if (owner != game.Id) hwnd = game.MainWindowHandle;
                     if (hwnd == IntPtr.Zero) return;
 
                     var style = ReadWindowStyle(hwnd);
                     if ((style & WindowStyles.WS_MINIMIZE) != 0)
                     {
+                        if (recovering) return;
                         WinAPIBindings.ShowWindow(hwnd, (int)WinAPIBindings.ShowWindowCommands.SW_RESTORE);
                         style = ReadWindowStyle(hwnd);
                     }
 
                     // SDL gives the game a popup window while it owns the fullscreen display.
                     // Let the engine leave that mode with its Alt+Enter shortcut before resizing.
-                    if ((style & WindowStyles.WS_POPUP) != 0)
+                    var presentation = ReadPresentation(game.Id, hwnd);
+                    if (recovering && (presentation?.Exclusive != true || presentation.Value.Present != stalledPresent
+                        || WinAPIBindings.GetForegroundWindow() != hwnd)) return;
+                    if (presentation?.Exclusive == true || ((style & WindowStyles.WS_POPUP) != 0
+                        && (style & WindowStyles.WS_CAPTION) == 0))
                     {
+                        if (recovering)
+                            Logger.Info("Fullscreen presentation stalled after restore; applying the enabled borderless setting.");
+                        else WinAPIBindings.SetForegroundWindow(hwnd);
                         const uint sysKeyDown = 0x104, sysKeyUp = 0x105;
                         PostGameKey(hwnd, sysKeyDown, 0x12, 0x00380001); // Alt
                         PostGameKey(hwnd, sysKeyDown, 0x0D, 0x201C0001); // Enter with Alt held
@@ -382,17 +432,32 @@ namespace BGOverlay
                         PostGameKey(hwnd, sysKeyUp, 0x12, 0xC0380001);
 
                         var timeout = Stopwatch.StartNew();
+                        long firstWindowedPresent = 0;
                         do
                         {
-                            if (timeout.ElapsedMilliseconds >= 3000)
+                            if (timeout.ElapsedMilliseconds >= 5000)
                                 throw new TimeoutException("Game did not switch to windowed mode.");
                             Thread.Sleep(50);
-                            game.Refresh();
-                            hwnd = game.MainWindowHandle;
+                            // SDL may recreate its window. Keep targeting the original while
+                            // it is visible, even if another top-level window appears first.
+                            if (!WinAPIBindings.IsWindowVisible(hwnd))
+                            {
+                                game.Refresh();
+                                hwnd = game.MainWindowHandle;
+                            }
+                            if (recovering && (hwnd == IntPtr.Zero || WinAPIBindings.GetForegroundWindow() != hwnd)) return;
                             style = ReadWindowStyle(hwnd);
-                        } while ((style & WindowStyles.WS_CAPTION) == 0);
+                            if ((style & WindowStyles.WS_CAPTION) == 0) continue;
+                            if (presentation == null) break;
+                            var current = ReadPresentation(game.Id, hwnd);
+                            if (!current.HasValue || current.Value.Exclusive || current.Value.Present <= presentation.Value.Present)
+                                continue;
+                            if (firstWindowedPresent != 0 && current.Value.Present > firstWindowedPresent) break;
+                            firstWindowedPresent = current.Value.Present;
+                        } while (true);
                     }
 
+                    if (recovering && WinAPIBindings.GetForegroundWindow() != hwnd) return;
                     if ((style & WindowStyles.WS_MAXIMIZE) != 0)
                     {
                         WinAPIBindings.ShowWindow(hwnd, (int)WinAPIBindings.ShowWindowCommands.SW_RESTORE);
@@ -402,18 +467,23 @@ namespace BGOverlay
                     var bounds = Screen.FromHandle(hwnd).Bounds;
                     // Preserve visibility and clipping (including the hosted options panel).
                     // Leaving WS_POPUP clear also makes repeated clicks stay in windowed mode.
-                    var borderless = style & ~WindowStyles.WS_OVERLAPPEDWINDOW;
+                    var borderless = style & ~(WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_POPUP);
+                    if (borderless == style && GetWindowRect(hwnd, out var currentRect)
+                        && currentRect.Left == bounds.Left && currentRect.Top == bounds.Top
+                        && currentRect.Right == bounds.Right && currentRect.Bottom == bounds.Bottom)
+                        return;
                     if (borderless != style && WinAPIBindings.SetWindowLong32(hwnd, -16, (uint)borderless) == 0)
                         throw new Win32Exception();
                     const uint noZOrder = 0x0004, noActivate = 0x0010, frameChanged = 0x0020;
                     if (!WinAPIBindings.SetWindowPos(hwnd, IntPtr.Zero, bounds.Left, bounds.Top,
-                        bounds.Width, bounds.Height, noZOrder | noActivate | frameChanged))
+                        bounds.Width, bounds.Height, noZOrder | noActivate | (borderless != style ? frameChanged : 0)))
                         throw new Win32Exception();
                 }
             } catch (Exception ex)
             {
                 Logger.Error("Could not make a window borderless!", ex);
-            }            
+            }
+            finally { Monitor.Exit(borderlessChange); }
         }
     }
 }

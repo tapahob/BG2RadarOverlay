@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
@@ -28,7 +29,11 @@ namespace WPFFrontend
         private Mutex _frameLock;
         private EventWaitHandle _frameReady;
         private EventWaitHandle _windowLayerAllowed;
+        private EventWaitHandle _fullscreenLayerAllowed;
         private GameWindowLayer _windowLayer;
+        private (IntPtr Window, int Width, int Height, bool Allowed, bool Popup) _displayMode;
+        private long _resumeAfterPresent;
+        private FullscreenResume _fullscreenResume;
         private long _nextLayerAttempt;
         private byte[] _frameBytes, _publishedBytes;
         private int _publishedWidth, _publishedHeight;
@@ -38,6 +43,7 @@ namespace WPFFrontend
         private bool _insideGame;
         private long _nextFrameProbe;
         private TimeSpan _lastRenderingTime = TimeSpan.MinValue;
+        private long _lastRenderTick;
         private volatile GameTarget[] _gameTargets = Array.Empty<GameTarget>();
         private GamePress _gamePress;
         private EnemyListRow _hoveredGameRow;
@@ -67,6 +73,7 @@ namespace WPFFrontend
             Action<double, double> ScrollTrack = null);
 
         [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out ClientRect rect);
+        [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr hwnd);
         [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out ClientRect rect);
         [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int virtualKey);
         [DllImport("user32.dll")] private static extern bool ClientToScreen(IntPtr hwnd, ref System.Drawing.Point pt);
@@ -81,8 +88,9 @@ namespace WPFFrontend
             _combatEvents = new CombatEventReader(pid);
             _combatEvents.Poll(Environment.TickCount64, CombatLayer.Add);
             _hasCombatEvents = _combatEvents.Connected;
-            _frameTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(32) };
-            _frameTimer.Tick += publishGameFrame;
+            CompositionTarget.Rendering += onGameRendering;
+            _frameTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+            _frameTimer.Tick += onFrameTimer;
             _frameTimer.Start();
         }
 
@@ -100,12 +108,18 @@ namespace WPFFrontend
             closeGameOptions();
             CompositionTarget.Rendering -= onGameRendering;
             _lastRenderingTime = TimeSpan.MinValue;
+            _lastRenderTick = 0;
             _frameTimer?.Stop();
             _frameTimer = null;
             closeWindowLayer();
             _windowLayerAllowed?.Dispose();
             _windowLayerAllowed = null;
+            _fullscreenLayerAllowed?.Dispose();
+            _fullscreenLayerAllowed = null;
             _nextLayerAttempt = 0;
+            _displayMode = default;
+            _resumeAfterPresent = 0;
+            _fullscreenResume = default;
             _frameView?.Dispose();
             _frameMap?.Dispose();
             _frameLock?.Dispose();
@@ -144,6 +158,7 @@ namespace WPFFrontend
                 _maxFrameSide = (int)Math.Sqrt((_frameView.Capacity - FrameHeaderSize) / 4);
                 EventWaitHandle.TryOpenExisting(name + ".Updated", out _frameReady);
                 EventWaitHandle.TryOpenExisting(name + ".WindowLayer", out _windowLayerAllowed);
+                EventWaitHandle.TryOpenExisting(name + ".FullscreenLayer", out _fullscreenLayerAllowed);
                 _revision = _frameView.ReadInt32(16);
                 return true;
             }
@@ -167,7 +182,16 @@ namespace WPFFrontend
             var time = ((RenderingEventArgs)args).RenderingTime;
             if (time == _lastRenderingTime) return;
             _lastRenderingTime = time;
+            _lastRenderTick = Stopwatch.GetTimestamp();
             publishGameFrame(sender, args);
+        }
+
+        private void onFrameTimer(object sender, EventArgs args)
+        {
+            // Occluded WPF windows may stop receiving Rendering altogether. While WPF
+            // is presenting normally, avoid rasterizing the same scene a second time.
+            if (Stopwatch.GetElapsedTime(_lastRenderTick).TotalMilliseconds >= 16)
+                publishGameFrame(sender, args);
         }
 
         private void closeWindowLayer()
@@ -177,13 +201,12 @@ namespace WPFFrontend
             _windowLayer = null;
             DesktopActorOutline.Visibility = Visibility.Collapsed;
             DesktopActorOutline.Source = null;
-            if (_frameTimer != null) _frameTimer.Interval = TimeSpan.FromMilliseconds(16);
         }
 
-        private void prepareWindowLayer(ClientRect client)
+        private void prepareWindowLayer(bool allowed, bool popup)
         {
-            bool allowed = _windowLayerAllowed?.WaitOne(0) == true;
-            if (_windowLayer != null && (!allowed || _windowLayer.Parent != _gameWindow || _windowLayer.IsDisposed))
+            if (_windowLayer != null && (!allowed || _windowLayer.Parent != _gameWindow ||
+                _windowLayer.IsPopup != popup || _windowLayer.IsDisposed))
                 closeWindowLayer();
             if (!allowed || Environment.TickCount64 < _nextLayerAttempt) return;
             try
@@ -204,17 +227,15 @@ namespace WPFFrontend
                     }
                     finally { _frameLock.ReleaseMutex(); }
                     _frameReady?.Set();
-                    _windowLayer = new GameWindowLayer(_gameWindow, MainCanvas);
-                    // The visible child drives Rendering at display cadence.
-                    _frameTimer.Interval = TimeSpan.FromMilliseconds(200);
+                    _windowLayer = new GameWindowLayer(_gameWindow, MainCanvas, popup);
                 }
-                _windowLayer.Resize(client.Right, client.Bottom, MainCanvas.RenderSize);
+                _windowLayer.Resize(bounds, MainCanvas.RenderSize);
             }
             catch (Exception ex)
             {
                 closeWindowLayer();
                 _nextLayerAttempt = Environment.TickCount64 + 5000;
-                Logger.Error("Could not display the radar in a layered child window", ex);
+                Logger.Error("Could not display the radar in a layered window", ex);
             }
         }
 
@@ -222,12 +243,37 @@ namespace WPFFrontend
         {
             try
             {
+                if (_detachedOptions && _optionsHost != null)
+                {
+                    var foreground = WinApiBindings.WinAPIBindings.GetForegroundWindow();
+                    WinApiBindings.WinAPIBindings.GetWindowThreadProcessId(foreground, out var pid);
+                    if (foreground != _gameWindow && pid != Environment.ProcessId) closeGameOptions();
+                }
                 updateActorLayers();
                 if (!connectGameFrames()) return;
                 long lastPresent = _frameView.ReadInt64(0);
-                if (lastPresent == 0 || Environment.TickCount64 - lastPresent > 1500)
+                // Observe minimization even while the game has no client area or frames.
+                if (Configuration.Borderless && _optionsHost == null &&
+                    _windowLayerAllowed?.WaitOne(0) == false && _fullscreenLayerAllowed?.WaitOne(0) == false)
                 {
-                    closeWindowLayer();
+                    var window = new IntPtr(_frameView.ReadInt64(48));
+                    if (_fullscreenResume.NeedsRecovery(window, lastPresent, Environment.TickCount64, IsIconic(window),
+                            WinApiBindings.WinAPIBindings.GetForegroundWindow() == window))
+                    {
+                        int pid = _framePid;
+                        _ = System.Threading.Tasks.Task.Run(() => Configuration.RecoverBorderless(pid, window, lastPresent));
+                    }
+                }
+                else _fullscreenResume = default;
+                // A paused foreground game can keep the same visible surface indefinitely.
+                // Its live overlay can continue animating even after the present heartbeat stops.
+                bool stale = Environment.TickCount64 - lastPresent > 1500;
+                if (lastPresent == 0 || (stale && (_windowLayer == null || _windowLayer.IsDisposed ||
+                    WinApiBindings.WinAPIBindings.GetForegroundWindow() != _windowLayer.Parent)))
+                {
+                    // Windows hides the child's or popup's owner when minimized.
+                    // Leave its window hierarchy alone while SDL resets the display.
+                    if (_windowLayer != null && !IsIconic(_windowLayer.Parent)) closeWindowLayer();
                     clearGameInput();
                     // An exclusive fullscreen device can stop presenting during Alt+Tab.
                     return;
@@ -239,26 +285,40 @@ namespace WPFFrontend
                     Topmost = false;
                     _insideGame = true;
                     _gameHand ??= new GameHandCursor(_framePid, _processHacker.ResourceManager);
-                    CompositionTarget.Rendering += onGameRendering;
-                    _frameTimer.Interval = TimeSpan.FromMilliseconds(16);
                 }
                 Opacity = IsActive ? 1 : 0;
                 _gameWindow = new IntPtr(_frameView.ReadInt64(48));
                 Configuration.HWndPtr = _gameWindow;
                 if (!GetClientRect(_gameWindow, out var client) || client.Right <= 0 || client.Bottom <= 0)
                 {
-                    closeWindowLayer();
+                    _displayMode = default;
                     clearGameInput();
                     return;
                 }
                 var origin = new System.Drawing.Point();
                 if (!ClientToScreen(_gameWindow, ref origin)) return;
+                bool coversMonitor = _fullscreenLayerAllowed?.WaitOne(0) == true;
+                bool allowed = coversMonitor || _windowLayerAllowed?.WaitOne(0) == true;
+                bool popup = coversMonitor && GameWindowLayer.IsPopupWindow(_gameWindow);
+                var mode = (_gameWindow, client.Right, client.Bottom, allowed, popup);
+                if (_displayMode != mode)
+                {
+                    if (_displayMode.Window != _gameWindow || _displayMode.Allowed != allowed || _displayMode.Popup != popup)
+                        closeGameOptions();
+                    _displayMode = mode;
+                    // SDL changes styles and dimensions in stages during Alt+Enter.
+                    // Creating a cross-process child here can synchronously enter the
+                    // game thread while it is still switching the graphics device.
+                    _resumeAfterPresent = Environment.TickCount64 + 250;
+                    clearGameInput();
+                }
+                if (lastPresent < _resumeAfterPresent) return;
                 bounds = new System.Drawing.Rectangle(origin.X, origin.Y, client.Right, client.Bottom);
                 var dpi = VisualTreeHelper.GetDpi(this);
                 if (WindowState != WindowState.Normal) { closeWindowLayer(); return; }
                 FitOverlayToBounds();
                 if (MainCanvas.ActualWidth < 1 || MainCanvas.ActualHeight < 1) return;
-                prepareWindowLayer(client);
+                prepareWindowLayer(allowed, popup);
 
                 bool pointerInGame = WinApiBindings.WinAPIBindings.GetForegroundWindow() == _gameWindow;
                 var mouse = System.Windows.Forms.Cursor.Position;
@@ -339,10 +399,12 @@ namespace WPFFrontend
                     var rect = new Rect(panel.X * viewport.Width / client.Right, 0,
                         panel.Width * viewport.Width / client.Right, panel.Height * viewport.Height / client.Bottom);
                     if (_windowLayer == null) layers.Add((_options, rect));
+                    else _windowLayer.ShowOptions(_options, rect);
                     addTarget(rect, null, null, null);
-                    bool overOptions = pointerInGame && press == null && WindowFromPoint(mouse) == _optionsHwnd;
+                    bool overOptions = pointerInGame && press == null && isGameOptionsInput(mouse.X, mouse.Y);
                     _options.UpdateGameTooltip(overOptions ? pointer : null);
                 }
+                else _windowLayer?.ShowOptions(null, Rect.Empty);
                 var hit = pointerInGame ? targets.LastOrDefault(t => t.Bounds.Contains(pointer)) : null;
                 var localPointer = new Point((mouse.X - bounds.X) * viewport.Width / bounds.Width,
                     (mouse.Y - bounds.Y) * viewport.Height / bounds.Height);
@@ -701,11 +763,6 @@ namespace WPFFrontend
             if (code == MouseMessageCode.LeftButtonDown || code == MouseMessageCode.RightButtonDown)
             {
                 if (hit == null) return Volatile.Read(ref _gamePress) != null;
-                if (!left && hit.DragElement == MinMaxBtn)
-                {
-                    Dispatcher.BeginInvoke(new Action(showGameOptions));
-                    return true;
-                }
                 var next = new GamePress { Target = hit, Origin = point, Left = left };
                 Interlocked.CompareExchange(ref _gamePress, next, null);
                 return true;

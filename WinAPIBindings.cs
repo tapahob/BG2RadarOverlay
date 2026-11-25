@@ -423,6 +423,9 @@ namespace WinApiBindings
         public static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
 
         [DllImport("user32.dll")]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
         public static extern bool RedrawWindow(IntPtr hWnd, IntPtr lprcUpdate, IntPtr hrgnUpdate, uint flags);
 
 

@@ -8,7 +8,9 @@ Manual startup from a different folder also works. The module draws the list, ra
 
 Click a list row to inspect a creature. Right-click a card to dismiss it. Cards follow the pointer while dragging. The radar button and enemy list slide horizontally and remember their position on release. The pointing and gripping gloves use the game's cursor artwork. Right-click the radar button to open the settings panel inside the game window. The panel receives mouse and keyboard input while the game stays fullscreen.
 
-In OpenGL and windowed Direct3D 9, the companion displays its live WPF panels in a transparent, click-through child of the game window. Dragging and panel animations can update between game frames. This path requires the updated companion and BG2Radar.asi. Older installations and systems without layered child windows use the shared bitmap renderer. True exclusive Direct3D 9 displays the radar on the game's own presents. Windowed mode allows independent updates with that backend.
+In a regular window or the radar's borderless mode, the companion displays its live WPF panels in a transparent, click-through child window. In OBS, select the game in Window Capture and use the Windows Graphics Capture (WGC) method to include the cards. Dragging and animations can update between game frames. For SDL's monitor-sized fullscreen popup the companion uses a separate owned window. Exclusive Direct3D 9 still draws the radar into the game frame.
+
+For OpenGL fullscreen in OBS, keep the game as the bottom source. While the game is fullscreen, add a Window Capture above it for **BG Radar - Fullscreen Overlay**. Use Modern (WGC), match by exact window title, and turn off cursor capture for this source. Give it the same placement and scale as the game. The transparent layer contains the live radar and can update even between game frames. A Window Capture of the game underneath also includes the child radar when you switch back to windowed mode.
 
 To return to the desktop overlay, close BG2EE and remove BG2Radar.asi from the game folder. Remove winmm.dll only if you installed it for this module and no other mod uses it.
 

@@ -487,6 +487,10 @@ namespace WPFFrontend
             ForceBorderless.IsEnabled = false;
             try
             {
+                // Release the hosted settings HWND and its keyboard focus before
+                // SDL tears down and recreates its fullscreen graphics resources.
+                if (WindowCloseRequested != null)
+                    await Dispatcher.InvokeAsync(() => WindowCloseRequested?.Invoke());
                 await System.Threading.Tasks.Task.Run(Configuration.ForceBorderless);
             }
             finally

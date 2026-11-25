@@ -37,6 +37,7 @@ HANDLE frameMutex;
 FrameHeader* shared;
 HANDLE frameUpdated;
 HANDLE windowLayerAllowed;
+HANDLE fullscreenLayerAllowed;
 std::atomic<HWND> compositionWindow{}, composedWindow{};
 // SDL can set a new hardware cursor between presents. Remember what the game
 // requested so leaving the radar restores the action under the pointer.
@@ -117,6 +118,20 @@ void updatePointer(HWND window) {
     pointer.source = next ? wanted : nullptr;
 }
 
+// A fullscreen drawable can bypass desktop composition even when its HWND and
+// graphics context survive the mode switch (notably SDL/OpenGL).
+bool canUseWindowLayer(HWND window) {
+    MONITORINFO monitor{sizeof(MONITORINFO)};
+    RECT client{};
+    POINT origin{};
+    if (!GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor)
+        || !GetClientRect(window, &client) || !ClientToScreen(window, &origin)) return false;
+    OffsetRect(&client, origin.x, origin.y);
+    const RECT& screen = monitor.rcMonitor;
+    return client.left > screen.left || client.top > screen.top
+        || client.right < screen.right || client.bottom < screen.bottom;
+}
+
 struct Snapshot {
     FrameHeader frame{};
     std::vector<unsigned char> pixels;
@@ -154,7 +169,15 @@ struct Snapshot {
     }
     bool update(HWND window, bool compositable = true) {
         updatePointer(window);
-        HWND desired = compositable ? window : nullptr;
+        HWND desired = compositable && canUseWindowLayer(window) ? window : nullptr;
+        // A separate owned popup can participate in desktop composition even
+        // when the fullscreen drawable covers its child windows.
+        bool fullscreen = compositable && window && !desired;
+        static std::atomic<bool> previousFullscreen{};
+        if (fullscreenLayerAllowed && previousFullscreen.exchange(fullscreen) != fullscreen) {
+            if (fullscreen) SetEvent(fullscreenLayerAllowed);
+            else ResetEvent(fullscreenLayerAllowed);
+        }
         if (compositionWindow.exchange(desired) != desired) {
             if (windowLayerAllowed) {
                 if (desired) SetEvent(windowLayerAllowed);
@@ -500,6 +523,8 @@ extern "C" __declspec(dllexport) void InitializeASI() {
         // Advertise child-window support before the companion can open the frame mapping.
         swprintf_s(name, L"Local\\BG2Radar.Frame.1.%lu.WindowLayer", GetCurrentProcessId());
         windowLayerAllowed = CreateEventW(nullptr, TRUE, FALSE, name);
+        swprintf_s(name, L"Local\\BG2Radar.Frame.1.%lu.FullscreenLayer", GetCurrentProcessId());
+        fullscreenLayerAllowed = CreateEventW(nullptr, TRUE, FALSE, name);
         swprintf_s(name, L"Local\\BG2Radar.Frame.1.%lu", GetCurrentProcessId());
         HANDLE mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, capacity, name);
         if (!mapping || !frameMutex) return;

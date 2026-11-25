@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 using BGOverlay;
 using WinApiBindings;
 
@@ -13,35 +14,61 @@ namespace WPFFrontend
         private HwndSource _optionsHost;
         private IntPtr _optionsHwnd;
         private Rect _optionsPlacement = Rect.Empty;
+        private bool _detachedOptions;
+        private System.Drawing.Point _optionsScreenOrigin;
 
-        [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(System.Drawing.Point point);
-        [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr window);
+        [StructLayout(LayoutKind.Sequential)]
+        private struct GuiThreadInfo
+        {
+            public int Size, Flags;
+            public IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+            public ClientRect CaretRect;
+        }
+
+        [DllImport("user32.dll")] private static extern bool GetGUIThreadInfo(uint thread, ref GuiThreadInfo info);
         [DllImport("user32.dll")] private static extern IntPtr SetCursor(IntPtr cursor);
 
         private bool isGameOptionsInput(int x, int y)
         {
             var panel = Volatile.Read(ref _optionsHwnd);
             if (panel == IntPtr.Zero) return false;
-            var underMouse = WindowFromPoint(new System.Drawing.Point(x, y));
-            if (panel == underMouse || IsChild(panel, underMouse)) return true;
-            // WPF combo boxes create their own popup HWND.
-            WinAPIBindings.GetWindowThreadProcessId(underMouse, out var pid);
-            return pid == Environment.ProcessId;
+            if (GetWindowRect(panel, out var r) && x >= r.Left && x < r.Right && y >= r.Top && y < r.Bottom)
+                return true;
+            // Combo dropdowns and slider drags retain mouse capture outside the panel.
+            // Never ask another window to hit-test from the low-level input hook.
+            uint thread = WinAPIBindings.GetWindowThreadProcessId(panel, out _);
+            var info = new GuiThreadInfo { Size = Marshal.SizeOf<GuiThreadInfo>() };
+            return thread != 0 && GetGUIThreadInfo(thread, ref info) && info.Capture != IntPtr.Zero
+                && WinAPIBindings.GetWindowThreadProcessId(info.Capture, out _) == thread;
         }
 
         private void showGameOptions()
         {
-            if (_options == null || _optionsHost != null || !GetClientRect(_gameWindow, out var client)) return;
+            if (_options == null || _optionsHost != null || WinAPIBindings.GetForegroundWindow() != _gameWindow
+                || !GetClientRect(_gameWindow, out var client) || IsIconic(_gameWindow)) return;
             _options.Init();
             try
             {
+                // A child HWND attaches the two UI threads' input queues. Creating one
+                // on an exclusive D3D9 surface also interrupts presentation during capture.
+                _detachedOptions = _windowLayer == null || _windowLayer.IsPopup;
+                const int toolWindow = 0x80, noActivate = 0x08000000, noParentNotify = 0x4;
                 var parameters = new HwndSourceParameters(RadarLocalization.Get("Str_Options"))
                 {
-                    ParentWindow = _gameWindow,
-                    WindowStyle = (int)(WinAPIBindings.WindowStyles.WS_CHILD | WinAPIBindings.WindowStyles.WS_CLIPSIBLINGS),
+                    ParentWindow = _detachedOptions ? IntPtr.Zero : _gameWindow,
+                    Width = 1, Height = 1,
+                    WindowStyle = _detachedOptions ? unchecked((int)WinAPIBindings.WindowStyles.WS_POPUP)
+                        : (int)(WinAPIBindings.WindowStyles.WS_CHILD | WinAPIBindings.WindowStyles.WS_CLIPSIBLINGS),
+                    ExtendedWindowStyle = _detachedOptions ? toolWindow | noActivate : noParentNotify,
+                    UsesPerPixelTransparency = _detachedOptions,
                     TreatAsInputRoot = true
                 };
                 _optionsHost = new HwndSource(parameters);
+                if (_detachedOptions)
+                {
+                    _optionsHost.CompositionTarget.RenderMode = RenderMode.SoftwareOnly;
+                    _optionsHost.CompositionTarget.BackgroundColor = Colors.Transparent;
+                }
                 _optionsHost.AddHook(optionsWindowMessage);
                 Volatile.Write(ref _optionsHwnd, _optionsHost.Handle);
                 MainGrid.Children.Remove(_options);
@@ -53,7 +80,7 @@ namespace WPFFrontend
                 _optionsHost.RootVisual = _options;
                 _options.UpdateLayout();
                 positionGameOptions(client, out _);
-                Logger.Debug("Opened radar options in game window");
+                Logger.Debug($"Opened radar options ({(_detachedOptions ? "independent window" : "game child")})");
             }
             catch (Exception ex)
             {
@@ -81,12 +108,14 @@ namespace WPFFrontend
             if (!GetClientRect(_optionsHwnd, out var size) || size.Right <= 0 || size.Bottom <= 0) return false;
             int left = Math.Max(0, (game.Right - size.Right) / 2);
             panel = new Rect(left, 0, size.Right, size.Bottom);
-            if (_optionsPlacement == panel) return true;
-            // SizeToContent owns the dimensions. Moving a child HWND does not activate
-            // a second top-level window or switch the game out of fullscreen.
+            var origin = new System.Drawing.Point(left, 0);
+            if (_detachedOptions && !ClientToScreen(_gameWindow, ref origin)) return false;
+            if (_optionsPlacement == panel && origin == _optionsScreenOrigin) return true;
             const uint noSize = 0x0001, noActivate = 0x0010, show = 0x0040;
-            if (!WinAPIBindings.SetWindowPos(_optionsHwnd, IntPtr.Zero, left, 0, 0, 0, noSize | noActivate | show))
+            if (!WinAPIBindings.SetWindowPos(_optionsHwnd, _detachedOptions ? new IntPtr(-1) : IntPtr.Zero,
+                    origin.X, origin.Y, 0, 0, noSize | noActivate | show))
                 return false;
+            _optionsScreenOrigin = origin;
             _optionsPlacement = panel;
             return true;
         }
@@ -106,7 +135,7 @@ namespace WPFFrontend
             host.Dispose();
             _options.SetWindowHosted(false);
             if (_options.Parent == null) MainGrid.Children.Add(_options);
-            if (WinAPIBindings.GetForegroundWindow() == _gameWindow) WinAPIBindings.SetFocus(_gameWindow);
+            _detachedOptions = false;
         }
     }
 }
