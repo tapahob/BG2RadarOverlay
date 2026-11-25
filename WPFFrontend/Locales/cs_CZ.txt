@@ -21,6 +21,7 @@ Str_EnemyListHP=ŽB: {0}
 Str_Attacks=Útoky: {0}
 Str_ArmorClass=Třída zbroje: {0}
 Str_THAC0=THAC0: {0}
+Str_WeaponAttack=Útok
 Str_DamageRange=Zranění: {0}
 Str_Experience=Zkušenosti: {0}
 Str_Alignment=Zaměření: {0}

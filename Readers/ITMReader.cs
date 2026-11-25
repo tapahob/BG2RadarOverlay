@@ -72,9 +72,8 @@ namespace BGOverlay
                     this.GeneralName = text?.Text;
                     var identifiedStrRef = reader.ReadInt32();
                     resourceManager.StringRefs.TryGetValue(identifiedStrRef, out text);
-                    this.IdentifiedName = !string.IsNullOrWhiteSpace(text?.Text) ? text.Text
-                        : !string.IsNullOrWhiteSpace(GeneralName) ? GeneralName
-                        : itmFilename;
+                    resolvedName = BGEntity.DisplayName(text?.Text) ?? BGEntity.DisplayName(GeneralName);
+                    this.IdentifiedName = resolvedName ?? itmFilename;
                     var trash = new string(reader.ReadChars(8));
                     this.Flags = reader.ReadInt32();
                     this.ItemType = reader.ReadUInt16();
@@ -216,6 +215,8 @@ namespace BGOverlay
         public string Version { get; private set; }
         public string GeneralName { get; private set; }
         public string IdentifiedName { get; private set; }
+        private readonly string resolvedName;
+        public string WeaponName => resolvedName ?? RadarLocalization.Get("Str_WeaponAttack");
 
         public List<ItemEffectEntry> Effects { get; }
         public int Enchantment { get; }

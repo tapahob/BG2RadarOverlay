@@ -21,6 +21,7 @@ Str_EnemyListHP=HP: {0}
 Str_Attacks=攻撃回数: {0}
 Str_ArmorClass=防御クラス: {0}
 Str_THAC0=THAC0: {0}
+Str_WeaponAttack=攻撃
 Str_DamageRange=ダメージ: {0}
 Str_Experience=経験値: {0}
 Str_Alignment=属性: {0}

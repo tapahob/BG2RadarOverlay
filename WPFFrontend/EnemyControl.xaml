@@ -115,7 +115,9 @@
                 <ImageBrush ImageSource="/pexels-photo-235985.jpeg" Stretch="UniformToFill"/>
             </Border.Background>
         </Border>
-        <Grid IsHitTestVisible="False"
+        <!-- Frame art follows the measured card. Its tall edge bitmaps must not size the card. -->
+        <Canvas x:Name="FrameLayer" IsHitTestVisible="False">
+        <Grid Width="{Binding ActualWidth, ElementName=FrameLayer}" Height="{Binding ActualHeight, ElementName=FrameLayer}"
               UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality">
             <Grid.Resources>
                 <Style TargetType="Image">
@@ -141,6 +143,7 @@
             <Image Grid.Row="2" Grid.Column="1" Source="/artwork/character-frame/bottom.png"/>
             <Image Grid.Row="2" Grid.Column="2" Source="/artwork/character-frame/bottom_right.png"/>
         </Grid>
+        </Canvas>
         <DockPanel Margin="10">
             <Grid DockPanel.Dock="Top">
                 <Label x:Name="Level" d:Content="41" HorizontalAlignment="Left" VerticalAlignment="Top"/>

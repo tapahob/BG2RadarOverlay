@@ -79,8 +79,15 @@ namespace WPFFrontend
                     effects.Add(source == null ? description : source + " — " + description);
             }
             Add(bgEntity.LauncherHitDescription, launcher?.Name);
-            Add(bgEntity.MainHitDescription, launcher.HasValue ? reader.EquippedWeaponName : null);
-            Add(bgEntity.OffHandHitDescription, bgEntity.OffHandWeapon?.IdentifiedName);
+            var mainHit = bgEntity.MainHitDescription;
+            var offHandHit = bgEntity.OffHandHitDescription;
+            if (!launcher.HasValue && !string.IsNullOrEmpty(mainHit) && mainHit == offHandHit)
+                Add(mainHit, RadarLocalization.Get("Hit_BothWeapons"));
+            else
+            {
+                Add(mainHit, launcher.HasValue ? reader.EquippedWeaponName : null);
+                Add(offHandHit, bgEntity.OffHandWeapon?.WeaponName);
+            }
             WeaponEffects.Text = string.Join("\n", effects);
             WeaponEffects.FontSize = Math.Max(1, WeaponDescription.FontSize * 0.84);
             HitHeading.Text = RadarLocalization.Get("Hit_Heading");
@@ -92,7 +99,7 @@ namespace WPFFrontend
             var offHand = bgEntity.OffHandWeapon;
             SecondaryWeaponDescription.Visibility = launcher.HasValue || offHand != null ? Visibility.Visible : Visibility.Collapsed;
             SecondaryWeaponIcon.DataContext = launcher.HasValue ? reader.EquippedWeaponIcon : offHand?.Icon;
-            SecondaryWeaponDescription.Text = launcher.HasValue ? weaponTitle : offHand?.IdentifiedName;
+            SecondaryWeaponDescription.Text = launcher.HasValue ? weaponTitle : offHand?.WeaponName;
             SecondaryWeaponDamage.Visibility = offHand != null ? Visibility.Visible : Visibility.Collapsed;
             SecondaryWeaponDamage.Content = offHand != null
                 ? new WeaponDamageDisplay(offHand.DamageType, bgEntity.OffHandDamageRange)

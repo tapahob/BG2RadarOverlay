@@ -21,6 +21,7 @@ Str_EnemyListHP=체력: {0}
 Str_Attacks=공격 횟수: {0}
 Str_ArmorClass=방어도: {0}
 Str_THAC0=THAC0: {0}
+Str_WeaponAttack=공격
 Str_DamageRange=피해: {0}
 Str_Experience=경험치: {0}
 Str_Alignment=성향: {0}

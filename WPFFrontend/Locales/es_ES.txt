@@ -21,6 +21,7 @@ Str_EnemyListHP=PG: {0}
 Str_Attacks=Ataques: {0}
 Str_ArmorClass=Clase de Armadura: {0}
 Str_THAC0=THAC0: {0}
+Str_WeaponAttack=Ataque
 Str_DamageRange=Daño: {0}
 Str_Experience=Experiencia: {0}
 Str_Alignment=Alineamiento: {0}

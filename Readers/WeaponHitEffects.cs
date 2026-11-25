@@ -17,13 +17,8 @@ namespace BGOverlay
         private int remaining = 512;
         private readonly HashSet<string> notes = new HashSet<string>();
         internal sealed class Summary { internal string Text, Notes; }
-        private string Unknown(string reason)
-        {
-            notes.Add(reason);
-            return L("Unknown");
-        }
-
-        private WeaponHitEffects(ResourceManager resources) { this.resources = resources; }
+        private readonly string weapon;
+        private WeaponHitEffects(ResourceManager resources, string weapon) { this.resources = resources; this.weapon = weapon; }
         private static string L(string key, params object[] args) =>
             string.Format(RadarLocalization.Get("Hit_" + key), args);
         private static int Word(byte[] b, int p) => BitConverter.ToUInt16(b, p);
@@ -40,73 +35,78 @@ namespace BGOverlay
 
         public static Summary Describe(ResourceManager resources, string name, int ability, int skip)
         {
-            var parser = new WeaponHitEffects(resources);
+            var parser = new WeaponHitEffects(resources, name);
             string file = name.ToUpperInvariant() + ".ITM";
-            string text = parser.Ability(resources.ReadResource(file), name, ability, 56, skip);
+            string text = string.Join("\n", parser.Ability(resources.ReadResource(file), name, ability, 56, skip));
             return new Summary { Text = text, Notes = string.Join("\n", parser.notes.Select(n => file + " · " + n)) };
         }
 
-        private string Ability(byte[] b, string name, int index, int stride, int skip = -1)
+        private List<string> Ability(byte[] b, string name, int index, int stride, int skip = -1, bool onWielder = false)
         {
-            if (!Fits(b, 0, 0x72) || index < 0 || index >= Word(b, 0x68)) return L("Unknown");
+            var lines = new List<string>();
+            if (!Fits(b, 0, 0x72) || index < 0 || index >= Word(b, 0x68)) return lines;
             long offset = (long)Int(b, 0x64) + index * stride;
-            if (!Fits(b, offset, stride)) return L("Unknown");
+            if (!Fits(b, offset, stride)) return lines;
             int first = Word(b, (int)offset + 32), count = Word(b, (int)offset + 30);
             long start = (long)Int(b, 0x6a) + first * 48L;
-            if (!Fits(b, start, count * 48L)) return L("Unknown");
-            var lines = new List<string>();
-            var guards = new Dictionary<int, List<string>>();
+            if (!Fits(b, start, count * 48L)) return lines;
+            var chapterLimits = new Dictionary<int, int>();
             var actions = new List<string>();
-            string lastDetails = null, lastExcluded = null, lastRoll = null, family = null;
+            string lastDetails = null, lastRoll = null, family = null;
             void Flush()
             {
                 if (actions.Count == 0) return;
                 lines.Add(Join(family, string.Join(", ", actions), lastDetails));
-                if (!string.IsNullOrEmpty(lastExcluded)) lines.Add(lastExcluded);
                 actions.Clear();
             }
             for (int i = 0; i < count; ++i)
             {
                 if (skip == first + i) continue;
-                if (--remaining < 0) { Flush(); lines.Add(L("Unknown")); break; }
+                if (--remaining < 0) break;
                 var e = new Entry(b, (int)start + i * 48);
-                if (e.Chance == 0 || Cosmetic(e.Op)) continue;
+                if (e.Chance == 0) continue;
                 if ((e.Op == 318 || e.Op == 324) && string.Equals(e.Resource, name, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!guards.TryGetValue(e.Target, out var restrictions))
-                        guards.Add(e.Target, restrictions = new List<string>());
-                    string restriction = Protection(e.P2, e.P1);
-                    restrictions.Add(e.Chance == 100 && (e.Save & 31) == 0 && e.Timing <= 2
-                        ? restriction : L("Conditional"));
+                    bool certain = e.Chance == 100 && (e.Save & 31) == 0 && e.Timing <= 2 && e.Dice == 0 && e.Sides == 0;
+                    if (certain && TryChapterLimit(e, out int chapter))
+                    {
+                        if (!chapterLimits.TryGetValue(e.Target, out int previous) || chapter < previous)
+                            chapterLimits[e.Target] = chapter;
+                    }
                     continue;
                 }
-                string action = Action(e);
-                if (string.IsNullOrEmpty(action)) continue;
+                int block = (int)start + i * 48;
+                int consumed = onWielder && e.Op == 112 && e.Target == 2 && ImmediateInventoryChange(e)
+                    ? BreakageLength(b, block, count - i) : 0;
+                // Recognize breakage before filtering the inventory operations that implement it.
+                if (consumed == 0 && HiddenOnHit(e.Op)) continue;
                 string details = Details(e);
-                if (action.Contains("\n") && details.Length > 0)
+                if (chapterLimits.TryGetValue(e.Target, out int limit)) details = Join(details, L("BeforeChapter", limit));
+                if (IsNested(e.Op))
                 {
-                    int line = action.IndexOf('\n');
-                    action = Join(action.Substring(0, line), details) + action.Substring(line);
-                    details = "";
+                    string nested = Nested(e, details);
+                    if (nested.Length == 0) continue;
+                    Flush();
+                    lines.Add(nested);
+                    continue;
                 }
+                string action = consumed > 0 ? L("Breaks") : Action(e);
+                if (action.Length == 0) continue;
+                if (consumed > 0) i += consumed - 1;
                 string groupName = e.Op == 78 || e.Op == 25 ? RadarLocalization.Get("Effect_" + (Effect)e.Op) : null;
                 if (groupName != null && action.StartsWith(groupName + " · ", StringComparison.Ordinal))
                     action = action.Substring(groupName.Length + 3);
                 else groupName = null;
-                string excluded = guards.TryGetValue(e.Target, out var group)
-                    ? L("Unaffected", string.Join(", ", group.Distinct())) : null;
                 string roll = e.Low + "/" + e.High;
-                if (groupName == null || groupName != family || details != lastDetails || excluded != lastExcluded || roll != lastRoll)
+                if (groupName == null || groupName != family || details != lastDetails || roll != lastRoll)
                     Flush();
                 actions.Add(action);
                 family = groupName;
                 lastDetails = details;
-                lastExcluded = excluded;
                 lastRoll = roll;
-                if (action.Contains("\n")) Flush();
             }
             Flush();
-            return string.Join("\n", lines);
+            return lines;
         }
 
         private sealed class Entry
@@ -131,15 +131,56 @@ namespace BGOverlay
             }
         }
 
-        private static bool Cosmetic(int op)
+        private static bool HiddenOnHit(int op)
         {
             switch (op)
             {
                 case 7: case 8: case 9: case 41: case 50: case 51: case 52: case 61:
                 case 139: case 140: case 141: case 142: case 174: case 215: case 240: case 327: case 330:
+                case (int)Effect.Removal_Effects_specified_by_Resource:
+                case (int)Effect.Removal_Remove_Secondary_Type:
+                case (int)Effect.Set_AI_Script:
+                case (int)Effect.Use_EFF_File_Cursed:
+                case (int)Effect.EEex_Invoke_Lua:
+                case (int)Effect.Stat_Gold:
+                case (int)Effect.Item_Create_Magical_Weapon:
+                case (int)Effect.Item_Remove_Item:
+                case (int)Effect.Item_Create_Inventory_Item:
+                case (int)Effect.Item_Remove_Inventory_Item:
+                case (int)Effect.Item_Create_Item_in_Slot:
+                case (int)Effect.Item_Create_Inventory_Item_days:
                     return true;
                 default: return false;
             }
+        }
+
+        private static bool ImmediateInventoryChange(Entry e) => e.Timing == 1 && e.Chance == 100 &&
+            e.Save == 0 && e.Dice == 0 && e.Sides == 0;
+
+        // Some breakage spells remove several variants of the same weapon before creating
+        // the broken item. Compare item identity fields rather than translated names.
+        private int BreakageLength(byte[] data, int offset, int count)
+        {
+            bool removesWeapon = false;
+            byte[] baseItem = null;
+            for (int i = 0; i < count; i++)
+            {
+                var entry = new Entry(data, offset + i * 48);
+                if (entry.Target != 2 || !ImmediateInventoryChange(entry)) break;
+                if (entry.Op == 122 && entry.Resource == "MISC56" && removesWeapon)
+                    return i + 1;
+                if (entry.Op != 112 || !ValidRef(entry.Resource)) break;
+                if (entry.Resource.Equals(weapon, StringComparison.OrdinalIgnoreCase))
+                    removesWeapon = true;
+                else
+                {
+                    baseItem = baseItem ?? resources.ReadResource(weapon.ToUpperInvariant() + ".ITM");
+                    var other = resources.ReadResource(entry.Resource + ".ITM");
+                    if (!Fits(baseItem, 0, 30) || !Fits(other, 0, 30) || Int(baseItem, 12) < 0 ||
+                        Int(baseItem, 12) != Int(other, 12) || Word(baseItem, 28) != Word(other, 28)) break;
+                }
+            }
+            return 0;
         }
 
         private static string Details(Entry e, bool wrapper = false)
@@ -167,9 +208,8 @@ namespace BGOverlay
 
         private string Action(Entry e)
         {
-            string title;
-            if (!RadarLocalization.TryGet("Effect_" + (Effect)e.Op, out title))
-                title = Unknown("opcode " + e.Op + " · " + e.Resource);
+            if (!RadarLocalization.TryGet("Effect_" + (Effect)e.Op, out string title) && e.Op != 12)
+                return "";
             switch (e.Op)
             {
                 case 12:
@@ -204,45 +244,55 @@ namespace BGOverlay
                     return title;
                 case 55: case 109: case 175: case 185:
                     return e.P1 == 0 ? title : Join(title, L("Only", Ids(e.P2, e.P1)));
-                case 177: case 146: case 148: case 326:
-                    return Nested(e);
                 case 318: case 324: return Join(title, e.Resource, L("Only", Protection(e.P2, e.P1)));
-                case 402: return Unknown("402 · " + e.Resource);
                 default: return title;
             }
         }
 
-        private string Nested(Entry e)
+        private static bool IsNested(int op) => op == 177 || op == 146 || op == 148 || op == 326;
+
+        private string Nested(Entry e, string details)
         {
             bool external = e.Op == 177;
             string file = e.Resource + (external ? ".EFF" : ".SPL");
             string only = external && e.P1 != 0 ? L("Only", Ids(e.P2, e.P1)) :
                 e.Op == 326 ? L("Only", Protection(e.P2, e.P1)) : null;
             if (!ValidRef(e.Resource) || active.Count >= 8 || !active.Add(file))
-                return Join(Unknown(file), only);
+                return "";
             try
             {
                 var b = resources.ReadResource(file);
                 if (external && Fits(b, 0, 104) && Encoding.ASCII.GetString(b,0,8) == "EFF V2.0")
                 {
                     var inner = new Entry(b,e);
-                    if (Cosmetic(inner.Op) || inner.Chance == 0) return "";
-                    return Join(Action(inner), Details(inner, true), only);
+                    if (HiddenOnHit(inner.Op) || inner.Chance == 0) return "";
+                    string innerDetails = Join(Details(inner, true), only, details);
+                    if (IsNested(inner.Op)) return Nested(inner, innerDetails);
+                    string action = Action(inner);
+                    return action.Length == 0 ? "" : Join(action, innerDetails);
                 }
                 if (!external && Fits(b,0,0x72) && Encoding.ASCII.GetString(b,0,4) == "SPL ")
                 {
                     string name = resources.GetStrRefText(Int(b,8));
-                    string label = name == "-1" || name == "<NO IDEA>" || string.IsNullOrWhiteSpace(name) ? L("SpellEffect") : name;
+                    bool unnamed = name == "-1" || name == "<NO IDEA>" || string.IsNullOrWhiteSpace(name);
                     // A level-dependent spell cannot be flattened without its effective casting level.
                     if (Word(b,0x68) != 1 || Word(b,0x70) != 0)
                     {
+                        if (unnamed) return "";
                         notes.Add(file);
-                        return Join(label, only, L("Conditional"));
+                        return Join(name, only, L("Conditional"), details);
                     }
-                    var child = Ability(b, e.Resource, 0, 40);
-                    return string.IsNullOrEmpty(child) ? "" : Join(label, only) + "\n    " + child.Replace("\n", "\n    ");
+                    var children = Ability(b, e.Resource, 0, 40,
+                        onWielder: active.Count == 1 && e.Op == 146 && e.Target == 1);
+                    if (children.Count == 0) return "";
+                    string heading = Join(unnamed ? null : name, only, details);
+                    string child = string.Join("\n", children);
+                    if (heading.Length == 0) return child;
+                    if (unnamed && !child.Contains("\n")) return Join(child, heading);
+                    // A condition shared by several outcomes is one roll for the whole group.
+                    return heading + "\n    " + child.Replace("\n", "\n    ");
                 }
-                return Join(Unknown(file), only);
+                return "";
             }
             finally { active.Remove(file); }
         }
@@ -279,6 +329,18 @@ namespace BGOverlay
             return symbol.Replace('_', ' ').ToLowerInvariant();
         }
 
+        private bool TryChapterLimit(Entry e, out int chapter)
+        {
+            chapter = 0;
+            var rows = Table("SPLPROT.2DA");
+            if (e.P2 < 0 || e.P2 >= rows.Length - 3) return false;
+            var row = rows[e.P2 + 3];
+            if (row.Length < 4 || !Number(row[1], out int stat) || stat != 0x116 ||
+                !Number(row[2], out chapter) || !Number(row[3], out int relation) || relation != 4) return false;
+            if (chapter == -1) chapter = e.P1;
+            return true;
+        }
+
         private string Protection(int index, int parameter, int depth = 0)
         {
             var table = Table("SPLPROT.2DA");
@@ -288,6 +350,7 @@ namespace BGOverlay
                 return L("Conditional");
             if (stat == 0x103) return L("Or", Protection(value, parameter, depth + 1), Protection(rel, parameter, depth + 1));
             if (value == -1) value = parameter;
+            if (stat == 0x116 && rel == 4) return L("ChapterFrom", value);
             if (rel == 1 && stat >= 0x10a && stat <= 0x10f) return Ids(stat - 0x10a + 2, value);
             if (stat == 74 && rel == 4) return L("PoisonResistance", value);
             if (stat == 0x110 && rel == 1) return Ids(8, value);

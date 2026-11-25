@@ -21,6 +21,7 @@ Str_EnemyListHP=ÉP: {0}
 Str_Attacks=Támadások: {0}
 Str_ArmorClass=Páncélosztály: {0}
 Str_THAC0=THAC0: {0}
+Str_WeaponAttack=Támadás
 Str_DamageRange=Sebzés: {0}
 Str_Experience=Tapasztalat: {0}
 Str_Alignment=Beállítottság: {0}

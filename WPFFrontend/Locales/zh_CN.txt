@@ -22,6 +22,7 @@ Str_EnemyListHP=生命值：{0}
 Str_Attacks=攻击次数：{0}
 Str_ArmorClass=防御等级：{0}
 Str_THAC0=零级命中值：{0}
+Str_WeaponAttack=攻击
 Str_DamageRange=伤害: {0}
 Str_Experience=经验值：{0}
 Str_Alignment=阵营：{0}

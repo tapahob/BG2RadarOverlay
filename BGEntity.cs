@@ -40,7 +40,7 @@ namespace BGOverlay
             return (name, resource?.CastingIcon);
         }
 
-        private static string DisplayName(string value) =>
+        internal static string DisplayName(string value) =>
             string.IsNullOrWhiteSpace(value) || value == "-1" || value == "<NO IDEA>" ? null : value;
 
         public int tag { get; set; }
@@ -989,7 +989,7 @@ namespace BGOverlay
                                     var info = live.Value;
                                     var name = DisplayName(resourceManager.GetStrRefText(info.IdentifiedNameRef))
                                         ?? DisplayName(resourceManager.GetStrRefText(info.GeneralNameRef))
-                                        ?? $"{lst[slot].Item1.resRef}.ITM";
+                                        ?? RadarLocalization.Get("Str_WeaponAttack");
                                     var icon = info.IconResource == "<ERROR>"
                                         ? null : resourceManager.GetBAMReader(info.IconResource)?.Image;
                                     EquippedLauncher = (name, icon);
@@ -999,7 +999,7 @@ namespace BGOverlay
                             else if (item.ItemType == itemType)
                             {
                                 launcherAttack = header;
-                                EquippedLauncher = (item.IdentifiedName, item.Icon);
+                                EquippedLauncher = (item.WeaponName, item.Icon);
                                 launcher = (header.Bonus, header.UsesStrength);
                             }
                             if (launcher.HasValue)
@@ -1030,10 +1030,10 @@ namespace BGOverlay
                     this.Reader = new CREReader();
                 this.Reader.Enchantment        = reader.Enchantment;
                 this.Reader.EquippedWeaponIcon = reader.Icon;
-                this.Reader.EquippedWeaponName = reader.IdentifiedName;
+                this.Reader.EquippedWeaponName = reader.WeaponName;
                 this.Reader.WeaponDamageType   = ability?.DamageType;
                 
-                if (Configuration.DebugMode && !string.Equals(reader.IdentifiedName, $"{ITMRes.resRef}.ITM", StringComparison.OrdinalIgnoreCase))
+                if (Configuration.DebugMode && !string.Equals(reader.WeaponName, $"{ITMRes.resRef}.ITM", StringComparison.OrdinalIgnoreCase))
                 {
                     this.Reader.EquippedWeaponName += $" [{ITMRes.resRef}.ITM]";
                 }

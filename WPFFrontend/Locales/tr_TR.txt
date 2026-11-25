@@ -21,6 +21,7 @@ Str_EnemyListHP=CP: {0}
 Str_Attacks=Saldırılar: {0}
 Str_ArmorClass=Zırh Sınıfı: {0}
 Str_THAC0=THAC0: {0}
+Str_WeaponAttack=Saldırı
 Str_DamageRange=Hasar: {0}
 Str_Experience=Tecrübe: {0}
 Str_Alignment=Eğilim: {0}
