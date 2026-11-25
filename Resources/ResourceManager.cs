@@ -2,6 +2,7 @@
 using BGOverlay.Resources;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -137,6 +138,7 @@ namespace BGOverlay
                 CREReaderCache.Clear();
                 ITMReaderCache.Clear();
                 SPLReaderCache.Clear();
+                immunityIconsByName = null;
                 potionSources.Clear();
             }
             return true;
@@ -392,6 +394,58 @@ namespace BGOverlay
 
                 return reader;
             }
+        }
+
+        private Dictionary<string, Lazy<Bitmap>> immunityIconsByName;
+
+        internal Bitmap GetSpellImmunityIcon(SPLReader spell)
+        {
+            if (spell == null) return null;
+            lock (localizedReadersGate)
+            {
+                if (HasSpellName(spell))
+                {
+                    if (immunityIconsByName == null) immunityIconsByName = IndexImmunityIcons();
+                    if (immunityIconsByName.TryGetValue(spell.Name1, out var icon)) return icon.Value;
+                }
+                return ReadImmunityIcon(spell);
+            }
+        }
+
+        private static bool HasSpellName(SPLReader spell) =>
+            !string.IsNullOrWhiteSpace(spell?.Name1) && spell.Name1 != "-1" &&
+            spell.Name1 != "<NO TEXT>" && spell.Name1 != "<NO IDEA>";
+
+        private Dictionary<string, Lazy<Bitmap>> IndexImmunityIcons()
+        {
+            var files = SPLResourceEntries.Select(entry => entry.FullName);
+            var overrides = Path.Combine(Configuration.GameFolder, "override");
+            if (Directory.Exists(overrides))
+                files = files.Concat(Directory.EnumerateFiles(overrides, "*.spl").Select(Path.GetFileName));
+
+            // Immunities are displayed once per name. Prefer the spell that owns its
+            // spellbook art, then other spellbook art, with a stable tie-break for aliases.
+            var variants = files.Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(file => new { ResRef = Path.GetFileNameWithoutExtension(file), Spell = GetSPLReader(file) })
+                .Where(v => HasSpellName(v.Spell))
+                .OrderByDescending(v => string.Equals(v.Spell.IconBAM, v.ResRef + "C", StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(v => v.Spell.IconBAM.EndsWith("C", StringComparison.OrdinalIgnoreCase))
+                .ThenBy(v => v.ResRef, StringComparer.OrdinalIgnoreCase);
+            return variants.GroupBy(v => v.Spell.Name1).ToDictionary(group => group.Key,
+                group => new Lazy<Bitmap>(() => group.Select(v => ReadImmunityIcon(v.Spell)).FirstOrDefault(icon => icon != null)));
+        }
+
+        private Bitmap ReadImmunityIcon(SPLReader spell)
+        {
+            var iconBam = spell.IconBAM;
+            // Some variants (e.g. IWD's Cloudkill trap) reference the action-button
+            // artwork. Use its spellbook counterpart on the card when available.
+            if (iconBam?.EndsWith("B", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                var spellbook = GetBAMReader(iconBam.Substring(0, iconBam.Length - 1) + "C")?.Image;
+                if (spellbook != null) return spellbook;
+            }
+            return spell.CastingIcon;
         }
 
         public BAMReader GetBAMReader(string bamFilename)

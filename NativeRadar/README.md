@@ -12,11 +12,15 @@ In a regular window or the radar's borderless mode, the companion displays its l
 
 For OpenGL fullscreen in OBS, keep the game as the bottom source. While the game is fullscreen, add a Window Capture above it for **BG Radar - Fullscreen Overlay**. Use Modern (WGC), match by exact window title, and turn off cursor capture for this source. Give it the same placement and scale as the game. The transparent layer contains the live radar and can update even between game frames. A Window Capture of the game underneath also includes the child radar when you switch back to windowed mode.
 
+For Icewind Dale EE, you can import [Icewind Dale Radar.json](../OBS/Icewind%20Dale%20Radar.json) through Scene Collection → Import and select the new collection. Its two Window Capture sources already target the game and the fullscreen radar, including when the window picker is empty while the game is minimized.
+
+Starting Radar again, manually or from a game with the updated native module, closes the previous Radar in the same Windows session. The game stays open.
+
 To return to the desktop overlay, close BG2EE and remove BG2Radar.asi from the game folder. Remove winmm.dll only if you installed it for this module and no other mod uses it.
 
 Combat Text displays weapon hits, misses, critical hits, backstabs and elemental damage over their targets. A critical backstab shows one combined label with the resolved damage. When the game reports an ineffective weapon, a skeleton banner appears over the target without a damage number. The module reports each resolved event separately on supported 2.6.6 and 2.7.3 x64 builds. An older module or a standalone desktop overlay shows the health lost between creature scans as a plain damage number. To upgrade an existing module, close the game and replace its BG2Radar.asi with the copy from the companion's GameFiles folder.
 
-With EEex installed on a supported build, floating damage uses the engine's individual damage events, including the amount after resistance and the damage type. Radar installs M_RDRCRT.lua in the game's override folder alongside the native installation and checks for it again at startup, including when EEex was added later. Restart the game through InfinityLoader to load the script. For a manual installation, copy M_RDRCRT.lua from GameFiles into override. The script uses EEex's base weapon damage listener and works independently of the Twitch bridge. If the script or listener is absent, critical hits show the usual damage-type style. Misses are available when the game's hit-roll entry point is intact.
+With EEex installed on a supported build, floating damage uses the engine's individual damage events, including the amount after resistance and the damage type. Radar installs M_RDRCRT.lua in the game's override folder alongside the native installation and checks for it again at startup, including when EEex was added later. Restart the game through InfinityLoader to load the script. For a manual installation, copy M_RDRCRT.lua from GameFiles/override into the game's override folder. The script uses EEex's base weapon damage listener and works independently of the Twitch bridge. If the script or listener is absent, critical hits show the usual damage-type style. Misses are available when the game's hit-roll entry point is intact.
 
 ## Building
 

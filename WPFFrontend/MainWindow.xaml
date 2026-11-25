@@ -58,6 +58,7 @@
                     PreviewMouseLeftButtonDown="RadarIcon_PreviewMouseLeftButtonDown"
                     PreviewMouseMove="RadarIcon_PreviewMouseMove"
                     PreviewMouseLeftButtonUp="RadarIcon_PreviewMouseLeftButtonUp">
+                <Button.RenderTransform><TranslateTransform/></Button.RenderTransform>
                 <Image Source="/radar.png"/>
             </Button>
             <!-- Shown while waiting for the game process to launch, hidden once it's found -
@@ -70,12 +71,17 @@
                 <Label x:Name="WaitingForGameLabel" Padding="4,0,4,0" Foreground="Black" FontWeight="Bold"
                        FontFamily="Segoe Print" FontSize="12" VerticalContentAlignment="Center" d:Content="Waiting for game ⠹"/>
             </Border>
-            <StackPanel x:Name="StackPanel" Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Left" Width="380"
+            <StackPanel x:Name="StackPanel" Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="4" Grid.RowSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top"
+                        MaxWidth="{Binding ActualWidth, ElementName=MainCanvas}"
                         Visibility="Collapsed"
                         PreviewMouseLeftButtonDown="EnemyList_PreviewMouseLeftButtonDown"
                         PreviewMouseMove="EnemyList_PreviewMouseMove"
                         PreviewMouseLeftButtonUp="EnemyList_PreviewMouseLeftButtonUp">
-                <ListView x:Name="ListView" Foreground="Black" BorderBrush="Black" BorderThickness="2" Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" VerticalAlignment="Top" SelectionChanged="ListView_SelectionChanged">
+                <StackPanel.RenderTransform><TranslateTransform/></StackPanel.RenderTransform>
+                <ListView x:Name="ListView" MaxWidth="380" Foreground="Black" BorderBrush="Black" BorderThickness="2" Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" VerticalAlignment="Top" SelectionChanged="ListView_SelectionChanged">
+                    <ListView.LayoutTransform>
+                        <ScaleTransform x:Name="RadarPanelScale"/>
+                    </ListView.LayoutTransform>
                     <ListView.Background>
                         <ImageBrush Stretch="UniformToFill" ImageSource="/artwork/enemy-list-parchment.png"/>
                     </ListView.Background>
@@ -117,8 +123,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <Border x:Name="RowHighlight" Grid.ColumnSpan="2" Background="#75FFE2A4" Opacity="0" IsHitTestVisible="False"/>
-                                <TextBlock Grid.Column="0" Style="{StaticResource EnemyList}" HorizontalAlignment="Left" Margin="5,2,0,2" Text="{Binding Name}"/>
-                                <wpffrontend:HpRollText Grid.Column="1" Style="{StaticResource EnemyList}" HorizontalAlignment="Right" Margin="4,2,5,2" HP="{Binding CurrentHP}"/>
+                                <TextBlock Grid.Column="0" Style="{StaticResource EnemyList}" HorizontalAlignment="Left" Margin="5,0,0,0" Text="{Binding Name}"/>
+                                <wpffrontend:HpRollText Grid.Column="1" Style="{StaticResource EnemyList}" HorizontalAlignment="Right" Margin="4,0,5,0" HP="{Binding CurrentHP}"/>
                             </Grid>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsGameHovered}" Value="True">
@@ -138,6 +144,9 @@
                     </ListView.ItemTemplate>
                 </ListView>
             </StackPanel>
+        </Grid>
+        <Grid Panel.ZIndex="9000" Width="{Binding ActualWidth, ElementName=MainCanvas}" Height="{Binding ActualHeight, ElementName=MainCanvas}">
+            <Viewbox x:Name="DesktopOptionsHost" StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Top"/>
         </Grid>
     </Canvas>
 

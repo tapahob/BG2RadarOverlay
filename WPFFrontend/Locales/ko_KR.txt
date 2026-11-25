@@ -527,6 +527,7 @@ Str_AnimateCharacterCardNumbers=캐릭터 정보
 Str_RefreshRate=새로 고침 속도 (ms):
 Str_Fonts=글꼴
 Str_Other=기타
+Str_RadarScale=레이더 배율
 Str_UseShiftClick=Shift+클릭 사용
 Str_UseShiftClickTooltip=우클릭 대신 Shift + 우클릭 사용
 Str_DebugMode=디버그 모드

@@ -18,7 +18,7 @@ internal sealed record GameInstallation(string Name, string Executable, bool Nat
     // Older installations.json entries have no EEex history.
     public bool? LastKnownEEex { get; init; }
     internal bool HasEEex => EEexModInstaller.HasEEexFiles(Folder);
-    internal string CriticalScriptPath => Path.Combine(Folder, "override", "M_RDRCRT.lua");
+    internal string CriticalScriptPath => Path.Combine(Folder, NativeInstallation.CriticalScript);
     [JsonIgnore]
     public string Folder => Path.GetDirectoryName(Executable);
     internal string GameExe => Path.GetFileName(Executable);
@@ -93,8 +93,11 @@ internal sealed class InstallationRegistry
 internal static class NativeInstallation
 {
     internal static readonly string[] FeatFiles = { @"override\M_RDRFT.lua", @"override\RDRFEATS.menu" };
+    internal const string CriticalScript = @"override\M_RDRCRT.lua";
     internal static bool SamePath(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
-    internal static string RadarExe => new FileInfo(Environment.ProcessPath).ResolveLinkTarget(true)?.FullName ?? Environment.ProcessPath;
+    internal static string RunningExe => new FileInfo(Environment.ProcessPath).ResolveLinkTarget(true)?.FullName ?? Environment.ProcessPath;
+    internal static string RadarExe => ReleaseUpdater.LauncherPath ?? RunningExe;
+    internal static string GameFiles => Path.Combine(Path.GetDirectoryName(RunningExe), "GameFiles");
 
     internal static IEnumerable<string> ModulePaths(GameInstallation game)
     {
@@ -160,7 +163,7 @@ internal static class NativeInstallation
         yield return ("BG2Radar.asi", ModulePaths(game).FirstOrDefault(File.Exists) ?? Path.Combine(game.Folder, "BG2Radar.asi"));
         if (hasEEex)
         {
-            yield return ("M_RDRCRT.lua", game.CriticalScriptPath);
+            yield return (CriticalScript, game.CriticalScriptPath);
             foreach (var file in FeatFiles)
                 yield return (file, Path.Combine(game.Folder, file));
         }
@@ -172,7 +175,7 @@ internal static class NativeInstallation
         if (!File.Exists(game.Executable))
             throw new IOException(string.Format(Get("Str_NativeGameMissing"), game.Folder));
         CleanModuleBackups(game);
-        var source = Path.Combine(Path.GetDirectoryName(radarExe), "GameFiles");
+        var source = GameFiles;
         var staged = new List<(string Temp, string Target, string Backup)>();
         var committed = 0;
         try

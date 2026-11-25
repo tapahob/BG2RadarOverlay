@@ -528,6 +528,7 @@ Str_AnimateCharacterCardNumbers=Karta postaci
 Str_RefreshRate=Częstotliwość odświeżania (ms):
 Str_Fonts=Czcionki
 Str_Other=Inne
+Str_RadarScale=Skala radaru
 Str_UseShiftClick=Użyj Shift+klik
 Str_UseShiftClickTooltip=Użyj Shift + PPM zamiast PPM
 Str_DebugMode=Tryb debugowania

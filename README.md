@@ -35,6 +35,13 @@ server between the overlay and viewers' browsers — you can use someone else's,
 Just extract the archive and start the "BG Radar Overlay.exe".
 The folder does not matter anymore, the game would be detected automatically once its launched.
 
+The packaged radar checks the latest stable GitHub release at startup and every six hours
+while running. It downloads the release in the background and verifies the archive against
+GitHub's SHA-256 digest. The next time you open Radar, manually or from the game, the
+original executable starts the prepared version. This also works offline. Keep the original
+installation folder and shortcuts in place. The update cache lives under
+`%ProgramFiles%\BG2RadarOverlay\Updates` and extraction uses Windows' built-in `tar.exe`.
+
 For fullscreen BG2EE on Windows, the optional native module draws the radar inside the game. See the [in-game renderer setup](NativeRadar/README.md).
 
 ## Configuration

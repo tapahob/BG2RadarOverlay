@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Threading;
 using System.Windows;
 using System.Threading.Tasks;
@@ -18,33 +19,54 @@ namespace WPFFrontend
         internal static class EntryPoint
         {
             [STAThread]
-            public static void Main()
+            public static void Main(string[] args)
             {
-                // The native launcher checks this same mutex before starting the overlay.
-                using var instance = new Mutex(false, @"Local\BG2Radar.Companion", out bool first);
-                if (!first) return;
+#if RADAR_AUTOUPDATE
+                if (ReleaseUpdater.LaunchPreparedVersion(args)) return;
+#endif
+                var app = new App();
+                if (args.Length == 2 && args[0] == "--game-pid"
+                    && (!int.TryParse(args[1], out int pid) || !app.watchGame(pid))) return;
 
-                var app = new App { _instance = instance };
-                app.InitializeComponent();
-                app.Run();
-            }
-        }
-
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            if (e.Args.Length == 2 && e.Args[0] == "--game-pid")
-            {
-                if (!int.TryParse(e.Args[1], out int pid) || !watchGame(pid))
+                if (app.LaunchGame != null)
                 {
-                    Shutdown();
+                    var settings = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "BG2RadarOverlay");
+                    Directory.CreateDirectory(settings);
+                    Directory.SetCurrentDirectory(settings);
+                }
+
+                using var owners = MemoryMappedFile.CreateOrOpen(RadarInstance.Name + ".Owner", 16);
+                using var stop = new EventWaitHandle(false, EventResetMode.ManualReset,
+                    RadarInstance.StopEvent(Environment.ProcessId));
+                try
+                {
+                    app._instance = RadarInstance.TakeOver(owners);
+                }
+                catch (Exception ex) when (ex is IOException or Win32Exception or UnauthorizedAccessException)
+                {
+                    MessageBox.Show(ex.Message, "BG Radar Overlay", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
-                var settings = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "BG2RadarOverlay");
-                Directory.CreateDirectory(settings);
-                Directory.SetCurrentDirectory(settings);
+                using var instance = app._instance;
+                if (instance == null) return;
+                var dispatcher = app.Dispatcher;
+                var registration = ThreadPool.RegisterWaitForSingleObject(stop, (_, _) =>
+                    dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Send, new Action(app.Shutdown)),
+                    null, Timeout.Infinite, true);
+                try
+                {
+                    app.InitializeComponent();
+#if RADAR_AUTOUPDATE
+                    using var updates = new CancellationTokenSource();
+                    BGOverlay.Logger.Init();
+                    _ = Task.Run(() => ReleaseUpdater.CheckPeriodically(updates.Token));
+                    app.Exit += (_, _) => updates.Cancel();
+#endif
+                    app.Run();
+                }
+                finally { registration.Unregister(null); }
             }
-            base.OnStartup(e);
         }
 
         private bool watchGame(int pid)

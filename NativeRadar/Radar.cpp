@@ -465,11 +465,6 @@ void startCompanion(const std::wstring& gameDirectory) {
     }
     DWORD attributes = GetFileAttributesW(exe.c_str());
     if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY)) return;
-    HANDLE existing = OpenMutexW(SYNCHRONIZE, FALSE, L"Local\\BG2Radar.Companion");
-    if (existing) {
-        CloseHandle(existing);
-        return;
-    }
     // Older installs place a symlink here. Start its target beside its own runtime.
     if (attributes & FILE_ATTRIBUTE_REPARSE_POINT) {
         HANDLE file = CreateFileW(exe.c_str(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,

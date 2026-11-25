@@ -14,32 +14,41 @@ namespace WPFFrontend
     public partial class BuffControl : UserControl
     {
         public string BuffName { get; set; }
-        public float BuffDuration 
-        { 
-            get { return 0; } 
-            set 
-            {
-                var str = value.ToString("0.0", new CultureInfo("en-US"));
-                if (value == float.MaxValue || value < 0) 
-                    str = "∞";
-                this.Label1.Content = str; this.Label2.Content = str; 
-            } 
-        }
-        public uint BuffDurationAbsolute { get; set; }
+        public uint BuffDurationAbsolute { get; private set; }
 
-        internal void UpdateTooltip(uint gameTime)
+        internal void UpdateDuration(uint expires, uint gameTime)
         {
+            BuffDurationAbsolute = expires;
+            string remaining = FormatIconDuration(expires, gameTime);
+            Label1.Content = remaining;
+            Label2.Content = remaining;
             var tooltip = (ToolTip)ToolTip;
-            string text = TooltipText(BuffName, BuffDurationAbsolute, gameTime);
+            string text = TooltipText(BuffName, expires, gameTime);
             if (!Equals(tooltip.Content, text)) tooltip.Content = text;
         }
 
         internal static string TooltipText(string name, uint expires, uint now)
         {
-            // The game clock advances 15 ticks per second and stops while paused.
-            long seconds = (Math.Max(0L, (long)expires - now) + 14) / 15;
-            string remaining = expires is 0 or uint.MaxValue ? "\u221e" : $"{seconds / 60}:{seconds % 60:00}";
-            return name + "\n" + remaining;
+            if (expires is 0 or uint.MaxValue) return name + "\n∞";
+            const int ticksPerSecond = 15;
+            long ticks = RemainingTicks(expires, now);
+            long seconds = (ticks + ticksPerSecond - 1) / ticksPerSecond;
+            if (seconds < 60)
+                return string.Create(CultureInfo.InvariantCulture, $"{name}\n{seconds}");
+            if (seconds < 3600)
+                return string.Create(CultureInfo.InvariantCulture, $"{name}\n{seconds / 60}:{seconds % 60:00}");
+            return string.Create(CultureInfo.InvariantCulture,
+                $"{name}\n{seconds / 3600}:{seconds / 60 % 60:00}:{seconds % 60:00}");
+        }
+
+        private static long RemainingTicks(uint expires, uint now) => Math.Max(0L, (long)expires - now);
+
+        private static string FormatIconDuration(uint expires, uint now)
+        {
+            if (expires is 0 or uint.MaxValue) return "∞";
+            const int ticksPerRound = 90, roundsPerTurn = 10;
+            long rounds = RemainingTicks(expires, now) / ticksPerRound;
+            return string.Create(CultureInfo.InvariantCulture, $"{rounds / roundsPerTurn}.{rounds % roundsPerTurn}");
         }
         public BitmapSource Icon
         {

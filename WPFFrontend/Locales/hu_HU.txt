@@ -528,6 +528,7 @@ Str_AnimateCharacterCardNumbers=Karakterlap
 Str_RefreshRate=Frissítési gyakoriság (ms):
 Str_Fonts=Betűtípusok
 Str_Other=Egyéb
+Str_RadarScale=Radar mérete
 Str_UseShiftClick=Shift+kattintás használata
 Str_UseShiftClickTooltip=Shift + jobb klikk használata jobb klikk helyett
 Str_DebugMode=Hibakereső mód

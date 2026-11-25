@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Controls;
 using System.Windows.Media;
 using BGOverlay;
 using WinApiBindings;
@@ -13,6 +14,7 @@ namespace WPFFrontend
     {
         private HwndSource _optionsHost;
         private IntPtr _optionsHwnd;
+        private readonly ScaleTransform _optionsScale = new();
         private Rect _optionsPlacement = Rect.Empty;
         private bool _detachedOptions;
         private System.Drawing.Point _optionsScreenOrigin;
@@ -71,13 +73,14 @@ namespace WPFFrontend
                 }
                 _optionsHost.AddHook(optionsWindowMessage);
                 Volatile.Write(ref _optionsHwnd, _optionsHost.Handle);
-                MainGrid.Children.Remove(_options);
+                DesktopOptionsHost.Child = null;
                 _options.SetWindowHosted(true);
                 _options.Cursor = _gameHand?.PointingCursor ?? System.Windows.Input.Cursors.Hand;
                 _options.ForceCursor = true;
                 _options.WindowCloseRequested += closeGameOptions;
                 _optionsHost.SizeToContent = SizeToContent.WidthAndHeight;
-                _optionsHost.RootVisual = _options;
+                _optionsHost.RootVisual = new Viewbox { StretchDirection = StretchDirection.DownOnly, Child = _options };
+                FitHostedOptions(client);
                 _options.UpdateLayout();
                 positionGameOptions(client, out _);
                 Logger.Debug($"Opened radar options ({(_detachedOptions ? "independent window" : "game child")})");
@@ -102,9 +105,26 @@ namespace WPFFrontend
             return new IntPtr(1);
         }
 
+        private void UpdateOptionsScale(double scale)
+        {
+            // Keep the slider under the pointer while the rest of the radar previews the new size.
+            if (_optionsScale.ScaleX == scale || _options?.RadarZoom.IsMouseCaptureWithin == true) return;
+            _optionsScale.ScaleX = _optionsScale.ScaleY = scale;
+        }
+
+        private void FitHostedOptions(ClientRect client)
+        {
+            var device = _optionsHost.CompositionTarget.TransformToDevice;
+            var root = (Viewbox)_optionsHost.RootVisual;
+            root.MaxWidth = client.Right / device.M11;
+            root.MaxHeight = client.Bottom / device.M22;
+            UpdateOptionsScale(_panelPixelScale / device.M22);
+        }
+
         private bool positionGameOptions(ClientRect game, out Rect panel)
         {
             panel = Rect.Empty;
+            FitHostedOptions(game);
             if (!GetClientRect(_optionsHwnd, out var size) || size.Right <= 0 || size.Bottom <= 0) return false;
             int left = Math.Max(0, (game.Right - size.Right) / 2);
             panel = new Rect(left, 0, size.Right, size.Bottom);
@@ -131,10 +151,11 @@ namespace WPFFrontend
             _options.ForceCursor = false;
             _options.ClearValue(FrameworkElement.CursorProperty);
             host.RemoveHook(optionsWindowMessage);
+            if (host.RootVisual is Viewbox root) root.Child = null;
             host.RootVisual = null;
             host.Dispose();
             _options.SetWindowHosted(false);
-            if (_options.Parent == null) MainGrid.Children.Add(_options);
+            DesktopOptionsHost.Child = _options;
             _detachedOptions = false;
         }
     }

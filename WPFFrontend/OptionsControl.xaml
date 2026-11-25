@@ -10,6 +10,8 @@
              VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="9000"
     xmlns:theme="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2">
     <UserControl.Resources>
+        <ToolTip x:Key="OptionTooltip" x:Shared="False"
+                 Content="{Binding PlacementTarget.(AutomationProperties.HelpText), RelativeSource={RelativeSource Self}}"/>
         <Style TargetType="Button">
             <Setter Property="Template">
                 <Setter.Value>
@@ -142,7 +144,8 @@
                         <CheckBox x:Name="BigBuffIcons" VerticalContentAlignment="Center" d:Content="Big Buff icons" Content="{DynamicResource Str_BigBuffIcons}" FontFamily="Segoe Print" FontWeight="Bold"/>
                         <CheckBox x:Name="CenterBuffIcons" VerticalContentAlignment="Center" d:Content="Center buff icons" Content="{DynamicResource Str_CenterBuffIcons}" FontFamily="Segoe Print" FontWeight="Bold"/>
                         <CheckBox x:Name="BuffInkFilter" VerticalContentAlignment="Center" d:Content="Ink filter" Content="{DynamicResource Str_BuffInkFilter}"
-                                  ToolTip="{DynamicResource Str_BuffInkFilterTooltip}" ToolTipOpening="OptionTooltip_Opening" FontFamily="Segoe Print" FontWeight="Bold"/>
+                                  AutomationProperties.HelpText="{DynamicResource Str_BuffInkFilterTooltip}"
+                                  ToolTip="{StaticResource OptionTooltip}" ToolTipOpening="OptionTooltip_Opening" FontFamily="Segoe Print" FontWeight="Bold"/>
                     </StackPanel>
                     <Border Grid.ColumnSpan="3" Grid.Row="1" Grid.Column="1" BorderThickness="1" BorderBrush="#FF151313" Margin="0,16,0,0" Grid.RowSpan="2"/>
                     <StackPanel Grid.ColumnSpan="3" Grid.Row="2" Grid.Column="1" Margin="5,5,5,5">
@@ -172,8 +175,18 @@
                     <StackPanel Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" Margin="5,5,5,5">
                         <Label d:Content="Other" Content="{DynamicResource Str_Other}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Vertical">
-                            <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" d:Content="Use Shift Click" Content="{DynamicResource Str_UseShiftClick}" ToolTip="{DynamicResource Str_UseShiftClickTooltip}" ToolTipOpening="OptionTooltip_Opening" FontFamily="Segoe Print" FontWeight="Bold"/>
+                            <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" d:Content="Use Shift Click" Content="{DynamicResource Str_UseShiftClick}"
+                                      AutomationProperties.HelpText="{DynamicResource Str_UseShiftClickTooltip}"
+                                      ToolTip="{StaticResource OptionTooltip}" ToolTipOpening="OptionTooltip_Opening" FontFamily="Segoe Print" FontWeight="Bold"/>
                             <CheckBox x:Name="DebugMode" VerticalContentAlignment="Center" d:Content="Debug Mode" Content="{DynamicResource Str_DebugMode}" FontFamily="Segoe Print" FontWeight="Bold"/>
+                            <DockPanel Margin="0,2">
+                                <Label Content="{DynamicResource Str_RadarScale}" Target="{Binding ElementName=RadarZoom}" Style="{StaticResource BoldSmall}"/>
+                                <TextBlock DockPanel.Dock="Right" Width="42" TextAlignment="Right" VerticalAlignment="Center"
+                                           Text="{Binding Value, ElementName=RadarZoom, StringFormat={}{0:0}%}"/>
+                                <Slider x:Name="RadarZoom" Margin="5,0" VerticalAlignment="Center"
+                                        TickFrequency="5" SmallChange="5" LargeChange="25" IsSnapToTickEnabled="True" IsMoveToPointEnabled="True"
+                                        AutomationProperties.Name="{DynamicResource Str_RadarScale}"/>
+                            </DockPanel>
                             <StackPanel Orientation="Horizontal">
                                 <Label d:Content="Locale:" Content="{DynamicResource Str_Locale}" Style="{StaticResource BoldSmall}" HorizontalAlignment="Center"/>
                                 <ComboBox x:Name="Locale" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Margin="5, -5, 0, 0" d:SelectedItem="en_US" FontFamily="Segoe Print" FontWeight="Bold" Width="77">
@@ -188,61 +201,7 @@
             <TabItem Header="{DynamicResource Str_TabCombatText}" Tag="M1,1 H15 V10 H7 L3,14 V10 H1 Z">
                 <Grid Margin="16" TextElement.FontFamily="{DynamicResource FontFamily1}" TextElement.FontWeight="Bold">
                     <Grid.Resources>
-                        <ResourceDictionary>
-                            <ResourceDictionary.MergedDictionaries>
-                                <ResourceDictionary Source="TwitchOptionsTheme.xaml"/>
-                            </ResourceDictionary.MergedDictionaries>
-                            <ControlTemplate x:Key="CombatSliderStep" TargetType="RepeatButton">
-                                <Grid Background="Transparent">
-                                    <Border Height="4" Background="{TemplateBinding Background}"
-                                            BorderBrush="{StaticResource Rule}" BorderThickness="0,1"/>
-                                </Grid>
-                            </ControlTemplate>
-                            <Style TargetType="Slider">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="Slider">
-                                            <Grid Height="20" Background="Transparent">
-                                                <Track x:Name="PART_Track">
-                                                    <Track.DecreaseRepeatButton>
-                                                        <RepeatButton Command="Slider.DecreaseLarge" Focusable="False"
-                                                                      Template="{StaticResource CombatSliderStep}" Background="{StaticResource Leather}"/>
-                                                    </Track.DecreaseRepeatButton>
-                                                    <Track.IncreaseRepeatButton>
-                                                        <RepeatButton Command="Slider.IncreaseLarge" Focusable="False"
-                                                                      Template="{StaticResource CombatSliderStep}" Background="{StaticResource Paper}"/>
-                                                    </Track.IncreaseRepeatButton>
-                                                    <Track.Thumb>
-                                                        <Thumb x:Name="Handle" Width="12" Height="16" Focusable="False"
-                                                               Background="{StaticResource Leather}" BorderBrush="{StaticResource Ink}">
-                                                            <Thumb.Template>
-                                                                <ControlTemplate TargetType="Thumb">
-                                                                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                                                                            BorderThickness="1" CornerRadius="2">
-                                                                        <Border Width="2" Margin="0,3" Background="{StaticResource Gold}"/>
-                                                                    </Border>
-                                                                </ControlTemplate>
-                                                            </Thumb.Template>
-                                                        </Thumb>
-                                                    </Track.Thumb>
-                                                </Track>
-                                            </Grid>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="Handle" Property="BorderBrush" Value="{StaticResource Gold}"/>
-                                                </Trigger>
-                                                <Trigger Property="IsKeyboardFocused" Value="True">
-                                                    <Setter TargetName="Handle" Property="BorderBrush" Value="{StaticResource Gold}"/>
-                                                </Trigger>
-                                                <Trigger SourceName="Handle" Property="IsDragging" Value="True">
-                                                    <Setter TargetName="Handle" Property="Background" Value="{StaticResource Ink}"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </ResourceDictionary>
+                        <ResourceDictionary Source="TwitchOptionsTheme.xaml"/>
                     </Grid.Resources>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="50"/></Grid.ColumnDefinitions>
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>

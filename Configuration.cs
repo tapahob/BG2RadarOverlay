@@ -68,7 +68,9 @@ namespace BGOverlay
         public static IntPtr HWndPtr { get; set; }
         public static bool BigBuffIcons { get; set; }
         public static bool CenterBuffIcons { get; set; }
-        private static bool buffInkFilter = true;
+        public const int MinRadarScale = 50, MaxRadarScale = 200;
+        public static int RadarScalePercent { get; set; } = 100;
+        private static bool buffInkFilter;
         public static event EventHandler BuffInkFilterChanged;
 
         public static bool BuffInkFilter
@@ -146,7 +148,8 @@ namespace BGOverlay
             Locale              = "en_US";            
             BigBuffIcons        = true;
             CenterBuffIcons     = true;
-            BuffInkFilter       = true;
+            RadarScalePercent   = 100;
+            BuffInkFilter       = false;
             AnimateEnemyListNumbers = true;
             AnimateCharacterCardNumbers = true;
             Font1               = "Segoe Print";
@@ -202,6 +205,7 @@ namespace BGOverlay
                 $"HideAllies={HideAllies}",
                 $"BigBuffIcons={BigBuffIcons}",
                 $"{nameof(CenterBuffIcons)}={CenterBuffIcons}",
+                $"{nameof(RadarScalePercent)}={RadarScalePercent}",
                 $"{nameof(BuffInkFilter)}={BuffInkFilter}",
                 $"AnimateEnemyListNumbers={AnimateEnemyListNumbers}",
                 $"AnimateCharacterCardNumbers={AnimateCharacterCardNumbers}",
@@ -277,7 +281,6 @@ namespace BGOverlay
                     storedConfig[split[0]] = split[1];
                 }
 
-                var version         = getProperty("Version", Configuration.Version); ;                
                 Locale              = getProperty("Locale", "en_US");
                 Borderless          = getProperty("Borderless", "true").Equals("true");
                 HidePartyMembers    = getProperty("HidePartyMembers", "false").Equals("true");
@@ -292,7 +295,8 @@ namespace BGOverlay
                 HideAllies          = getProperty("HideAllies", "false").Equals("true");
                 BigBuffIcons        = getProperty("BigBuffIcons", "false").Equals("true");
                 CenterBuffIcons     = getProperty(nameof(CenterBuffIcons), "true").Equals("true");
-                BuffInkFilter       = getProperty(nameof(BuffInkFilter), "true").Equals("true");
+                RadarScalePercent   = ReadPercent(nameof(RadarScalePercent), 100, MinRadarScale, MaxRadarScale);
+                BuffInkFilter       = getProperty(nameof(BuffInkFilter), "false").Equals("true");
                 AnimateEnemyListNumbers = getProperty(nameof(AnimateEnemyListNumbers), "true").Equals("true");
                 AnimateCharacterCardNumbers = getProperty(nameof(AnimateCharacterCardNumbers), "true").Equals("true");
                 ShowCombatText = getProperty(nameof(ShowCombatText), "true").Equals("true");
@@ -319,13 +323,6 @@ namespace BGOverlay
                 TwitchControlKey    = getProperty("TwitchControlKey", "");
                 TwitchBroadcasterLogin = getProperty("TwitchBroadcasterLogin", "");
                 SpawnPacks          = getProperty("SpawnPacks", "");
-                if (version != Configuration.Version)
-                {
-                    Logger.Debug("Outdated config version found - overriding it");
-                    File.Delete("config.cfg");
-                    loadConfig();
-                    Logger.Debug("Done");
-                }
                 Logger.Info("Current config:\n" + string.Join("\n", File.ReadAllLines("config.cfg")));
                 
             } catch (Exception ex)

@@ -8,11 +8,11 @@
 #include <mutex>
 #include <string>
 
-// The three call-site adapters leave the FeedBack entry intact: EEex locates
+// The call-site adapters leave the FeedBack entry intact: EEex locates
 // that function by its original prologue, even when it starts after this ASI.
 extern "C" {
-void backstabFeedbackSite(), meleeIneffectiveSite(), rangedIneffectiveSite();
-void *backstabResume, *meleeResume, *rangedResume;
+void backstabFeedbackSite(), sneakAttackFeedbackSite(), meleeIneffectiveSite(), rangedIneffectiveSite();
+void *backstabResume, *sneakAttackResume, *meleeResume, *rangedResume;
 }
 
 namespace {
@@ -77,7 +77,7 @@ struct WeaponRoll { void* attacker; void* target; bool backstab = false; };
 thread_local WeaponRoll* activeRoll;
 constexpr uint32_t BackstabMark = 0x52425354, BackstabCritMark = 0x52425343;
 
-// Observe the engine's successful multiplier branch while constructing this
+// Observe successful classic backstab or 3E sneak attack feedback while constructing this
 // one base damage effect. Nested rolls and on-hit riders remain independent.
 void* onWeaponDamage(void* attacker, void* weapon, void* launcher, int attack, int critical,
         void* targetType, short facing, short myFacing, void* target, int lastSwing) {
@@ -281,6 +281,7 @@ bool installCombatHooks(Byte* base, bool withEEex) {
         auto damage = base + b.weaponDamage;
         auto notify = base + b.feedback;
         auto backstab = damage + 0xD64;
+        auto sneakAttack = damage + 0x97E; // 3E sneak attack damage, after the bonus dice are applied
         auto rangedBlock = base + b.swing + 0x819;
         auto meleeBlock = base + b.swing + 0x13FC;
         if (calls(backstab + 5, notify) && calls(rangedBlock + 5, notify) && calls(meleeBlock + 5, notify) &&
@@ -293,6 +294,10 @@ bool installCombatHooks(Byte* base, bool withEEex) {
                 return MH_CreateHook(site, reinterpret_cast<void*>(adapter), nullptr) == MH_OK &&
                     MH_QueueEnableHook(site) == MH_OK;
             };
+            if (calls(sneakAttack + 5, notify) && !std::memcmp(sneakAttack - 3, "\x8D\x50\x52", 3)) {
+                sneakAttackResume = sneakAttack + 5;
+                if (!observe(sneakAttack, sneakAttackFeedbackSite)) return false;
+            }
             if (!queueHook(damage, onWeaponDamage, weaponDamage) ||
                 !observe(backstab, backstabFeedbackSite) || !observe(rangedBlock, rangedIneffectiveSite) ||
                 !observe(meleeBlock, meleeIneffectiveSite)) return false;
@@ -303,11 +308,11 @@ bool installCombatHooks(Byte* base, bool withEEex) {
 }
 }
 
-// R15 holds the victim at these three sites. The normal fourth argument is
+// R15 holds the victim at these sites. The normal fourth argument is
 // zero there; the adapter passes the victim in its place and we restore zero.
 extern "C" void combatFeedback(void* attacker, unsigned id, int int1, void* victim,
         int int3, unsigned ref1, int int4, void* stringIn) {
-    if (id == 1 && activeRoll && activeRoll->attacker == attacker && activeRoll->target == victim)
+    if ((id == 1 || id == 0x52) && activeRoll && activeRoll->attacker == attacker && activeRoll->target == victim)
         activeRoll->backstab = true;
     if (id == 0x25) publish(victim, WeaponIneffective, 0);
     feedback(attacker, id, int1, 0, int3, ref1, int4, stringIn);

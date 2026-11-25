@@ -528,6 +528,7 @@ Str_AnimateCharacterCardNumbers=Karakter kartı
 Str_RefreshRate=Yenileme Hızı (ms):
 Str_Fonts=Yazı Tipleri
 Str_Other=Diğer
+Str_RadarScale=Radar ölçeği
 Str_UseShiftClick=Shift+Tık Kullan
 Str_UseShiftClickTooltip=Sağ Tık yerine Shift + Sağ Tık kullan
 Str_DebugMode=Hata Ayıklama Modu

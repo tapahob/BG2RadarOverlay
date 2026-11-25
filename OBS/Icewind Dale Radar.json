@@ -1,0 +1,55 @@
+{
+    "name": "Icewind Dale Radar",
+    "current_scene": "Icewind Dale",
+    "current_program_scene": "Icewind Dale",
+    "scene_order": [{ "name": "Icewind Dale" }],
+    "resolution": { "x": 2560, "y": 1440 },
+    "sources": [
+        {
+            "name": "Icewind Dale EE",
+            "id": "window_capture",
+            "versioned_id": "window_capture",
+            "settings": {
+                "window": "Icewind Dale - Enhanced Edition - v2.7.3.0:SDL_app:icewind.exe",
+                "method": 2,
+                "priority": 2,
+                "client_area": true,
+                "cursor": true
+            }
+        },
+        {
+            "name": "Fullscreen Radar",
+            "id": "window_capture",
+            "versioned_id": "window_capture",
+            "settings": {
+                "window": "BG Radar - Fullscreen Overlay:HwndWrapper:BG Radar Overlay.exe",
+                "method": 2,
+                "priority": 1,
+                "client_area": true,
+                "cursor": false
+            }
+        },
+        {
+            "name": "Icewind Dale",
+            "id": "scene",
+            "versioned_id": "scene",
+            "settings": {
+                "id_counter": 2,
+                "items": [
+                    {
+                        "id": 1, "name": "Icewind Dale EE", "visible": true,
+                        "pos": { "x": 0, "y": 0 }, "scale": { "x": 1, "y": 1 },
+                        "align": 5, "bounds_type": 2, "bounds_align": 0,
+                        "bounds": { "x": 2560, "y": 1440 }
+                    },
+                    {
+                        "id": 2, "name": "Fullscreen Radar", "visible": true,
+                        "pos": { "x": 0, "y": 0 }, "scale": { "x": 1, "y": 1 },
+                        "align": 5, "bounds_type": 2, "bounds_align": 0,
+                        "bounds": { "x": 2560, "y": 1440 }
+                    }
+                ]
+            }
+        }
+    ]
+}

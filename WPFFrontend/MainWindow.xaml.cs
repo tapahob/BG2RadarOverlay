@@ -58,6 +58,11 @@ namespace WPFFrontend
         public MainWindow()
         {
             InitializeComponent();
+            MainCanvas.SizeChanged += (_, _) => { SizeRadarControls(default); RestorePanelPositions(); };
+            StackPanel.SizeChanged += (_, _) => RestorePanelPositions();
+            MinMaxBtn.SizeChanged += (_, _) => RestorePanelPositions();
+            StackPanel.IsVisibleChanged += (_, _) => RestorePanelPositions();
+            DpiChanged += (_, _) => SizeRadarControls(default);
             Activated += (_, _) => { if (_insideGame) Opacity = 1; };
             Deactivated += (_, _) => { if (_insideGame) Opacity = 0; };
 
@@ -119,10 +124,9 @@ namespace WPFFrontend
 
                     ApplyLocalization();
 
-                    updateEnemyListPosition();
-                    updateRadarIconPosition();
+                    RestorePanelPositions();
 
-                    _options = new();
+                    _options = new() { LayoutTransform = _optionsScale };
                     _options.InstallationList.ItemsSource = installations.Games;
                     _options.NativeInstallationToggleRequested += game => RunInstallationAction(() => ToggleNativeInstallation(game));
                     _options.DebugModeChanged += _processHacker.InvalidateEntityCache;
@@ -130,7 +134,7 @@ namespace WPFFrontend
 
                     updateStyles();
 
-                    MainGrid.Children.Add(_options);
+                    DesktopOptionsHost.Child = _options;
                     this.MinMaxBtn.MouseEnter += MinMaxBtn_MouseEnter;
                     this.MinMaxBtn.MouseLeave += MinMaxBtn_MouseLeave;
 
@@ -241,19 +245,26 @@ namespace WPFFrontend
                 bounds.Width, bounds.Height, noZOrder | noActivate);
         }
 
-        private void updateEnemyListPosition()
+        private void SetPanelOffset(FrameworkElement panel, double requested)
         {
-            var transform = this.StackPanel.RenderTransform as TranslateTransform ?? new TranslateTransform();
-            transform.X = Configuration.EnemyListXOffset;
-            this.StackPanel.RenderTransform = transform;
+            if (MainCanvas.ActualWidth <= 0 || panel.ActualWidth <= 0 || !panel.IsVisible) return;
+            var transform = (TranslateTransform)panel.RenderTransform;
+            double baseLeft = panel.TranslatePoint(new Point(), MainCanvas).X - transform.X;
+            double rightmost = Math.Max(0, MainCanvas.ActualWidth - panel.ActualWidth);
+            transform.X = Math.Clamp(requested, -baseLeft, rightmost - baseLeft);
+        }
+
+        private void RestorePanelPositions()
+        {
+            // Retain the preferred offset so it can be restored if the viewport grows again.
+            var pressed = Volatile.Read(ref _gamePress)?.Target.DragElement;
+            if (!_isDraggingEnemyList && pressed != StackPanel) SetPanelOffset(StackPanel, Configuration.EnemyListXOffset);
+            if (!_isDraggingRadarIcon && pressed != MinMaxBtn) SetPanelOffset(MinMaxBtn, Configuration.RadarIconXOffset);
         }
 
         private bool _isDraggingEnemyList;
         private System.Windows.Point _enemyListDragStartMouse;
         private double _enemyListDragStartOffsetX;
-        // The panel's layout-only (pre-transform) left edge in window coordinates, captured
-        // once when a drag starts, so clamping doesn't have to hardcode Grid column widths.
-        private double _enemyListDragBaseLeft;
 
         private void EnemyList_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -264,7 +275,7 @@ namespace WPFFrontend
                 // still reaches the ListView's own item-selection handling untouched.
                 _isDraggingEnemyList = false;
                 _enemyListDragStartMouse = e.GetPosition(this);
-                _enemyListDragStartOffsetX = Configuration.EnemyListXOffset;
+                _enemyListDragStartOffsetX = ((TranslateTransform)StackPanel.RenderTransform).X;
             }
             catch (Exception ex)
             {
@@ -292,27 +303,11 @@ namespace WPFFrontend
 
                     _isDraggingEnemyList = true;
                     this.StackPanel.CaptureMouse();
-
-                    var transform = (TranslateTransform)this.StackPanel.RenderTransform;
-                    var currentLeftInWindow = this.StackPanel.TransformToAncestor(this).Transform(new System.Windows.Point(0, 0)).X;
-                    _enemyListDragBaseLeft = currentLeftInWindow - transform.X;
                 }
 
                 e.Handled = true;
 
-                // Window-local X 0 is the game monitor's left edge and this.ActualWidth is its
-                // right edge (moveToGameScreen() positions/sizes the window to exactly cover the
-                // game's monitor), so clamping the panel's absolute left/right edges to
-                // [0, ActualWidth] keeps it from being dragged off that monitor.
-                var minOffset = -_enemyListDragBaseLeft;
-                var maxOffset = this.ActualWidth - _enemyListDragBaseLeft - this.StackPanel.ActualWidth;
-                if (maxOffset < minOffset)
-                    maxOffset = minOffset; // panel wider than the monitor - pin it instead of inverting the clamp
-
-                var proposedOffset = _enemyListDragStartOffsetX + deltaX;
-                var clampedOffset  = Math.Max(minOffset, Math.Min(maxOffset, proposedOffset));
-
-                ((TranslateTransform)this.StackPanel.RenderTransform).X = clampedOffset;
+                SetPanelOffset(StackPanel, _enemyListDragStartOffsetX + deltaX);
             }
             catch (Exception ex)
             {
@@ -341,19 +336,9 @@ namespace WPFFrontend
             }
         }
 
-        private void updateRadarIconPosition()
-        {
-            var transform = this.MinMaxBtn.RenderTransform as TranslateTransform ?? new TranslateTransform();
-            transform.X = Configuration.RadarIconXOffset;
-            this.MinMaxBtn.RenderTransform = transform;
-        }
-
         private bool _isDraggingRadarIcon;
         private System.Windows.Point _radarIconDragStartMouse;
         private double _radarIconDragStartOffsetX;
-        // The button's layout-only (pre-transform) left edge in window coordinates, captured
-        // once when a drag starts, so clamping doesn't have to hardcode Grid column widths.
-        private double _radarIconDragBaseLeft;
 
         private void RadarIcon_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -364,7 +349,7 @@ namespace WPFFrontend
                 // still reaches the button's own Click (show/hide the enemy list) untouched.
                 _isDraggingRadarIcon = false;
                 _radarIconDragStartMouse = e.GetPosition(this);
-                _radarIconDragStartOffsetX = Configuration.RadarIconXOffset;
+                _radarIconDragStartOffsetX = ((TranslateTransform)MinMaxBtn.RenderTransform).X;
             }
             catch (Exception ex)
             {
@@ -391,27 +376,11 @@ namespace WPFFrontend
 
                     _isDraggingRadarIcon = true;
                     this.MinMaxBtn.CaptureMouse();
-
-                    var transform = (TranslateTransform)this.MinMaxBtn.RenderTransform;
-                    var currentLeftInWindow = this.MinMaxBtn.TransformToAncestor(this).Transform(new System.Windows.Point(0, 0)).X;
-                    _radarIconDragBaseLeft = currentLeftInWindow - transform.X;
                 }
 
                 e.Handled = true;
 
-                // Window-local X 0 is the game monitor's left edge and this.ActualWidth is its
-                // right edge (moveToGameScreen() positions/sizes the window to exactly cover the
-                // game's monitor), so clamping the button's absolute left/right edges to
-                // [0, ActualWidth] keeps it from being dragged off that monitor.
-                var minOffset = -_radarIconDragBaseLeft;
-                var maxOffset = this.ActualWidth - _radarIconDragBaseLeft - this.MinMaxBtn.ActualWidth;
-                if (maxOffset < minOffset)
-                    maxOffset = minOffset; // button wider than the monitor - pin it instead of inverting the clamp
-
-                var proposedOffset = _radarIconDragStartOffsetX + deltaX;
-                var clampedOffset  = Math.Max(minOffset, Math.Min(maxOffset, proposedOffset));
-
-                ((TranslateTransform)this.MinMaxBtn.RenderTransform).X = clampedOffset;
+                SetPanelOffset(MinMaxBtn, _radarIconDragStartOffsetX + deltaX);
             }
             catch (Exception ex)
             {
@@ -460,7 +429,6 @@ namespace WPFFrontend
             _mouseHook.AddHandler(MouseMessageCode.RightButtonDown, MouseHook_MouseEvent);
             _mouseHook.InstallAsync().GetAwaiter().GetResult();
             
-            Logger.Debug("Mouse hooks installed");
             string executable = Configuration.GameExecutable;
             Dispatcher.InvokeAsync(() => RunInstallationAction(() => DetectInstallation(executable, pid)));
         }
@@ -663,7 +631,7 @@ namespace WPFFrontend
             ThicknessAnimation anim = new ThicknessAnimation();
             anim.From = this.StackPanel.Margin;
             var newMargin = this.StackPanel.Margin;
-            newMargin.Top = -this.ListView.ActualHeight;
+            newMargin.Top = -this.StackPanel.ActualHeight;
             anim.To = newMargin;
             anim.EasingFunction = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
             anim.Duration = TimeSpan.FromSeconds(.45);
@@ -692,7 +660,7 @@ namespace WPFFrontend
             ThicknessAnimation anim = new ThicknessAnimation();
             anim.From               = this.MinMaxBtn.Margin;
             var newMargin           = this.MinMaxBtn.Margin;
-            newMargin.Top           = -15;
+            newMargin.Top           = -MinMaxBtn.MaxHeight / 2;
             anim.To                 = newMargin;
             anim.Duration           = TimeSpan.FromSeconds(.5);
             anim.EasingFunction     = new BackEase() { Amplitude = .7, EasingMode = EasingMode.EaseOut };
@@ -706,7 +674,7 @@ namespace WPFFrontend
             ThicknessAnimation anim = new ThicknessAnimation();
             anim.From               = this.MinMaxBtn.Margin;
             var newMargin           = this.MinMaxBtn.Margin;
-            newMargin.Top           = -5;
+            newMargin.Top           = -MinMaxBtn.MaxHeight / 6;
             anim.To                 = newMargin;
             this.MinMaxBtn.Opacity  = 1;
             //anim.EasingFunction   = new BackEase() { Amplitude = .7, EasingMode = EasingMode.EaseIn };

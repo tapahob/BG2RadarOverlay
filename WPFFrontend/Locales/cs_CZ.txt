@@ -528,6 +528,7 @@ Str_AnimateCharacterCardNumbers=Karta postavy
 Str_RefreshRate=Frekvence obnovení (ms):
 Str_Fonts=Písma
 Str_Other=Ostatní
+Str_RadarScale=Měřítko radaru
 Str_UseShiftClick=Použít Shift+klik
 Str_UseShiftClickTooltip=Použít Shift + pravé tlačítko místo pravého tlačítka
 Str_DebugMode=Ladicí režim

@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using BGOverlay.Diagnostics;
@@ -16,6 +15,7 @@ namespace BGOverlay
     public class ProcessHacker
     {
         private readonly Process launchGame;
+        private bool waitingForBorderlessWindow;
         public ProcessHacker() { }
         public ProcessHacker(Process game) { launchGame = game; }
 
@@ -122,6 +122,11 @@ namespace BGOverlay
                 deadSlots.Clear();
                 ProcessDestroyed?.Invoke(gameName, Proc.Id);
                 this.Init();
+            }
+            else if (waitingForBorderlessWindow)
+            {
+                Proc.Refresh();
+                makeBorderless(Proc.MainWindowHandle);
             }
 
             var staticEntityList26= moduleBase + 0x68D438 + 0x18; // 2.6 entity array
@@ -379,11 +384,10 @@ namespace BGOverlay
         public void makeBorderless(IntPtr handle)
         {
             Configuration.HWndPtr = handle;
-            // Keep the engine's chosen display mode at startup when using the in-game renderer.
-            if (!Configuration.Borderless || File.Exists(Path.Combine(Configuration.GameFolder, "BG2Radar.asi"))
-                || File.Exists(Path.Combine(Configuration.GameFolder, "scripts", "BG2Radar.asi")))
-                return;
-            Configuration.ForceBorderless();            
+            // The native module can start the companion before SDL creates the game window.
+            waitingForBorderlessWindow = Configuration.Borderless && handle == IntPtr.Zero;
+            if (Configuration.Borderless && handle != IntPtr.Zero)
+                Configuration.ForceBorderless(handle);
         }
 
         public Process GetHookedProcess()

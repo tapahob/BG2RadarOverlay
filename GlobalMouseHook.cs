@@ -116,8 +116,15 @@ namespace BGOverlay.Input
             // Keep a reference so the delegate isn't collected while the hook is installed.
             _proc = HookCallback;
             _hookHandle = SetWindowsHookEx(WH_MOUSE_LL, _proc, IntPtr.Zero, 0);
-
+            int error = _hookHandle == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
             _installed.Set();
+            if (_hookHandle == IntPtr.Zero)
+            {
+                Logger.Error($"Mouse hook registration failed for game PID {_pid}, Win32 error {error}");
+                _hookThreadId = 0;
+                return;
+            }
+            Logger.Debug("Mouse hooks installed");
 
             // WH_MOUSE_LL requires a message pump on the installing thread to keep receiving callbacks.
             while (GetMessage(out var msg, IntPtr.Zero, 0, 0) > 0)

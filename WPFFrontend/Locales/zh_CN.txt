@@ -566,6 +566,7 @@ Str_AnimateCharacterCardNumbers=角色面板
 Str_RefreshRate=刷新率（毫秒）：
 Str_Fonts=字体
 Str_Other=其他
+Str_RadarScale=雷达缩放
 Str_UseShiftClick=使用上档键点击
 Str_UseShiftClickTooltip=使用上档键右键点击代替右键点击
 Str_DebugMode=调试模式

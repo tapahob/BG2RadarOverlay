@@ -529,6 +529,7 @@ Str_AnimateCharacterCardNumbers=Charakterbogen
 Str_RefreshRate=Aktualisierungsrate (ms):
 Str_Fonts=Schriftarten
 Str_Other=Sonstiges
+Str_RadarScale=Radargröße
 Str_UseShiftClick=Umschalt+Klick verwenden
 Str_UseShiftClickTooltip=Umschalt + Rechtsklick statt Rechtsklick verwenden
 Str_DebugMode=Debug-Modus

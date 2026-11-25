@@ -529,6 +529,7 @@ Str_AnimateCharacterCardNumbers=Scheda del personaggio
 Str_RefreshRate=Frequenza di aggiornamento (ms):
 Str_Fonts=Caratteri
 Str_Other=Altro
+Str_RadarScale=Scala del radar
 Str_UseShiftClick=Usa Shift+Clic
 Str_UseShiftClickTooltip=Usa Shift + Clic destro invece di Clic destro
 Str_DebugMode=Modalità debug

@@ -158,4 +158,54 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <ControlTemplate x:Key="RadarSliderStep" TargetType="RepeatButton">
+        <Grid Background="Transparent">
+            <Border Height="4" Background="{TemplateBinding Background}"
+                    BorderBrush="{StaticResource Rule}" BorderThickness="0,1"/>
+        </Grid>
+    </ControlTemplate>
+    <Style TargetType="Slider">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid Height="20" Background="Transparent">
+                        <Track x:Name="PART_Track">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="Slider.DecreaseLarge" Focusable="False"
+                                              Template="{StaticResource RadarSliderStep}" Background="{StaticResource Leather}"/>
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="Slider.IncreaseLarge" Focusable="False"
+                                              Template="{StaticResource RadarSliderStep}" Background="{StaticResource Paper}"/>
+                            </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb x:Name="Handle" Width="12" Height="16" Focusable="False"
+                                       Background="{StaticResource Leather}" BorderBrush="{StaticResource Ink}">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="1" CornerRadius="2">
+                                                <Border Width="2" Margin="0,3" Background="{StaticResource Gold}"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Handle" Property="BorderBrush" Value="{StaticResource Gold}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Handle" Property="BorderBrush" Value="{StaticResource Gold}"/>
+                        </Trigger>
+                        <Trigger SourceName="Handle" Property="IsDragging" Value="True">
+                            <Setter TargetName="Handle" Property="Background" Value="{StaticResource Ink}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

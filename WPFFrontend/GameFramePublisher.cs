@@ -55,7 +55,6 @@ namespace WPFFrontend
         private CombatEventReader _combatEvents;
         private volatile bool _hasCombatEvents;
         private readonly ActorProjection _combatProjection = new();
-        private long _lastCombatFrame, _lastOverheadFrame;
         private sealed class GamePress
         {
             public GameTarget Target;
@@ -66,7 +65,7 @@ namespace WPFFrontend
             public long DragStarted;
             public Matrix CardStart;
             public MatrixTransform CardTransform;
-            public double PanelStartX, PanelBaseLeft;
+            public double PanelStartX;
         }
 
         private sealed record GameTarget(Rect Bounds, Action Click, Action RightClick, FrameworkElement DragElement, EnemyListRow Row = null,
@@ -253,7 +252,12 @@ namespace WPFFrontend
                     if (foreground != _gameWindow && pid != Environment.ProcessId) closeGameOptions();
                 }
                 updateActorLayers();
-                if (!connectGameFrames()) return;
+                if (!connectGameFrames())
+                {
+                    if (GetClientRect(_gameWindow, out var desktopClient))
+                        SizeRadarControls(desktopClient);
+                    return;
+                }
                 long lastPresent = _frameView.ReadInt64(0);
                 // Observe minimization even while the game has no client area or frames.
                 if (Configuration.Borderless && _optionsHost == null &&
@@ -320,6 +324,7 @@ namespace WPFFrontend
                 var dpi = VisualTreeHelper.GetDpi(this);
                 if (WindowState != WindowState.Normal) { closeWindowLayer(); return; }
                 FitOverlayToBounds();
+                SizeRadarControls(client);
                 if (MainCanvas.ActualWidth < 1 || MainCanvas.ActualHeight < 1) return;
                 prepareWindowLayer(allowed, popup);
 
@@ -421,7 +426,8 @@ namespace WPFFrontend
                     {
                         cardTooltip = new DrawingGroup();
                         using var tooltip = cardTooltip.Open();
-                        MiniBuffLayer.DrawTooltip(tooltip, viewport, localPointer, content, dpi.PixelsPerDip, abovePointer: true);
+                        MiniBuffLayer.DrawTooltip(tooltip, viewport, localPointer, content, dpi.PixelsPerDip,
+                            RadarPanelScale.ScaleX, abovePointer: true);
                     }
                 }
                 updateGameHover(press?.Target ?? hit);
@@ -548,11 +554,36 @@ namespace WPFFrontend
             }));
         }
 
+        private double _panelPixelScale = 1;
+
+        private void SizeRadarControls(ClientRect client)
+        {
+            double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
+            double width = client.Right > 0 ? client.Right : MainCanvas.ActualWidth * dpi;
+            double height = client.Bottom > 0 ? client.Bottom : MainCanvas.ActualHeight * dpi;
+            if (width <= 0 || height <= 0) return;
+            // Only shrink for small viewports. A 4K client must not double row height.
+            _panelPixelScale = Math.Clamp(Math.Min(width / 1920, height / 1080), 0.8, 1) * Configuration.RadarScalePercent / 100.0;
+            double pixelsPerDip = _insideGame && client.Bottom > 0 && MainCanvas.ActualHeight > 0
+                ? client.Bottom / MainCanvas.ActualHeight : dpi;
+            double scale = _panelPixelScale / pixelsPerDip;
+            if (_optionsHost == null) UpdateOptionsScale(scale);
+            double cardLimit = Math.Max(1, (MainCanvas.ActualHeight - 8) / scale);
+            if (!Equals(MainCanvas.Resources["CardHeightLimit"], cardLimit))
+                MainCanvas.Resources["CardHeightLimit"] = cardLimit;
+            if (RadarPanelScale.ScaleX == scale) return;
+            RadarPanelScale.ScaleX = RadarPanelScale.ScaleY = scale;
+            MinMaxBtn.MaxHeight = 30 * scale;
+            MinMaxBtn.BeginAnimation(FrameworkElement.MarginProperty, null);
+            var margin = MinMaxBtn.Margin;
+            margin.Top = (_gameIconHovered || MinMaxBtn.IsMouseOver ? -5 : -15) * scale;
+            MinMaxBtn.Margin = margin;
+        }
+
         private void updateActorLayers()
         {
             long now = Environment.TickCount64;
-            if (_combatEvents == null || now - _lastCombatFrame < 8) return;
-            _lastCombatFrame = now;
+            if (_combatEvents == null) return;
             CombatLayer.Advance(now);
             _combatEvents.Poll(now, CombatLayer.Add);
             _hasCombatEvents = _combatEvents.Connected;
@@ -573,10 +604,6 @@ namespace WPFFrontend
             CombatLayer.Paint(viewport);
             if (foreground && (Configuration.ShowCastingSpell || showBuffs) && !viewport.IsEmpty && viewport.Width > 0 && viewport.Height > 0)
             {
-                // The game simulation advances at 15 Hz. Avoid polling idle sprites
-                // at the monitor refresh rate when only casting labels are enabled.
-                if (!showBuffs && now - _lastOverheadFrame < 32) return;
-                _lastOverheadFrame = now;
                 Point? pointer = null;
                 if (showBuffs)
                 {
@@ -585,7 +612,7 @@ namespace WPFFrontend
                     if (viewport.Contains(local) && MainCanvas.InputHitTest(local) == null
                         && !isGameOptionsInput(cursor.X, cursor.Y)) pointer = local;
                 }
-                BuffLayer.Paint(viewport, _processHacker.OverheadActors, showBuffs, pointer);
+                BuffLayer.Paint(viewport, _processHacker.OverheadActors, showBuffs, pointer, RadarPanelScale.ScaleX);
             }
             else
                 BuffLayer.Clear();
@@ -620,9 +647,9 @@ namespace WPFFrontend
             }
             var element = press.Target.DragElement;
             if (element == null || !element.IsDescendantOf(MainCanvas)) return;
-            var dpi = VisualTreeHelper.GetDpi(this);
-            double dx = (position.X - press.Origin.X) / dpi.DpiScaleX;
-            double dy = (position.Y - press.Origin.Y) / dpi.DpiScaleY;
+            if (bounds.Width <= 0 || bounds.Height <= 0) return;
+            double dx = (position.X - press.Origin.X) * MainCanvas.ActualWidth / bounds.Width;
+            double dy = (position.Y - press.Origin.Y) * MainCanvas.ActualHeight / bounds.Height;
             bool card = element is EnemyControl;
             if (!press.Dragging)
             {
@@ -640,7 +667,6 @@ namespace WPFFrontend
                 {
                     var transform = (TranslateTransform)element.RenderTransform;
                     press.PanelStartX = transform.X;
-                    press.PanelBaseLeft = element.TranslatePoint(new Point(), MainCanvas).X - transform.X;
                 }
             }
             if (card)
@@ -651,9 +677,7 @@ namespace WPFFrontend
             }
             else
             {
-                double min = -press.PanelBaseLeft;
-                double max = Math.Max(min, MainCanvas.ActualWidth - element.ActualWidth + min);
-                ((TranslateTransform)element.RenderTransform).X = Math.Clamp(press.PanelStartX + dx, min, max);
+                SetPanelOffset(element, press.PanelStartX + dx);
             }
         }
 

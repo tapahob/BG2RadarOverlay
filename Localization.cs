@@ -17,6 +17,38 @@ namespace BGOverlay
     public static class RadarLocalization
     {
         private const string DefaultLocale = "en_US";
+        private static string customLocaleFolder;
+        private static string[] customLocales = Array.Empty<string>();
+
+        // When an updated binary runs from the cache, keep loose user translations in
+        // the original installation, but load newly shipped defaults from its own release.
+        public static string FindCustomLocales(string installFolder)
+        {
+            var folder = Path.Combine(installFolder, "Locales");
+            if (!Directory.Exists(folder)) return "";
+            var assembly = typeof(RadarLocalization).Assembly;
+            var changed = new List<string>();
+            foreach (var file in Directory.EnumerateFiles(folder, "*.txt"))
+            {
+                string name = Path.GetFileNameWithoutExtension(file);
+                using (var baseline = assembly.GetManifestResourceStream($"BGOverlay.Locales.{name}.txt"))
+                {
+                    if (baseline != null)
+                    {
+                        using (var reader = new StreamReader(baseline))
+                            if (File.ReadAllText(file) == reader.ReadToEnd()) continue;
+                    }
+                    changed.Add(name);
+                }
+            }
+            return string.Join("|", changed);
+        }
+
+        public static void UseCustomLocales(string installFolder, string names)
+        {
+            customLocaleFolder = Path.Combine(installFolder, "Locales");
+            customLocales = (names ?? "").Split('|');
+        }
 
         public static Dictionary<string, string> Strings { get; private set; } = new Dictionary<string, string>();
 
@@ -110,7 +142,8 @@ namespace BGOverlay
             }
 
             // Loose translations override the built-in defaults, including individual edits.
-            var folder = Path.Combine(getAppDirectory(), "Locales");
+            var folder = customLocales.Contains(locale, StringComparer.OrdinalIgnoreCase)
+                ? customLocaleFolder : Path.Combine(getAppDirectory(), "Locales");
             try
             {
                 if (!Directory.Exists(folder)) return;

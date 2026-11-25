@@ -573,6 +573,7 @@ Str_AnimateCharacterCardNumbers=Character card
 Str_RefreshRate=Refresh Rate (ms):
 Str_Fonts=Fonts
 Str_Other=Other
+Str_RadarScale=Radar scale
 Str_UseShiftClick=Use Shift Click
 Str_UseShiftClickTooltip=Use Shift Right-Click instead of Right Click
 Str_DebugMode=Debug Mode

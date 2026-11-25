@@ -351,3 +351,7 @@ TwitchIntegration/Extension/*.zip
 
 # A filled-in relay .env holds three Twitch secrets - never commit one.
 TwitchIntegration/Relay/docker/.env
+
+# The local radar configuration can contain a Twitch control key.
+/config.cfg
+/CHANGELOG.md

@@ -43,6 +43,18 @@ namespace BGOverlay
         internal static string DisplayName(string value) =>
             string.IsNullOrWhiteSpace(value) || value == "-1" || value == "<NO IDEA>" ? null : value;
 
+        private static string StripNameColor(string name)
+        {
+            const int prefixLength = 11; // ^0x followed by eight hexadecimal digits.
+            if (name.Length < prefixLength || !name.StartsWith("^0x", StringComparison.OrdinalIgnoreCase))
+                return name;
+            for (int i = 3; i < prefixLength; i++)
+                if (!Uri.IsHexDigit(name[i])) return name;
+
+            int suffixLength = name.EndsWith("^-", StringComparison.Ordinal) ? 2 : 0;
+            return name.Substring(prefixLength, name.Length - prefixLength - suffixLength);
+        }
+
         public int tag { get; set; }
         public List<CGameEffect> TimedEffects { get; private set; }
         public List<Tuple<string, Bitmap, uint>> SpellProtection { get; private set; }
@@ -122,39 +134,112 @@ namespace BGOverlay
             }
         }
 
-        /// <summary>
-        /// Returns a string representation of a CLASS enum value.
-        /// </summary>
+        private KIT EffectiveKit
+        {
+            get
+            {
+                if (Kit != KIT.NONE && Kit != KIT.TRUECLASS) return Kit;
+                return Reader?.Class == CLASS ? Reader.KitInformation : KIT.NONE;
+            }
+        }
+
+        private static string LocalizedClass(CLASS value)
+        {
+            if (RadarLocalization.TryGet($"Class_{value}", out var label)) return label;
+            string name = value.ToString();
+            return name[0] + name.Substring(1).ToLower().Replace('_', ' ');
+        }
+
         public string ClassString
         {
             get
             {
-                if (this.Kit != CREReader.KIT.NONE && this.Kit != CREReader.KIT.TRUECLASS)
-                {
-                    if (RadarLocalization.TryGet($"Kit_{this.Kit}", out var localizedKit))
-                        return localizedKit;
-                    return this.Kit.ToString().Replace('_', ' ');
-                }
-                if (this.Reader == null || this.CLASS != this.Reader.Class)
-                {
-                    if (RadarLocalization.TryGet($"Class_{this.CLASS}", out var localizedClass1))
-                        return localizedClass1;
-
-                    return this.CLASS.ToString()[0] + this.CLASS.ToString().ToLower().Substring(1).Replace('_', ' ');
-                }
-                if (this.Reader.KitInformation != CREReader.KIT.NONE
-                    && this.Reader.KitInformation != CREReader.KIT.TRUECLASS)
-                {
-                    if (RadarLocalization.TryGet($"Kit_{this.Reader.KitInformation}", out var localizedKit))
-                        return localizedKit;
-
-                    return this.Reader.KitInformation.ToString().Replace('_', ' ');
-                }
-                if (RadarLocalization.TryGet($"Class_{this.Reader.Class}", out var localizedClass2))
-                    return localizedClass2;
-
-                return this.Reader.Class.ToString()[0] + this.Reader.Class.ToString().ToLower().Substring(1).Replace('_', ' ');
+                var kit = EffectiveKit;
+                if (kit == KIT.NONE || kit == KIT.TRUECLASS) return LocalizedClass(CLASS);
+                return RadarLocalization.TryGet($"Kit_{kit}", out var label)
+                    ? label : kit.ToString().Replace('_', ' ');
             }
+        }
+
+        // CRE level slots follow the internal class order, also for dual-class characters.
+        private static readonly Dictionary<CLASS, CLASS[]> LevelClasses = new Dictionary<CLASS, CLASS[]>
+        {
+            { CLASS.FIGHTER_MAGE, new[] { CLASS.FIGHTER, CLASS.MAGE } },
+            { CLASS.FIGHTER_CLERIC, new[] { CLASS.FIGHTER, CLASS.CLERIC } },
+            { CLASS.FIGHTER_THIEF, new[] { CLASS.FIGHTER, CLASS.THIEF } },
+            { CLASS.FIGHTER_MAGE_THIEF, new[] { CLASS.FIGHTER, CLASS.MAGE, CLASS.THIEF } },
+            { CLASS.MAGE_THIEF, new[] { CLASS.MAGE, CLASS.THIEF } },
+            { CLASS.CLERIC_MAGE, new[] { CLASS.CLERIC, CLASS.MAGE } },
+            { CLASS.CLERIC_THIEF, new[] { CLASS.CLERIC, CLASS.THIEF } },
+            { CLASS.FIGHTER_DRUID, new[] { CLASS.FIGHTER, CLASS.DRUID } },
+            { CLASS.FIGHTER_MAGE_CLERIC, new[] { CLASS.FIGHTER, CLASS.MAGE, CLASS.CLERIC } },
+            { CLASS.CLERIC_RANGER, new[] { CLASS.CLERIC, CLASS.RANGER } }
+        };
+
+        // Only classes that can occupy a multiclass level slot are relevant here.
+        private static CLASS? MulticlassKitBase(KIT kit)
+        {
+            switch (kit)
+            {
+                case KIT.BARBARIAN:
+                case KIT.BERSERKER:
+                case KIT.WIZARDSLAYER:
+                case KIT.KENSAI:
+                case KIT.DWARVEN_DEFENDER:
+                case KIT.GRIZZLY_BEAR:
+                    return CLASS.FIGHTER;
+                case KIT.ABJURER:
+                case KIT.CONJURER:
+                case KIT.DIVINER:
+                case KIT.ENCHANTER:
+                case KIT.ILLUSIONIST:
+                case KIT.INVOKER:
+                case KIT.NECROMANCER:
+                case KIT.TRANSMUTER:
+                case KIT.WILDMAGE:
+                    return CLASS.MAGE;
+                case KIT.GODTALOS:
+                case KIT.GODHELM:
+                case KIT.GODLATHANDER:
+                case KIT.OHTYR:
+                    return CLASS.CLERIC;
+                case KIT.ARCHER:
+                case KIT.STALKER:
+                case KIT.BEASTMASTER:
+                    return CLASS.RANGER;
+                case KIT.ASSASIN:
+                case KIT.BOUNTYHUNTER:
+                case KIT.SWASHBUCKLER:
+                case KIT.SHADOWDANCER:
+                    return CLASS.THIEF;
+                case KIT.TOTEMIC:
+                case KIT.SHAPESHIFTER:
+                case KIT.AVENGER:
+                    return CLASS.DRUID;
+                default:
+                    return null;
+            }
+        }
+
+        public (string Classes, string Levels) GetCardClassLevels()
+        {
+            var stats = DerivedStatsTemp;
+            if (!LevelClasses.TryGetValue(CLASS, out var classes))
+                return (ClassString, stats.Level);
+
+            var levels = new[] { stats.Level1, stats.Level2, stats.Level3 };
+            var specializedClass = MulticlassKitBase(EffectiveKit);
+            var names = new List<string>();
+            var values = new List<short>();
+            for (int i = 0; i < classes.Length; i++)
+            {
+                if (levels[i] <= 0) continue;
+                names.Add(classes[i] == specializedClass ? ClassString : LocalizedClass(classes[i]));
+                values.Add(levels[i]);
+            }
+            if (names.Count == 0) return (ClassString, stats.Level);
+
+            return (string.Join("/", names), string.Join("/", values));
         }
 
         private List<object> _protectionsCache;
@@ -261,7 +346,7 @@ namespace BGOverlay
                             spellName = splReader.Name1;
                             spellName = spellName == "-1" ? item.Resource : spellName;
                         }
-                        var icon = splReader?.IconBAM != null ? resourceManager.GetBAMReader(splReader.IconBAM)?.Image : null;
+                        var icon = resourceManager.GetSpellImmunityIcon(splReader);
                         spellStrings.Add(new SpellIconEntry { Name = preprocess(spellName), Icon = icon });
                         continue;
                     }
@@ -596,7 +681,7 @@ namespace BGOverlay
                 this.MousePosY1            = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x60 + 0x4 }));
                 this.ViewportHeight        = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0xC }));
                 this.ViewportWidth         = WinAPIBindings.ReadInt32(WinAPIBindings.FindDMAAddy(cGameAreaPtr, new int[] { 0x5C8 + 0x78 + 0x8 }));
-                this.Name2                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(IntPtr.Add(entityBase, 0x3928), 0x0), 64);
+                this.Name2                 = StripNameColor(WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(IntPtr.Add(entityBase, 0x3928), 0x0), 64));
                 this.Name1                 = WinAPIBindings.ReadString(WinAPIBindings.FindDMAAddy(IntPtr.Add(entityBase, 0x30), 0x0), 8);
                 this.CurrentHP             = BitConverter.ToInt16(window, OffCurrentHP);
                 this.timedEffectsPointer   = IntPtr.Add(entityBase, 0x4A00);

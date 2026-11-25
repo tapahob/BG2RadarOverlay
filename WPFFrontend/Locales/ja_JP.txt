@@ -527,6 +527,7 @@ Str_AnimateCharacterCardNumbers=キャラクターシート
 Str_RefreshRate=更新頻度 (ms):
 Str_Fonts=フォント
 Str_Other=その他
+Str_RadarScale=レーダーの表示倍率
 Str_UseShiftClick=Shift+クリックを使用
 Str_UseShiftClickTooltip=右クリックの代わりにShift+右クリックを使用
 Str_DebugMode=デバッグモード

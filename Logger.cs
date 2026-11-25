@@ -2,7 +2,7 @@
 using NLog.Targets;
 using NLog.Targets.Wrappers;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 
 namespace BGOverlay
@@ -10,20 +10,25 @@ namespace BGOverlay
     public static class Logger
     {
         private static NLog.Logger logger;
-        private static readonly Dictionary<string, string> errorCache = new Dictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, string> errorCache = new ConcurrentDictionary<string, string>();
 
         public static void Init()
         {
-            logger = LogManager.GetCurrentClassLogger();
+            if (logger != null) return;
             
             var config = new NLog.Config.LoggingConfiguration();
             
-            using (var logfile = new FileTarget("logfile") { FileName = Path.Combine(Directory.GetCurrentDirectory(), "radar.log").ToString(), DeleteOldFileOnStartup = true, Layout = "${longdate} [${level:uppercase=true}] ${message:withexception=true}" })
-            {
-                config.AddRule(LogLevel.Debug, LogLevel.Fatal, new AsyncTargetWrapper(logfile));
-            }
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BG2RadarOverlay");
+            var logfile = new FileTarget("logfile") {
+                FileName = Path.Combine(folder, "radar.log"), ArchiveOldFileOnStartup = true,
+                ArchiveAboveSize = 8 * 1024 * 1024, MaxArchiveFiles = 2,
+                Layout = "${longdate} [${level:uppercase=true}] ${message} ${exception:format=tostring}"
+            };
+            config.AddRule(LogLevel.Debug, LogLevel.Fatal, new AsyncTargetWrapper(logfile));
 
             LogManager.Configuration = config;
+            logger = LogManager.GetCurrentClassLogger();
+            logger.Info($"Radar {Configuration.Version} started; OS={Environment.OSVersion}, 64-bit={Environment.Is64BitProcess}");
         }
 
         public static void Info(string msg, params object[] args)
@@ -38,9 +43,9 @@ namespace BGOverlay
 
         public static void Error(string msg, Exception ex = null)
         {
-            if (ex != null && !errorCache.ContainsKey(ex.Message + ex.StackTrace)) 
+            if (ex == null) logger.Error(msg);
+            else if (errorCache.TryAdd(ex.Message + ex.StackTrace, msg))
             {
-                errorCache[ex.Message + ex.StackTrace] = msg;
                 logger.Error(ex, msg);
             }                
         }

@@ -570,6 +570,7 @@ Str_AnimateCharacterCardNumbers=В карточке персонажа
 Str_RefreshRate=Частота обновления (мс):
 Str_Fonts=Шрифты
 Str_Other=Другое
+Str_RadarScale=Масштаб радара
 Str_UseShiftClick=Использовать Shift+клик
 Str_UseShiftClickTooltip=Использовать Shift + ПКМ вместо ПКМ
 Str_DebugMode=Режим отладки

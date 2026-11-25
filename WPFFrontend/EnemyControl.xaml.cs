@@ -26,6 +26,7 @@ namespace WPFFrontend
         public EnemyControl(BGEntity bgEntity, MainWindow mainWindow)
         {
             InitializeComponent();
+            CardContent.LayoutTransform = mainWindow.RadarPanelScale;
             init(bgEntity, mainWindow);
         }
 
@@ -221,7 +222,9 @@ namespace WPFFrontend
 
             // Multiclass level is a composite string (e.g. "9/9/12"), not one number - can't
             // roll-down animate that, so it stays a plain Label.
-            this.Level.Content     = F("Str_Level", item.DerivedStatsTemp.Level);
+            var classLevels = item.GetCardClassLevels();
+            this.Level.Content     = F("Str_Level", classLevels.Levels);
+            this.ClassesAndLevels.Content = classLevels.Classes;
             this.Race.Content      = F("Str_Race", item.Race);
 
             // Only the base score animates - the "/exceptional" percentile (e.g. 18/76), when
@@ -321,6 +324,7 @@ namespace WPFFrontend
                         BuffName = name,
                         Icon = (BitmapSource)converter.Convert(bitmap, typeof(BitmapSource), null, null) ?? emptyBuffIcon
                     };
+                    ((ToolTip)control.ToolTip).LayoutTransform = mainWindow.RadarPanelScale;
                     BuffStack.Children.Add(control);
                     buffs.Add(name, control);
                 }
@@ -328,10 +332,7 @@ namespace WPFFrontend
                 {
                     control.Invalidate();
                 }
-                control.BuffDurationAbsolute = expires;
-                control.BuffDuration = expires is 0 or uint.MaxValue
-                    ? float.MaxValue : (expires - item.GameTime) / 90 / 10f;
-                control.UpdateTooltip(item.GameTime);
+                control.UpdateDuration(expires, item.GameTime);
             }
             BuffStack.Visibility = buffs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         }

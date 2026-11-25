@@ -7,6 +7,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <StartupObject>WPFFrontend.App.EntryPoint</StartupObject>
     <AssemblyName>BG Radar Overlay</AssemblyName>
+    <DefineConstants Condition="'$(PublishSingleFile)' == 'true' and '$(Configuration)' == 'Release'">$(DefineConstants);RADAR_AUTOUPDATE</DefineConstants>
     <ApplicationIcon>ic.ico</ApplicationIcon>
     <PlatformTarget>X64</PlatformTarget>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -82,15 +83,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="Exists('..\bin\NativeRadar\BG2Radar.asi')">
-    <Content Include="..\bin\NativeRadar\BG2Radar.asi;..\bin\NativeRadar\*.txt;..\bin\NativeRadar\*.md;..\EEexMod\M_RDRCRT.lua;..\bin\NativeRadar\winmm*.dll">
+    <RadarPayload Include="..\bin\NativeRadar\BG2Radar.asi;..\bin\NativeRadar\winmm*.dll" Link="GameFiles\%(Filename)%(Extension)" />
+    <RadarPayload Include="..\bin\NativeRadar\*LICENSE*.txt" Link="GameFiles\license\%(Filename)%(Extension)" />
+    <RadarPayload Include="..\EEexMod\M_RDRCRT.lua;..\EEexMod\M_RDRFT.lua;..\EEexMod\RDRFEATS.menu" Link="GameFiles\override\%(Filename)%(Extension)" />
+    <Content Include="@(RadarPayload)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>GameFiles\%(Filename)%(Extension)</Link>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-    <Content Include="..\EEexMod\M_RDRFT.lua;..\EEexMod\RDRFEATS.menu">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>GameFiles\override\%(Filename)%(Extension)</Link>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>

@@ -78,7 +78,8 @@ namespace BGOverlay.NativeStructs
                 var spell = resourceManager.GetSPLReader(filename);
                 name = spell?.Name1;
                 if (string.IsNullOrWhiteSpace(name) || name == "-1") return null;
-                Icon = resourceManager.GetBAMReader(spell.IconBAM)?.Image;
+                Icon = buffs ? resourceManager.GetBAMReader(spell.IconBAM)?.Image
+                             : resourceManager.GetSpellImmunityIcon(spell);
             }
             if (Configuration.DebugMode) name += " " + filename;
             return Tuple.Create(name, Icon, DurationType == 1 ? uint.MaxValue : Duration);

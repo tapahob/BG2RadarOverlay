@@ -135,12 +135,13 @@ internal static class FloatingText
         {
             double t = Math.Clamp(age / Lifetime, 0, 1);
             if (t <= 0 || t >= 1) return;
-            var offset = OffsetAt(age);
+            double radarZoom = Configuration.RadarScalePercent / 100.0;
+            var offset = OffsetAt(age) * radarZoom;
             double fadeOut = kind is DamageKind.Backstab or DamageKind.BackstabCritical or DamageKind.WeaponIneffective ? .27 : .47;
             double fade = Math.Min(1, t / .08) * Math.Clamp((1 - t) / fadeOut, 0, 1);
             double growth = kind is DamageKind.Normal or DamageKind.Miss ? .12 : .15;
             double sizeFactor = kind is DamageKind.BackstabCritical or DamageKind.WeaponIneffective ? 1.15 : 1;
-            double scale = sizeFactor * UserScale * (1 + growth * Ease(t, Configuration.CombatTextEasing));
+            double scale = sizeFactor * radarZoom * UserScale * (1 + growth * Ease(t, Configuration.CombatTextEasing));
             dc.PushOpacity(fade);
             dc.PushTransform(new TranslateTransform(viewport.X + Anchor.X * viewport.Width + offset.X,
                 viewport.Y + Anchor.Y * viewport.Height + offset.Y));

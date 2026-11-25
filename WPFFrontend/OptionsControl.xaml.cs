@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -54,6 +55,8 @@ namespace WPFFrontend
         private void OptionTooltip_Opening(object sender, System.Windows.Controls.ToolTipEventArgs e)
         {
             if (WindowCloseRequested != null) e.Handled = true;
+            else if (sender is FrameworkElement { ToolTip: System.Windows.Controls.ToolTip tooltip })
+                tooltip.LayoutTransform = LayoutTransform;
         }
 
         internal void UpdateGameTooltip(Point? screenPointer)
@@ -65,14 +68,14 @@ namespace WPFFrontend
                 var element = viewport.Contains(position) ? InputHitTest(position) as Visual : null;
                 while (element != null && element != this)
                 {
-                    if (element is FrameworkElement { IsEnabled: true, ToolTip: string content }
-                        && !string.IsNullOrWhiteSpace(content))
+                    if (element is FrameworkElement { IsEnabled: true, ToolTip: System.Windows.Controls.ToolTip } option
+                        && AutomationProperties.GetHelpText(option) is { Length: > 0 } content)
                     {
                         // This visual is displayed both in the Options HWND and in the game frame.
                         using var drawing = gameTooltipDrawing.Open();
                         drawing.DrawRectangle(Brushes.Transparent, null, viewport);
                         MiniBuffLayer.DrawTooltip(drawing, viewport, position, content,
-                            VisualTreeHelper.GetDpi(this).PixelsPerDip, abovePointer: true);
+                            VisualTreeHelper.GetDpi(this).PixelsPerDip * LayoutTransform.Value.M22, 1, abovePointer: true);
                         return;
                     }
                     element = VisualTreeHelper.GetParent(element) as Visual;
@@ -111,6 +114,10 @@ namespace WPFFrontend
             this.RefreshRate.TextChanged    += updateConfig;
             this.BigBuffIcons.Click         += updateConfig;
             this.CenterBuffIcons.Click      += updateConfig;
+            RadarZoom.Maximum = Configuration.MaxRadarScale;
+            RadarZoom.Minimum = Configuration.MinRadarScale;
+            RadarZoom.Value = Configuration.RadarScalePercent;
+            RadarZoom.ValueChanged += updateConfig;
             this.BuffInkFilter.Click        += updateConfig;
             this.AnimateEnemyListNumbers.Click += updateConfig;
             this.AnimateCharacterCardNumbers.Click += updateConfig;
@@ -461,14 +468,14 @@ namespace WPFFrontend
             ThicknessAnimation anim = new ThicknessAnimation();
             anim.From               = this.Margin;
             var newMargin           = this.Margin;
-            newMargin.Top           = -this.ActualHeight;
+            newMargin.Top           = -LayoutTransform.TransformBounds(new Rect(RenderSize)).Height;
             anim.To                 = newMargin;
             anim.EasingFunction     = new BackEase() { Amplitude = .3, EasingMode = EasingMode.EaseIn };
             anim.Duration           = TimeSpan.FromSeconds(.45);
             anim.Completed         += (o, e) => 
             {
                 this.hidden = true;
-                this.Margin = new Thickness(0, -this.ActualHeight, 0, 0);
+                this.Margin = new Thickness(0, -LayoutTransform.TransformBounds(new Rect(RenderSize)).Height, 0, 0);
             };
             anim.FillBehavior = FillBehavior.HoldEnd;
             this.BeginAnimation(UserControl.MarginProperty, anim, HandoffBehavior.SnapshotAndReplace);
@@ -553,6 +560,7 @@ namespace WPFFrontend
                 Configuration.RefreshTimeMS   = refreshMs;
             Configuration.BigBuffIcons        = (bool)this.BigBuffIcons.IsChecked;
             Configuration.CenterBuffIcons     = this.CenterBuffIcons.IsChecked == true;
+            Configuration.RadarScalePercent   = (int)RadarZoom.Value;
             Configuration.BuffInkFilter       = this.BuffInkFilter.IsChecked == true;
             Configuration.AnimateEnemyListNumbers = this.AnimateEnemyListNumbers.IsChecked == true;
             Configuration.AnimateCharacterCardNumbers = this.AnimateCharacterCardNumbers.IsChecked == true;
@@ -928,6 +936,7 @@ namespace WPFFrontend
                 this.RefreshRate.Text               = Configuration.RefreshTimeMS.ToString();
                 this.BigBuffIcons.IsChecked         = Configuration.BigBuffIcons;
                 this.CenterBuffIcons.IsChecked      = Configuration.CenterBuffIcons;
+                RadarZoom.Value = Configuration.RadarScalePercent;
                 this.BuffInkFilter.IsChecked        = Configuration.BuffInkFilter;
                 this.AnimateEnemyListNumbers.IsChecked = Configuration.AnimateEnemyListNumbers;
                 this.AnimateCharacterCardNumbers.IsChecked = Configuration.AnimateCharacterCardNumbers;
@@ -977,7 +986,7 @@ namespace WPFFrontend
                 return;
             }
             
-            this.Margin = new Thickness(0, -this.ActualHeight, 0, 0);
+            this.Margin = new Thickness(0, -LayoutTransform.TransformBounds(new Rect(RenderSize)).Height, 0, 0);
             this.Visibility         = System.Windows.Visibility.Visible;            
             ThicknessAnimation anim = new ThicknessAnimation();
             var margin1             = this.Margin;

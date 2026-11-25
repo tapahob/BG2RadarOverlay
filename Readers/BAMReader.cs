@@ -175,8 +175,6 @@ namespace BGOverlay.Readers
                     palette.Add(paletteEntry);
                 }
 
-                palette[rleColourIndex] = new RGBA { Red = 0, Green = 0, Blue = 0, Alpha = 255 };
-
                 br.BaseStream.Seek(originalOffset + frameLookupTableOffset, SeekOrigin.Begin);
                 for (int i = 0; i < frameLookupTableCount; i++)
                 {
@@ -265,7 +263,7 @@ namespace BGOverlay.Readers
                             xdata[cnt] = data[(y * frameEntries[i].Width) + x].Blue;
                             xdata[cnt + 1] = data[(y * frameEntries[i].Width) + x].Green;
                             xdata[cnt + 2] = data[(y * frameEntries[i].Width) + x].Red;
-                            bool transparentPixel = (IsFeatAtlas || FileName == "CURSORS.BAM") && pixels[cnt / 4] == rleColourIndex;
+                            bool transparentPixel = pixels[cnt / 4] == rleColourIndex;
                             xdata[cnt + 3] = transparentPixel ? (byte)0 : alpha == 0 ? (byte)255 : alpha;
                             cnt += 4;
                         }
@@ -275,7 +273,6 @@ namespace BGOverlay.Readers
                     var bits = img.LockBits(new Rectangle(0, 0, img.Width, img.Height), ImageLockMode.WriteOnly, img.PixelFormat);
                     try { Marshal.Copy(xdata, 0, bits.Scan0, xdata.Length); }
                     finally { img.UnlockBits(bits); }
-                    if (!IsFeatAtlas && FileName != "CURSORS.BAM") img.MakeTransparent();
                     frames.Add(img);
                 }
 
