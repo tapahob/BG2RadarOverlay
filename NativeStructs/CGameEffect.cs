@@ -108,6 +108,8 @@ namespace BGOverlay.NativeStructs
             }
 
             name = BGEntity.DisplayName(name);
+            if (name == null && Icon == null) return null;
+
             var label = name ?? "<NO IDEA>";
             if (Configuration.DebugMode && filename != null) label += " " + filename;
             // Known aliases share a label. Missing labels must never merge unrelated effects.

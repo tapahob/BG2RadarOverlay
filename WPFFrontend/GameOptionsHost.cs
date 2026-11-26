@@ -94,6 +94,14 @@ namespace WPFFrontend
 
         private IntPtr optionsWindowMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
+            // Deliver the click to the detached panel while the fullscreen game stays active.
+            const int wmMouseActivate = 0x0021, maNoActivate = 3;
+            if (_detachedOptions && message == wmMouseActivate)
+            {
+                handled = true;
+                return new IntPtr(maNoActivate);
+            }
+
             // DefWindowProc asks the parent to choose the cursor first. BG2 would
             // install its world cursor before WPF gets each mouse-move notification.
             const int wmSetCursor = 0x0020, htClient = 1;
