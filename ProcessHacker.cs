@@ -128,6 +128,7 @@ namespace BGOverlay
                 Proc.Refresh();
                 makeBorderless(Proc.MainWindowHandle);
             }
+            Configuration.UpdateTaskbarFullscreen();
 
             var staticEntityList26= moduleBase + 0x68D438 + 0x18; // 2.6 entity array
             IntPtr staticEntityList27 = moduleBase + (gameName == "baldur" ? 0x68F910 : 0x695910); // 2.7 entity array

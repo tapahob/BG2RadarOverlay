@@ -110,6 +110,7 @@ Str_ResCrushing=Rés. Contondant : {0}
 Str_ResPiercing=Rés. Perforant : {0}
 Str_ResMissile=Rés. aux Projectiles : {0}
 Str_Pockets=Poches
+Str_ShowPockets=Afficher les poches
 Str_ItemIdentified=Identifié
 Str_ItemStealable=Volable
 Str_ItemUnstealable=Non volable
@@ -869,6 +870,7 @@ Str_NativeLinkOccupied=Un fichier existe déjà à l’emplacement {0}. Déplace
 Str_NativeGameMissing=Jeu introuvable dans {0}.
 Str_NativeLoaderConflict=Un autre fichier winmm.dll est déjà installé dans {0}. Vérifiez la compatibilité du chargeur.
 Str_ShowCastingSpell=Afficher le nom des sorts au-dessus des lanceurs
+Str_HideEnemyCastingSpells=Masquer le nom des sorts au-dessus des ennemis
 
 Str_NativeProgressDetected=Installation du jeu détectée : {0}
 Str_NativeProgressInjector=Installation de l’injecteur de Radar

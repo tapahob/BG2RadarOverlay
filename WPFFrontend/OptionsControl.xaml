@@ -119,7 +119,7 @@
                         <RowDefinition Height="50"/>
                         <RowDefinition Height="100"/>
                         <RowDefinition Height="15"/>
-                        <RowDefinition Height="145"/>
+                        <RowDefinition Height="Auto" MinHeight="145"/>
                         <RowDefinition Height="15"/>
                         <RowDefinition Height="30"/>
                         <RowDefinition Height="35"/>
@@ -178,6 +178,7 @@
                             <CheckBox x:Name="UseShiftClick" VerticalContentAlignment="Center" d:Content="Use Shift Click" Content="{DynamicResource Str_UseShiftClick}"
                                       AutomationProperties.HelpText="{DynamicResource Str_UseShiftClickTooltip}"
                                       ToolTip="{StaticResource OptionTooltip}" ToolTipOpening="OptionTooltip_Opening" FontFamily="Segoe Print" FontWeight="Bold"/>
+                            <CheckBox x:Name="ShowPockets" VerticalContentAlignment="Center" d:Content="Show pockets" Content="{DynamicResource Str_ShowPockets}" FontFamily="Segoe Print" FontWeight="Bold"/>
                             <CheckBox x:Name="DebugMode" VerticalContentAlignment="Center" d:Content="Debug Mode" Content="{DynamicResource Str_DebugMode}" FontFamily="Segoe Print" FontWeight="Bold"/>
                             <DockPanel Margin="0,2">
                                 <Label Content="{DynamicResource Str_RadarScale}" Target="{Binding ElementName=RadarZoom}" Style="{StaticResource BoldSmall}"/>
@@ -204,7 +205,7 @@
                         <ResourceDictionary Source="TwitchOptionsTheme.xaml"/>
                     </Grid.Resources>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="50"/></Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <CheckBox x:Name="ShowCombatText" Grid.ColumnSpan="3" Margin="0,0,0,6" Content="{DynamicResource Str_ShowCombatText}"/>
                     <Label Grid.Row="1" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatScale}"/>
                     <Slider x:Name="CombatScale" Grid.Row="1" Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Minimum="1" Maximum="150" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" IsMoveToPointEnabled="True" AutomationProperties.Name="{DynamicResource Str_CombatScale}"/>
@@ -220,7 +221,8 @@
                     <Label Grid.Row="5" Style="{StaticResource BoldSmall}" VerticalAlignment="Center" Content="{DynamicResource Str_CombatEasing}"/>
                     <ComboBox x:Name="CombatEasingPicker" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" Margin="8,4,0,4" AutomationProperties.Name="{DynamicResource Str_CombatEasing}"/>
                     <CheckBox x:Name="ShowCastingSpell" Grid.Row="6" Grid.ColumnSpan="3" Margin="0,8,0,0" Content="{DynamicResource Str_ShowCastingSpell}"/>
-                    <Button Grid.Row="7" Grid.ColumnSpan="3" Content="{DynamicResource Str_Save}" Click="Save_Click" Margin="0,12,0,0" Padding="4"/>
+                    <CheckBox x:Name="HideEnemyCastingSpells" Grid.Row="7" Grid.ColumnSpan="3" Margin="16,4,0,0" IsEnabled="{Binding IsChecked, ElementName=ShowCastingSpell}" Content="{DynamicResource Str_HideEnemyCastingSpells}"/>
+                    <Button Grid.Row="8" Grid.ColumnSpan="3" Content="{DynamicResource Str_Save}" Click="Save_Click" Margin="0,12,0,0" Padding="4"/>
                 </Grid>
             </TabItem>
             <TabItem Tag="{StaticResource TwitchGlyph}" d:Header="Twitch Integration" Header="{DynamicResource Str_TabTwitchIntegration}">

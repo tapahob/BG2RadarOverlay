@@ -41,7 +41,7 @@ namespace BGOverlay
         }
 
         internal static string DisplayName(string value) =>
-            string.IsNullOrWhiteSpace(value) || value == "-1" || value == "<NO IDEA>" ? null : value;
+            string.IsNullOrWhiteSpace(value) || value == "-1" || value == "<NO IDEA>" || value == "<NO TEXT>" ? null : value;
 
         private static string StripNameColor(string name)
         {
@@ -57,7 +57,7 @@ namespace BGOverlay
 
         public int tag { get; set; }
         public List<CGameEffect> TimedEffects { get; private set; }
-        public List<Tuple<string, Bitmap, uint>> SpellProtection { get; private set; }
+        public List<(string Key, string Name, Bitmap Icon, uint Expires)> SpellProtection { get; private set; }
         public bool Loaded { get; private set; }
 
         /// <summary>
@@ -597,7 +597,7 @@ namespace BGOverlay
             this.entityIdPtr     = entityIdPtr;
             this.resourceManager = resourceManager;
             this.Loaded          = false;
-            this.SpellProtection = new List<Tuple<string, Bitmap, uint>>();
+            this.SpellProtection = new List<(string, string, Bitmap, uint)>();
             try
             {
                 // Most of the scanned slot range is not the entity array at all, so most calls
@@ -718,7 +718,7 @@ namespace BGOverlay
         {
             this.entityIdPtr     = template.entityIdPtr;
             this.resourceManager = template.resourceManager;
-            this.SpellProtection = new List<Tuple<string, Bitmap, uint>>();
+            this.SpellProtection = new List<(string, string, Bitmap, uint)>();
             this.Loaded          = false;
 
             this.Id                    = template.Id;
@@ -1187,13 +1187,13 @@ namespace BGOverlay
             this.TimedEffects = this.TimedEffects.Where(x => !x.ToString().StartsWith("Graphics")
                 && !x.ToString().StartsWith("Script")                
                 && !x.ToString().EndsWith("Sound_Effect")
-                && x.SourceRes != "CDHLYSY2"
-                && x.SourceRes != "<ERROR>").ToList();
+                && x.SourceRes != "CDHLYSY2").ToList();
 
-            this.SpellProtection = TimedEffects.Select(x => x.getSpellName(resourceManager, true))
-                .Where(x => x != null && x.Item1 != null && !x.Item1.StartsWith("Extra"))
-                .GroupBy(x => x.Item1)
-                .Select(group => group.OrderByDescending(x => x.Item3).First()).ToList();
+            this.SpellProtection = TimedEffects.Select(x => x.ReadBuff(resourceManager))
+                .Where(x => x.HasValue && !x.Value.Name.StartsWith("Extra"))
+                .Select(x => x.Value)
+                .GroupBy(buff => buff.Key)
+                .Select(group => group.OrderByDescending(buff => buff.Expires == 0 ? uint.MaxValue : buff.Expires).First()).ToList();
         }
 
         public override string ToString()

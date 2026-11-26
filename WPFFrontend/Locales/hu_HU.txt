@@ -110,6 +110,7 @@ Str_ResCrushing=Zúzó ellenállás: {0}
 Str_ResPiercing=Szúró ellenállás: {0}
 Str_ResMissile=Lövedék ellenállás: {0}
 Str_Pockets=Zsebek
+Str_ShowPockets=Zsebek megjelenítése
 Str_ItemIdentified=Azonosítva
 Str_ItemStealable=Lopható
 Str_ItemUnstealable=Nem lopható
@@ -868,6 +869,7 @@ Str_NativeLinkOccupied=Ezen az útvonalon már van egy fájl: {0}. Helyezd át a
 Str_NativeGameMissing=A játék nem található ebben a mappában: {0}.
 Str_NativeLoaderConflict=Ebben a mappában már van egy másik winmm.dll fájl: {0}. Ellenőrizd a betöltő kompatibilitását.
 Str_ShowCastingSpell=Varázslatnevek megjelenítése a varázslók felett
+Str_HideEnemyCastingSpells=Varázslatnevek elrejtése az ellenségek felett
 
 Str_NativeProgressDetected=A játék telepítése észlelve: {0}
 Str_NativeProgressInjector=A Radar injektor telepítése

@@ -110,6 +110,7 @@ Str_ResCrushing=Ezici Hasara Direnç: {0}
 Str_ResPiercing=Delici Hasara Direnç: {0}
 Str_ResMissile=Mermiye Direnç: {0}
 Str_Pockets=Cepler
+Str_ShowPockets=Cepleri göster
 Str_ItemIdentified=Tanımlandı
 Str_ItemStealable=Çalınabilir
 Str_ItemUnstealable=Çalınamaz
@@ -868,6 +869,7 @@ Str_NativeLinkOccupied=Bu konumda zaten bir dosya var: {0}. Bağlantıyı oluşt
 Str_NativeGameMissing=Oyun şu klasörde bulunamadı: {0}.
 Str_NativeLoaderConflict=Bu klasörde zaten farklı bir winmm.dll dosyası var: {0}. Yükleyicinin uyumluluğunu kontrol edin.
 Str_ShowCastingSpell=Büyü adlarını büyüyü yapanların üzerinde göster
+Str_HideEnemyCastingSpells=Düşmanların üzerindeki büyü adlarını gizle
 
 Str_NativeProgressDetected=Oyun kurulumu bulundu: {0}
 Str_NativeProgressInjector=Radar enjektörünü yükleme

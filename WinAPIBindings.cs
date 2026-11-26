@@ -8,6 +8,33 @@ namespace WinApiBindings
 {
     public static class WinAPIBindings
     {
+        [ComImport, Guid("56FDF344-FD6D-11D0-958A-006097C9A090")]
+        private class TaskbarList { }
+
+        [ComImport, Guid("602D4995-B13A-429B-A66E-1935E44F4317"),
+            InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface ITaskbarList2
+        {
+            // The five ITaskbarList methods precede MarkFullscreenWindow in the vtable.
+            void HrInit();
+            void AddTab(IntPtr hwnd);
+            void DeleteTab(IntPtr hwnd);
+            void ActivateTab(IntPtr hwnd);
+            void SetActiveAlt(IntPtr hwnd);
+            void MarkFullscreenWindow(IntPtr hwnd, [MarshalAs(UnmanagedType.Bool)] bool fullscreen);
+        }
+
+        internal static void MarkTaskbarFullscreen(IntPtr hwnd, bool fullscreen)
+        {
+            var taskbar = (ITaskbarList2)new TaskbarList();
+            try
+            {
+                taskbar.HrInit();
+                taskbar.MarkFullscreenWindow(hwnd, fullscreen);
+            }
+            finally { Marshal.ReleaseComObject(taskbar); }
+        }
+
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr OpenProcess(ProcessAccessFlags processAccess, bool bInheritHandle, int processId);
 

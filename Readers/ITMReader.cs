@@ -72,8 +72,8 @@ namespace BGOverlay
                     this.GeneralName = text?.Text;
                     var identifiedStrRef = reader.ReadInt32();
                     resourceManager.StringRefs.TryGetValue(identifiedStrRef, out text);
-                    resolvedName = BGEntity.DisplayName(text?.Text) ?? BGEntity.DisplayName(GeneralName);
-                    this.IdentifiedName = resolvedName ?? itmFilename;
+                    ResolvedName = BGEntity.DisplayName(text?.Text) ?? BGEntity.DisplayName(GeneralName);
+                    this.IdentifiedName = ResolvedName ?? itmFilename;
                     var trash = new string(reader.ReadChars(8));
                     this.Flags = reader.ReadInt32();
                     this.ItemType = reader.ReadUInt16();
@@ -215,8 +215,12 @@ namespace BGOverlay
         public string Version { get; private set; }
         public string GeneralName { get; private set; }
         public string IdentifiedName { get; private set; }
-        private readonly string resolvedName;
-        public string WeaponName => resolvedName ?? RadarLocalization.Get("Str_WeaponAttack");
+        internal string ResolvedName { get; }
+        public string WeaponName => ResolvedName ?? RadarLocalization.Get("Str_WeaponAttack");
+        public string WeaponNameWithEnchantment => WeaponName + EnchantmentSuffix(WeaponName, Enchantment);
+
+        internal static string EnchantmentSuffix(string weaponName, int enchantment) =>
+            weaponName.Contains($"+{enchantment}") ? "" : $" (Strikes as +{enchantment})";
 
         public List<ItemEffectEntry> Effects { get; }
         public int Enchantment { get; }

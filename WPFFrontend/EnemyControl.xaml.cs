@@ -93,7 +93,7 @@ namespace WPFFrontend
             WeaponEffects.Text = string.Join("\n", effects);
             WeaponEffects.FontSize = Math.Max(1, WeaponDescription.FontSize * 0.84);
             HitHeading.Text = RadarLocalization.Get("Hit_Heading");
-            var notes = bgEntity.HitEffectNotes;
+            var notes = Configuration.DebugMode ? bgEntity.HitEffectNotes : null;
             HitSection.ToolTip = string.IsNullOrEmpty(notes) ? null : notes;
             HitSection.Visibility = effects.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             Damage.Content = new WeaponDamageDisplay(reader.WeaponDamageType, bgEntity.DamageRange);
@@ -101,7 +101,7 @@ namespace WPFFrontend
             var offHand = bgEntity.OffHandWeapon;
             SecondaryWeaponDescription.Visibility = launcher.HasValue || offHand != null ? Visibility.Visible : Visibility.Collapsed;
             SecondaryWeaponIcon.DataContext = launcher.HasValue ? reader.EquippedWeaponIcon : offHand?.Icon;
-            SecondaryWeaponDescription.Text = launcher.HasValue ? weaponTitle : offHand?.WeaponName;
+            SecondaryWeaponDescription.Text = launcher.HasValue ? weaponTitle : offHand?.WeaponNameWithEnchantment;
             SecondaryWeaponDamage.Visibility = offHand != null ? Visibility.Visible : Visibility.Collapsed;
             SecondaryWeaponDamage.Content = offHand != null
                 ? new WeaponDamageDisplay(offHand.DamageType, bgEntity.OffHandDamageRange)
@@ -293,7 +293,7 @@ namespace WPFFrontend
                 }
                 protectionsPanel.Visibility = item.Protections.Count > 0 || featPanel.Visibility == Visibility.Visible
                     ? Visibility.Visible : Visibility.Collapsed;
-                pocketsSection.Visibility = item.Pockets.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                pocketsSection.Visibility = Configuration.ShowPockets && item.Pockets.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             } catch (Exception ex)
             {
                 Logger.Error("Enemy Control: Update View error!", ex);
@@ -305,28 +305,28 @@ namespace WPFFrontend
         {
             BuffStack.CenterRows = Configuration.CenterBuffIcons;
             var active = item.SpellProtection
-                .Where(effect => effect.Item3 == 0 || effect.Item3 >= item.GameTime)
-                .ToDictionary(effect => effect.Item1);
+                .Where(effect => effect.Expires == 0 || effect.Expires >= item.GameTime)
+                .ToDictionary(effect => effect.Key);
 
-            foreach (var name in buffs.Keys.Where(name => !active.ContainsKey(name)).ToArray())
+            foreach (var key in buffs.Keys.Where(key => !active.ContainsKey(key)).ToArray())
             {
-                BuffStack.Children.Remove(buffs[name]);
-                buffs.Remove(name);
+                BuffStack.Children.Remove(buffs[key]);
+                buffs.Remove(key);
             }
 
             var converter = (BitmapToImageSourceConverter)Resources["BitmapToImageSourceConverter"];
-            foreach (var (name, bitmap, expires) in active.Values)
+            foreach (var (key, name, bitmap, expires) in active.Values)
             {
-                if (!buffs.TryGetValue(name, out var control))
+                if (!buffs.TryGetValue(key, out var control))
                 {
                     control = new BuffControl
                     {
                         BuffName = name,
-                        Icon = (BitmapSource)converter.Convert(bitmap, typeof(BitmapSource), null, null) ?? emptyBuffIcon
+                        Icon = converter.BuffIcon(bitmap, emptyBuffIcon)
                     };
                     ((ToolTip)control.ToolTip).LayoutTransform = mainWindow.RadarPanelScale;
                     BuffStack.Children.Add(control);
-                    buffs.Add(name, control);
+                    buffs.Add(key, control);
                 }
                 else
                 {

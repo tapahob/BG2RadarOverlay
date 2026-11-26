@@ -44,6 +44,19 @@ namespace WPFFrontend
     /// </summary>
     public class BitmapToImageSourceConverter : IValueConverter
     {
+        internal BitmapSource BuffIcon(System.Drawing.Bitmap bitmap, BitmapSource fallback)
+        {
+            try
+            {
+                return (BitmapSource)Convert(bitmap, typeof(BitmapSource), null, null) ?? fallback;
+            }
+            catch (Exception ex)
+            {
+                BGOverlay.Logger.Error("Could not convert buff icon", ex);
+                return fallback;
+            }
+        }
+
         [DllImport("gdi32.dll")]
         private static extern bool DeleteObject(IntPtr hObject);
 

@@ -111,6 +111,7 @@ Str_ResCrushing=Resist Crushing: {0}
 Str_ResPiercing=Resist Piercing: {0}
 Str_ResMissile=Resist Missile: {0}
 Str_Pockets=Pockets
+Str_ShowPockets=Show pockets
 Str_ItemIdentified=Identified
 Str_ItemStealable=Stealable
 Str_ItemUnstealable=Unstealable
@@ -966,6 +967,7 @@ Str_NativeLoaderConflict=A different winmm.dll is already installed in {0}. Plea
 
 
 Str_ShowCastingSpell=Show spell names above casters
+Str_HideEnemyCastingSpells=Hide spell names above enemies
 Str_CombatScale=Scale
 Str_CombatSpeed=Speed
 Str_CombatPush=Push strength

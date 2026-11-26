@@ -36,8 +36,12 @@ public sealed class MiniBuffLayer : FrameworkElement
             nextSpellScan = now + 32;
             castingSpells.Clear();
             foreach (var entity in actors)
+            {
+                const byte hostileCutoff = 200; // EVILCUTOFF in EA.IDS.
+                if (Configuration.HideEnemyCastingSpells && entity.EnemyAlly >= hostileCutoff) continue;
                 if (entity.ReadCastingSpell(entity.GetCurrentSpriteAddress()) is { } spell)
                     castingSpells[entity.Id] = spell;
+            }
         }
         if (!Configuration.ShowCastingSpell) castingSpells.Clear();
         if (!showBuffs && castingSpells.Count == 0)
@@ -112,7 +116,7 @@ public sealed class MiniBuffLayer : FrameworkElement
         try
         {
             entity.loadTimedEffects();
-            var effects = entity.SpellProtection.Where(e => e.Item3 == 0 || e.Item3 >= entity.GameTime).ToArray();
+            var effects = entity.SpellProtection.Where(e => e.Expires == 0 || e.Expires >= entity.GameTime).ToArray();
             return ArrangeIcons(effects);
         }
         catch (Exception ex)
@@ -122,7 +126,7 @@ public sealed class MiniBuffLayer : FrameworkElement
         }
     }
 
-    private Bar ArrangeIcons(Tuple<string, Bitmap, uint>[] effects)
+    private Bar ArrangeIcons((string Key, string Name, Bitmap Icon, uint Expires)[] effects)
     {
         const int columns = 5, size = 18, gap = 2;
         int rows = (effects.Length + columns - 1) / columns;
@@ -137,10 +141,10 @@ public sealed class MiniBuffLayer : FrameworkElement
                 double left = -(count * (size + gap) - gap) / 2.0 + (i % columns) * (size + gap);
                 double top = -(rows - row) * (size + gap) + gap;
                 var bounds = new Rect(left, top, size, size);
-                var (name, bitmap, expires) = effects[i];
+                var (_, name, bitmap, expires) = effects[i];
                 entries[i] = new BuffIcon(bounds, name, expires);
                 var image = bitmap == null ? missingIcon : icons.GetValue(bitmap,
-                    b => (BitmapSource)converter.Convert(b, typeof(BitmapSource), null, null));
+                    b => converter.BuffIcon(b, missingIcon));
                 dc.DrawRoundedRectangle(Brushes.Wheat, null, bounds, 2, 2);
                 DrawIcon(dc, image, left + 1, top + 1, size - 2);
             }

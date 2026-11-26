@@ -110,6 +110,7 @@ Str_ResCrushing=Сопр. дробящему: {0}
 Str_ResPiercing=Сопр. колющему: {0}
 Str_ResMissile=Сопр. снарядам: {0}
 Str_Pockets=Карманы
+Str_ShowPockets=Показывать карманы
 Str_ItemIdentified=Опознан
 Str_ItemStealable=Можно украсть
 Str_ItemUnstealable=Нельзя украсть
@@ -963,6 +964,7 @@ Str_NativeLoaderConflict=В папке {0} уже установлен друг�
 
 
 Str_ShowCastingSpell=Показывать названия заклинаний над заклинателями
+Str_HideEnemyCastingSpells=Скрывать названия заклинаний над врагами
 Str_CombatScale=Масштаб
 Str_CombatSpeed=Скорость
 Str_CombatPush=Сила выталкивания

@@ -139,7 +139,7 @@ namespace BGOverlay
                 ITMReaderCache.Clear();
                 SPLReaderCache.Clear();
                 immunityIconsByName = null;
-                potionSources.Clear();
+                effectSourceItems.Clear();
             }
             return true;
         }
@@ -177,26 +177,25 @@ namespace BGOverlay
             return priestBuffParents.TryGetValue(source, out var parent) ? parent : source + ".SPL";
         }
 
-        private readonly Dictionary<string, ITMReader> potionSources =
+        private readonly Dictionary<string, ITMReader> effectSourceItems =
             new Dictionary<string, ITMReader>(StringComparer.OrdinalIgnoreCase);
 
-        internal ITMReader GetPotionSource(string filename)
+        internal ITMReader GetEffectSourceItem(string filename)
         {
             lock (localizedReadersGate)
             {
-                if (!potionSources.TryGetValue(filename, out var potion))
+                if (!effectSourceItems.TryGetValue(filename, out var item))
                 {
                     // Inventory lookups can match a shortened resref by suffix. An effect
                     // already carries the full resref, so require an exact resource here.
                     if (BIFResourceEntries.ContainsKey(filename.ToUpperInvariant()) ||
                         File.Exists(Path.Combine(Configuration.GameFolder, "override", filename)))
                     {
-                        var item = GetITMReader(filename);
-                        if (item?.ItemType == 9) potion = item; // POTION in ITEMCAT.IDS
+                        item = GetITMReader(filename);
                     }
-                    potionSources[filename] = potion;
+                    effectSourceItems[filename] = item;
                 }
-                return potion;
+                return item;
             }
         }
 

@@ -15,6 +15,7 @@ namespace BGOverlay.NativeStructs
         public string Res3 { get; private set; }
         public string SourceRes { get; }
         private readonly uint sourceType;
+        private readonly IntPtr address;
         public string ScriptName { get; }
         public int Done { get; private set; }
         public uint DurationTemp { get; private set; }
@@ -30,8 +31,8 @@ namespace BGOverlay.NativeStructs
 
         public CGameEffect(IntPtr addr)
         {
-            addr = WinAPIBindings.FindDMAAddy(addr, new int[] { 0x8 });
-            //addr += 4;
+            address = WinAPIBindings.ReadPointer(addr);
+            addr = address + 8;
             this.Version       = WinAPIBindings.ReadString(addr, 8);
             this.EffectId      = (Effect) WinAPIBindings.ReadUInt32(addr + 0x08);
             this.Res           = Encoding.UTF8.GetString(WinAPIBindings.ReadBytes(addr + 0x28, 8));
@@ -52,37 +53,69 @@ namespace BGOverlay.NativeStructs
             this.dWFlags       = WinAPIBindings.ReadUInt32(addr + 0x18);
         }
 
-        public Tuple<string, Bitmap, uint> getSpellName(ResourceManager resourceManager, bool buffs = false)
+        public Tuple<string, Bitmap, uint> getSpellName(ResourceManager resourceManager)
         {
-            var res = (buffs ? SourceRes : Res).TrimEnd('\0');
+            var res = Res.TrimEnd('\0');
             if (res.Length == 0 || res == "<ERROR>") return null;
+            var filename = res + ".SPL";
+            var spell = resourceManager.GetSPLReader(filename);
+            var name = spell?.Name1;
+            if (string.IsNullOrWhiteSpace(name) || name == "-1") return null;
+            Icon = resourceManager.GetSpellImmunityIcon(spell);
+            if (Configuration.DebugMode) name += " " + filename;
+            return Tuple.Create(name, Icon, DurationType == 1 ? uint.MaxValue : Duration);
+        }
 
-            string filename;
-            string name;
-            if (buffs && sourceType == 2) // EFF V2 item parent
+        internal (string Key, string Name, Bitmap Icon, uint Expires)? ReadBuff(ResourceManager resourceManager)
+        {
+            if (address == IntPtr.Zero) return null;
+            bool fromItem = sourceType == 2;
+            if (fromItem)
             {
                 // A healing potion can leave a short animation or a delayed sound after the heal.
                 uint timing = DurationType & 0xff;
                 if ((timing != 0 && timing != 10) || Duration == 0 ||
                     EffectId == Effect.Creature_RGB_color_fade || EffectId == Effect.Text_Display_String)
                     return null;
-                filename = res + ".ITM";
-                var item = resourceManager.GetPotionSource(filename);
-                if (item == null) return null;
-                name = item.IdentifiedName;
-                Icon = item.Icon;
             }
-            else
+
+            string filename = null;
+            string name = null;
+            try
             {
-                filename = buffs ? resourceManager.BuffSpellFilename(res) : res + ".SPL";
-                var spell = resourceManager.GetSPLReader(filename);
-                name = spell?.Name1;
-                if (string.IsNullOrWhiteSpace(name) || name == "-1") return null;
-                Icon = buffs ? resourceManager.GetBAMReader(spell.IconBAM)?.Image
-                             : resourceManager.GetSpellImmunityIcon(spell);
+                if (!string.IsNullOrWhiteSpace(SourceRes) && SourceRes != "<ERROR>")
+                {
+                    if (fromItem)
+                    {
+                        filename = SourceRes + ".ITM";
+                        var item = resourceManager.GetEffectSourceItem(filename);
+                        if (item != null && item.ItemType != 9) return null; // Only potions.
+                        name = item?.ResolvedName;
+                        Icon = item?.Icon;
+                    }
+                    else
+                    {
+                        filename = resourceManager.BuffSpellFilename(SourceRes);
+                        var spell = resourceManager.GetSPLReader(filename);
+                        name = BGEntity.DisplayName(spell?.Name1) ?? BGEntity.DisplayName(spell?.Name2);
+                        Icon = spell?.CastingIcon;
+                    }
+                }
             }
-            if (Configuration.DebugMode) name += " " + filename;
-            return Tuple.Create(name, Icon, DurationType == 1 ? uint.MaxValue : Duration);
+            catch (Exception ex)
+            {
+                Logger.Error($"Could not read buff resource {filename}", ex);
+            }
+
+            name = BGEntity.DisplayName(name);
+            var label = name ?? "<NO IDEA>";
+            if (Configuration.DebugMode && filename != null) label += " " + filename;
+            // Known aliases share a label. Missing labels must never merge unrelated effects.
+            string key;
+            if (name != null) key = "name:" + label;
+            else if (filename != null) key = "resource:" + filename.ToUpperInvariant();
+            else key = "effect:" + address;
+            return (key, label, Icon, DurationType == 1 ? uint.MaxValue : Duration);
         }
 
         public override string ToString()

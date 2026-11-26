@@ -110,6 +110,7 @@ Str_ResCrushing=Res. a Impacto: {0}
 Str_ResPiercing=Res. a Perfuração: {0}
 Str_ResMissile=Res. a Projéteis: {0}
 Str_Pockets=Bolsos
+Str_ShowPockets=Mostrar bolsos
 Str_ItemIdentified=Identificado
 Str_ItemStealable=Roubável
 Str_ItemUnstealable=Não roubável
@@ -869,6 +870,7 @@ Str_NativeLinkOccupied=Já existe um arquivo em {0}. Mova-o antes de criar o lin
 Str_NativeGameMissing=Não foi possível encontrar o jogo em {0}.
 Str_NativeLoaderConflict=Já existe outro arquivo winmm.dll instalado em {0}. Verifique a compatibilidade do carregador.
 Str_ShowCastingSpell=Mostrar o nome da magia sobre quem a conjura
+Str_HideEnemyCastingSpells=Ocultar os nomes das magias sobre os inimigos
 
 Str_NativeProgressDetected=Instalação do jogo detectada: {0}
 Str_NativeProgressInjector=Instalar o injetor do Radar

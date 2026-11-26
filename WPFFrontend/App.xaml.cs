@@ -117,6 +117,7 @@ namespace WPFFrontend
 
         protected override void OnExit(ExitEventArgs e)
         {
+            BGOverlay.Configuration.UpdateTaskbarFullscreen(exiting: true);
             LaunchGame?.Dispose();
             base.OnExit(e);
         }

@@ -110,6 +110,7 @@ Str_ResCrushing=Res. Contundente: {0}
 Str_ResPiercing=Res. Perforazione: {0}
 Str_ResMissile=Res. ai Proiettili: {0}
 Str_Pockets=Tasche
+Str_ShowPockets=Mostra tasche
 Str_ItemIdentified=Identificato
 Str_ItemStealable=Rubabile
 Str_ItemUnstealable=Non rubabile
@@ -869,6 +870,7 @@ Str_NativeLinkOccupied=Esiste già un file in {0}. Spostalo prima di creare il c
 Str_NativeGameMissing=Impossibile trovare il gioco in {0}.
 Str_NativeLoaderConflict=In {0} è già installato un altro file winmm.dll. Verifica la compatibilità del loader.
 Str_ShowCastingSpell=Mostra i nomi degli incantesimi sopra chi li lancia
+Str_HideEnemyCastingSpells=Nascondi i nomi degli incantesimi sopra i nemici
 
 Str_NativeProgressDetected=Rilevata un’installazione di {0}
 Str_NativeProgressInjector=Installazione del modulo di iniezione di Radar

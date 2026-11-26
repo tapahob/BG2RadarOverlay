@@ -111,6 +111,7 @@ Str_ResCrushing=钝击抗性：{0}
 Str_ResPiercing=穿刺抗性：{0}
 Str_ResMissile=远程抗性：{0}
 Str_Pockets=口袋
+Str_ShowPockets=显示口袋
 Str_ItemIdentified=已鉴定
 Str_ItemStealable=可偷窃
 Str_ItemUnstealable=不可偷窃
@@ -906,6 +907,7 @@ Str_NativeLinkOccupied={0} 已存在文件。请先移走该文件，再创建�
 Str_NativeGameMissing=在 {0} 中找不到游戏。
 Str_NativeLoaderConflict={0} 中已安装另一个 winmm.dll。请检查加载器的兼容性。
 Str_ShowCastingSpell=在施法者头顶显示法术名称
+Str_HideEnemyCastingSpells=隐藏敌人头顶的法术名称
 
 Str_NativeProgressDetected=检测到已安装的游戏：{0}
 Str_NativeProgressInjector=安装雷达注入器

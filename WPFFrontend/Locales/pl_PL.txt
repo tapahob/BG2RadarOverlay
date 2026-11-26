@@ -110,6 +110,7 @@ Str_ResCrushing=Odp. na obr. obuchowe: {0}
 Str_ResPiercing=Odp. na obr. kłute: {0}
 Str_ResMissile=Odp. na pociski: {0}
 Str_Pockets=Kieszenie
+Str_ShowPockets=Pokazuj kieszenie
 Str_ItemIdentified=Zidentyfikowany
 Str_ItemStealable=Można ukraść
 Str_ItemUnstealable=Nie można ukraść
@@ -868,6 +869,7 @@ Str_NativeLinkOccupied=Pod ścieżką {0} jest już plik. Przenieś go, zanim ut
 Str_NativeGameMissing=Nie znaleziono gry w folderze {0}.
 Str_NativeLoaderConflict=W folderze {0} zainstalowano już inny plik winmm.dll. Sprawdź zgodność programu ładującego.
 Str_ShowCastingSpell=Pokazuj nazwy zaklęć nad rzucającymi
+Str_HideEnemyCastingSpells=Ukrywaj nazwy zaklęć nad przeciwnikami
 
 Str_NativeProgressDetected=Wykryto instalację gry {0}
 Str_NativeProgressInjector=Instalacja modułu wstrzykującego Radar

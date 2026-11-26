@@ -87,8 +87,10 @@ namespace BGOverlay
         }
         public static bool AnimateEnemyListNumbers { get; set; } = true;
         public static bool AnimateCharacterCardNumbers { get; set; } = true;
+        public static bool ShowPockets { get; set; } = true;
         public static bool ShowCombatText { get; set; } = true;
         public static bool ShowCastingSpell { get; set; } = true;
+        public static bool HideEnemyCastingSpells { get; set; } = false;
         public static int CombatTextScale { get; set; } = 40;
         public static int CombatTextSpeed { get; set; } = 100;
         public static int CombatTextPush { get; set; } = 50;
@@ -152,6 +154,7 @@ namespace BGOverlay
             BuffInkFilter       = false;
             AnimateEnemyListNumbers = true;
             AnimateCharacterCardNumbers = true;
+            ShowPockets = true;
             Font1               = "Segoe Print";
             Font2               = "Ink Free";
             Font3               = "Bahnschrift Condensed";
@@ -209,8 +212,10 @@ namespace BGOverlay
                 $"{nameof(BuffInkFilter)}={BuffInkFilter}",
                 $"AnimateEnemyListNumbers={AnimateEnemyListNumbers}",
                 $"AnimateCharacterCardNumbers={AnimateCharacterCardNumbers}",
+                $"ShowPockets={ShowPockets}",
                 $"ShowCombatText={ShowCombatText}",
                 $"ShowCastingSpell={ShowCastingSpell}",
+                $"HideEnemyCastingSpells={HideEnemyCastingSpells}",
                 $"CombatTextScale={CombatTextScale}",
                 $"CombatTextSpeed={CombatTextSpeed}",
                 $"CombatTextPush={CombatTextPush}",
@@ -299,8 +304,10 @@ namespace BGOverlay
                 BuffInkFilter       = getProperty(nameof(BuffInkFilter), "false").Equals("true");
                 AnimateEnemyListNumbers = getProperty(nameof(AnimateEnemyListNumbers), "true").Equals("true");
                 AnimateCharacterCardNumbers = getProperty(nameof(AnimateCharacterCardNumbers), "true").Equals("true");
+                ShowPockets = getProperty(nameof(ShowPockets), "true").Equals("true");
                 ShowCombatText = getProperty(nameof(ShowCombatText), "true").Equals("true");
                 ShowCastingSpell = getProperty(nameof(ShowCastingSpell), "true").Equals("true");
+                HideEnemyCastingSpells = getProperty(nameof(HideEnemyCastingSpells), "false").Equals("true");
                 CombatTextScale = ReadPercent(nameof(CombatTextScale), 40, 1, 150);
                 CombatTextSpeed = ReadPercent(nameof(CombatTextSpeed), 100, 1, 200);
                 CombatTextPush = ReadPercent(nameof(CombatTextPush), 50, 0, 300);
@@ -388,6 +395,44 @@ namespace BGOverlay
             ApplyBorderless(pid, hwnd, stalledPresent);
 
         private static readonly object borderlessChange = new object();
+        private static readonly object taskbarChange = new object();
+        private static IntPtr markedGameWindow;
+        private static int markedGamePid;
+
+        private static bool CoversMonitor(IntPtr hwnd, System.Drawing.Rectangle bounds) =>
+            GetWindowRect(hwnd, out var rect) && rect.Left == bounds.Left && rect.Top == bounds.Top
+            && rect.Right == bounds.Right && rect.Bottom == bounds.Bottom;
+
+        private static void ClearTaskbarFullscreen()
+        {
+            WinAPIBindings.GetWindowThreadProcessId(markedGameWindow, out var owner);
+            if (owner == markedGamePid)
+                WinAPIBindings.MarkTaskbarFullscreen(markedGameWindow, false);
+            markedGameWindow = IntPtr.Zero;
+        }
+
+        // SDL can return to an ordinary window on the same HWND after Alt+Enter.
+        // A minimized fullscreen window should keep its mark for the next restore.
+        public static void UpdateTaskbarFullscreen(bool exiting = false)
+        {
+            lock (taskbarChange)
+            {
+                if (markedGameWindow == IntPtr.Zero) return;
+                try
+                {
+                    WinAPIBindings.GetWindowThreadProcessId(markedGameWindow, out var owner);
+                    if (!exiting && owner == markedGamePid)
+                    {
+                        var style = ReadWindowStyle(markedGameWindow);
+                        if ((style & WindowStyles.WS_MINIMIZE) != 0 ||
+                            ((style & WindowStyles.WS_CAPTION) == 0 &&
+                            CoversMonitor(markedGameWindow, Screen.FromHandle(markedGameWindow).Bounds))) return;
+                    }
+                    ClearTaskbarFullscreen();
+                }
+                catch (COMException ex) { Logger.Error("Could not clear the game's fullscreen taskbar status.", ex); }
+            }
+        }
 
         private static void ApplyBorderless(int pid, IntPtr hwnd, long? stalledPresent)
         {
@@ -465,16 +510,22 @@ namespace BGOverlay
                     // Preserve visibility and clipping (including the hosted options panel).
                     // Leaving WS_POPUP clear also makes repeated clicks stay in windowed mode.
                     var borderless = style & ~(WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_POPUP);
-                    if (borderless == style && GetWindowRect(hwnd, out var currentRect)
-                        && currentRect.Left == bounds.Left && currentRect.Top == bounds.Top
-                        && currentRect.Right == bounds.Right && currentRect.Bottom == bounds.Bottom)
-                        return;
-                    if (borderless != style && WinAPIBindings.SetWindowLong32(hwnd, -16, (uint)borderless) == 0)
-                        throw new Win32Exception();
-                    const uint noZOrder = 0x0004, noActivate = 0x0010, frameChanged = 0x0020;
-                    if (!WinAPIBindings.SetWindowPos(hwnd, IntPtr.Zero, bounds.Left, bounds.Top,
-                        bounds.Width, bounds.Height, noZOrder | noActivate | (borderless != style ? frameChanged : 0)))
-                        throw new Win32Exception();
+                    if (borderless != style || !CoversMonitor(hwnd, bounds))
+                    {
+                        if (borderless != style && WinAPIBindings.SetWindowLong32(hwnd, -16, (uint)borderless) == 0)
+                            throw new Win32Exception();
+                        const uint noZOrder = 0x0004, noActivate = 0x0010, frameChanged = 0x0020;
+                        if (!WinAPIBindings.SetWindowPos(hwnd, IntPtr.Zero, bounds.Left, bounds.Top,
+                            bounds.Width, bounds.Height, noZOrder | noActivate | (borderless != style ? frameChanged : 0)))
+                            throw new Win32Exception();
+                    }
+                    lock (taskbarChange)
+                    {
+                        if (markedGameWindow != IntPtr.Zero && markedGameWindow != hwnd) ClearTaskbarFullscreen();
+                        WinAPIBindings.MarkTaskbarFullscreen(hwnd, true);
+                        markedGameWindow = hwnd;
+                        markedGamePid = pid;
+                    }
                 }
             } catch (Exception ex)
             {

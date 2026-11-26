@@ -110,6 +110,7 @@ Str_ResCrushing=Odolnost vůči drtivému: {0}
 Str_ResPiercing=Odolnost vůči bodnému: {0}
 Str_ResMissile=Odolnost vůči střelám: {0}
 Str_Pockets=Kapsy
+Str_ShowPockets=Zobrazovat kapsy
 Str_ItemIdentified=Identifikováno
 Str_ItemStealable=Lze ukrást
 Str_ItemUnstealable=Nelze ukrást
@@ -868,6 +869,7 @@ Str_NativeLinkOccupied=Na cestě {0} již existuje soubor. Před vytvořením od
 Str_NativeGameMissing=Hru se nepodařilo najít ve složce {0}.
 Str_NativeLoaderConflict=Ve složce {0} je již nainstalován jiný soubor winmm.dll. Ověřte kompatibilitu zavaděče.
 Str_ShowCastingSpell=Zobrazovat názvy kouzel nad sesilateli
+Str_HideEnemyCastingSpells=Skrývat názvy kouzel nad nepřáteli
 
 Str_NativeProgressDetected=Nalezena instalace hry {0}
 Str_NativeProgressInjector=Instalace injektoru radaru

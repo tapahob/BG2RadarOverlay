@@ -110,6 +110,7 @@ Str_ResCrushing=타격 저항: {0}
 Str_ResPiercing=관통 저항: {0}
 Str_ResMissile=발사체 저항: {0}
 Str_Pockets=주머니
+Str_ShowPockets=주머니 표시
 Str_ItemIdentified=감정됨
 Str_ItemStealable=훔칠 수 있음
 Str_ItemUnstealable=훔칠 수 없음
@@ -867,6 +868,7 @@ Str_NativeLinkOccupied={0}에 이미 파일이 있습니다. 링크를 만들기
 Str_NativeGameMissing={0}에서 게임을 찾을 수 없습니다.
 Str_NativeLoaderConflict={0}에 다른 winmm.dll이 이미 설치되어 있습니다. 로더의 호환성을 확인하세요.
 Str_ShowCastingSpell=시전자 위에 주문 이름 표시
+Str_HideEnemyCastingSpells=적 머리 위의 주문 이름 숨기기
 
 Str_NativeProgressDetected=설치된 게임을 찾았습니다: {0}
 Str_NativeProgressInjector=Radar 인젝터 설치

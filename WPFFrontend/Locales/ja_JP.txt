@@ -110,6 +110,7 @@ Str_ResCrushing=打撃抵抗: {0}
 Str_ResPiercing=刺突抵抗: {0}
 Str_ResMissile=飛び道具抵抗: {0}
 Str_Pockets=ポケット
+Str_ShowPockets=ポケットを表示
 Str_ItemIdentified=鑑定済み
 Str_ItemStealable=盗める
 Str_ItemUnstealable=盗めない
@@ -867,6 +868,7 @@ Str_NativeLinkOccupied={0} にはすでにファイルがあります。リン�
 Str_NativeGameMissing={0} にゲームが見つかりませんでした。
 Str_NativeLoaderConflict={0} には別の winmm.dll がインストールされています。ローダーの互換性を確認してください。
 Str_ShowCastingSpell=詠唱者の頭上に呪文名を表示
+Str_HideEnemyCastingSpells=敵の頭上の呪文名を非表示にする
 
 Str_NativeProgressDetected=インストール済みのゲームを検出：{0}
 Str_NativeProgressInjector=Radar インジェクターのインストール

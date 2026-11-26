@@ -110,6 +110,7 @@ Str_ResCrushing=Wuchtresistenz: {0}
 Str_ResPiercing=Stichresistenz: {0}
 Str_ResMissile=Fernkampfresistenz: {0}
 Str_Pockets=Taschen
+Str_ShowPockets=Taschen anzeigen
 Str_ItemIdentified=Identifiziert
 Str_ItemStealable=Stehlbar
 Str_ItemUnstealable=Nicht stehlbar
@@ -869,6 +870,7 @@ Str_NativeLinkOccupied=Unter {0} ist bereits eine Datei vorhanden. Verschiebe si
 Str_NativeGameMissing=Das Spiel wurde in {0} nicht gefunden.
 Str_NativeLoaderConflict=In {0} ist bereits eine andere winmm.dll installiert. Prüfe die Kompatibilität des Loaders.
 Str_ShowCastingSpell=Zaubernamen über Zaubernden anzeigen
+Str_HideEnemyCastingSpells=Zaubernamen über Gegnern ausblenden
 
 Str_NativeProgressDetected=Spielinstallation gefunden: {0}
 Str_NativeProgressInjector=Radar-Injektor installieren

@@ -264,7 +264,7 @@ namespace BGOverlay
         }
 
         public string WeaponTitle => $"Weapon: \"{EquippedWeaponName}\"" +
-            (EquippedWeaponName.Contains($"+{Enchantment}") ? "" : $" (Strikes as +{Enchantment})");
+            ITMReader.EnchantmentSuffix(EquippedWeaponName, Enchantment);
 
         public List<string> OnHitEffectsStrings 
         { 
